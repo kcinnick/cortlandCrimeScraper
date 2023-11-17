@@ -61,10 +61,9 @@ topic_ids = {
 }
 
 
-def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date, end_date, session=None):
+def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date, end_date, max_pages, session=None):
     if match_type not in ['all', 'any', 'phrase']:
-        print('match must be one of all, any, or phrase.')
-        print('defaulting to \'any\'.')
+        print('match must be one of all, any, or phrase. defaulting to \'any\'.')
         match = 'any'
 
     if not keywords:
@@ -99,7 +98,7 @@ def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date
     url = ("https://www.cortlandstandard.com/browse.html?archive_search=1&"
            "content_source=&"
            f"search_filter={','.join(keywords)}&"
-           f"search_filter_mode={match}&"
+           f"search_filter_mode={match_type}&"
            f"byline={byline.replace(' ', '%20')}&"
            f"{sub_type_string}"
            f"date_start_n={start_date_n}&"
@@ -129,9 +128,10 @@ def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date
         stories = story_list.find_all('div', class_='item')
         for story in stories:
             articleUrls.append('https://www.cortlandstandard.com' + story.find('a')['href'])
-        return articleUrls
         if soup.find('span', class_='next'):
             page_number += 1
+            if page_number > max_pages:
+                hasMore = False
         else:
             hasMore = False
 
@@ -163,8 +163,9 @@ def login():
 def main():
     logged_in_session = login()
     article_urls = get_article_urls(
-        ['Police/Fire'], [], '', '',
-        '', '', [], session=logged_in_session
+        ['Police/Fire'], [], '', 'any',
+        '', '', [], max_pages=1,
+        session=logged_in_session
     )
 
 
