@@ -1,11 +1,17 @@
+from database import engine, Article, Session as DBSession
+
 import os
 from time import sleep
 
+import regex as re
+
 from bs4 import BeautifulSoup
-from newspaper import Article
+from newspaper import Article as NewspaperArticle
 from newspaper import Config
 from requests import Session
 from tqdm import tqdm
+
+DBsession = DBSession()
 
 config = Config()
 userAgent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 "
@@ -61,7 +67,7 @@ topic_ids = {
 }
 
 
-def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date, end_date, max_pages, session=None):
+def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date, end_date, max_pages=9999, session=None):
     if match_type not in ['all', 'any', 'phrase']:
         print('match must be one of all, any, or phrase. defaulting to \'any\'.')
         match = 'any'
@@ -160,13 +166,51 @@ def login():
     return session
 
 
+def scrape_article(article_url, logged_in_session, section):
+    print(article_url)
+    parsed_article = NewspaperArticle(article_url, config=config)
+    parsed_article.download()
+    parsed_article.parse()
+    parsed_article.nlp()
+    print('keywords: ' + str(parsed_article.keywords))
+
+    r = logged_in_session.get(article_url)
+    soup = BeautifulSoup(r.content, 'html.parser')
+    headline = soup.find('h1', id='headline').text
+    try:
+        byline = soup.find('div', class_='byline').text
+    except AttributeError:
+        byline = ''
+    date_published = re.search('"datePublished": "(.*?)"', str(soup)).group(1)
+
+    article = Article(
+        headline=headline,
+        section=section,
+        keywords=parsed_article.keywords,
+        author=byline,
+        date_published=date_published,
+        url=article_url,
+        content=parsed_article.text,
+        html_content=soup.prettify()
+    )
+
+    DBsession.add(article)
+    DBsession.commit()
+    DBsession.close()
+
+    return
+
+
 def main():
     logged_in_session = login()
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',
-        '', '', [], max_pages=1,
-        session=logged_in_session
+        '', '', [], session=logged_in_session
     )
+    already_scraped_urls = [article.url for article in DBsession.query(Article).all()]
+    article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
+    for article_url in tqdm(article_urls):
+        scrape_article(article_url, logged_in_session, section='Police/Fire')
 
 
 if __name__ == '__main__':
