@@ -23,10 +23,11 @@ class Article(Base):
     __table_args__ = {'schema': 'public'}
 
     id = Column(Integer, primary_key=True)
-    title = Column(String)
+    headline = Column(String)
     section = Column(String)
+    keywords = Column(String)
     author = Column(String)
-    publish_date = Column(Date)
+    date_published = Column(Date)
     url = Column(String)
     content = Column(String)
     html_content = Column(String)
