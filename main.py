@@ -205,7 +205,8 @@ def main():
     logged_in_session = login()
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',
-        '', '', [], session=logged_in_session
+        '', '', [], session=logged_in_session,
+        max_pages=None
     )
     already_scraped_urls = [article.url for article in DBsession.query(Article).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
