@@ -1,5 +1,3 @@
-from database import engine, Article, Session as DBSession
-
 import os
 from time import sleep
 
@@ -11,7 +9,7 @@ from newspaper import Config
 from requests import Session
 from tqdm import tqdm
 
-DBsession = DBSession()
+from database import get_database_session, Article
 
 config = Config()
 userAgent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 "
@@ -166,7 +164,7 @@ def login():
     return session
 
 
-def scrape_article(article_url, logged_in_session, section):
+def scrape_article(article_url, logged_in_session, section, DBsession):
     print(article_url)
     parsed_article = NewspaperArticle(article_url, config=config)
     parsed_article.download()
@@ -202,6 +200,7 @@ def scrape_article(article_url, logged_in_session, section):
 
 
 def main():
+    DBsession, engine = get_database_session(test=False)
     logged_in_session = login()
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',
@@ -211,7 +210,7 @@ def main():
     already_scraped_urls = [article.url for article in DBsession.query(Article).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
     for article_url in tqdm(article_urls):
-        scrape_article(article_url, logged_in_session, section='Police/Fire')
+        scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)
 
 
 if __name__ == '__main__':
