@@ -64,10 +64,19 @@ def scrape_structured_incident_details(article, DBsession):
                 accused_str = accused_element.text.strip()
             charges_element = charges[index].next_sibling
             charges_str = charges_element.text.strip()
+            if charges_str == '':
+                charges_element = charges[index].find_next('span')
+                charges_str = charges_element.text.strip()
             details_element = details[index].next_sibling
             details_str = details_element.text.strip()
+            if details_str == '':
+                details_element = details[index].find_next('span')
+                details_str = details_element.text.strip()
             legal_actions_element = legal_actions[index].next_sibling
             legal_actions_str = legal_actions_element.text.strip()
+            if legal_actions_str == '':
+                legal_actions_element = legal_actions[index].find_next('span')
+                legal_actions_str = legal_actions_element.text.strip()
         except IndexError:
             print('IndexError')
             incidentWithError = IncidentsWithErrors(
@@ -104,7 +113,7 @@ def scrape_structured_incident_details(article, DBsession):
                 DBsession.rollback()
             continue
 
-        accused_name = accused_str.split(',')[0].strip()
+        accused_name = accused_str.split(',')[0].strip().split(' of ')[0].strip()
         try:
             accused_age = accused_str.split(',')[1].strip()
         except IndexError:
@@ -147,6 +156,7 @@ def scrape_structured_incident_details(article, DBsession):
         incident = Incidents(
             article_id=article.id,
             url=article.url,
+            incident_reported_date=article.date_published,
             accused_name=accused_name,
             accused_age=accused_age,
             accused_location=accused_location,
