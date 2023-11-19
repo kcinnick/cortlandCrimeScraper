@@ -61,6 +61,7 @@ class Incidents(Base):
 
     id = Column(Integer, autoincrement=True, primary_key=True)
     url = Column(String, primary_key=True)
+    incident_reported_date = Column(Date, primary_key=True)
     accused_name = Column(String, primary_key=True)
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
