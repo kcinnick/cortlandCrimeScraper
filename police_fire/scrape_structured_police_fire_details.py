@@ -160,7 +160,8 @@ def scrape_structured_incident_details(article, DBsession):
         try:
             DBsession.add(incident)
             DBsession.commit()
-        except IntegrityError:
+        except IntegrityError as e:
+            print('Integrity error: ', e)
             DBsession.rollback()
 
     return
