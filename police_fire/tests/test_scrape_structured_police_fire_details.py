@@ -85,3 +85,25 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly():
     incidents = DBsession.query(Incidents).all()
 
     assert len(incidents) == 9
+
+
+def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correctly():
+    article_url = 'https://www.cortlandstandard.com/stories/two-charged-with-drunken-driving,12273?'
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    incidents = DBsession.query(Incidents).all()
+    assert len(incidents) == 0
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+    test_article = DBsession.query(Article).where(
+        Article.url == article_url).first()
+
+    scrape_structured_incident_details(test_article, DBsession)
+    incidents = DBsession.query(Incidents).all()
+
+    assert len(incidents) == 2
+    for incident in incidents:
+        assert incident.details is not ''
+
