@@ -30,7 +30,7 @@ class Article(Base):
     __tablename__ = 'article'
     __table_args__ = {'schema': 'public'}
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     headline = Column(String)
     section = Column(String)
     keywords = Column(String)
@@ -48,7 +48,7 @@ class IncidentsWithErrors(Base):
     article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
     article = relationship("Article")  # This creates a link to the Article model
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String, unique=True)
 
 
@@ -59,13 +59,13 @@ class Incidents(Base):
     article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
     article = relationship("Article")  # This creates a link to the Article model
 
-    id = Column(Integer, primary_key=True)
-    url = Column(String, unique=True)
-    accused_name = Column(String)
-    accused_age = Column(String)
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    url = Column(String, primary_key=True)
+    accused_name = Column(String, primary_key=True)
+    accused_age = Column(String, primary_key=True)
     accused_location = Column(String)
-    charges = Column(String)
-    details = Column(String)
+    charges = Column(String, primary_key=True)
+    details = Column(String, primary_key=True)
     legal_actions = Column(String)
     structured_source = Column(Boolean)
 
