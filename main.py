@@ -137,6 +137,7 @@ def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date
             if page_number > max_pages:
                 hasMore = False
         else:
+            print('No more pages found. Stopping.')
             hasMore = False
 
     return articleUrls
@@ -205,7 +206,6 @@ def main():
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',
         '', '', [], session=logged_in_session,
-        max_pages=None
     )
     already_scraped_urls = [article.url for article in DBsession.query(Article).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
