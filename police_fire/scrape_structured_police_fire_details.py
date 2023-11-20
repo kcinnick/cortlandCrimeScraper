@@ -2,15 +2,14 @@ import regex as re
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import engine, Article, Incidents, IncidentsWithErrors, Session as DBSession
+from database import get_database_session, Article, Incidents, IncidentsWithErrors
 
 
-def identify_articles_with_incident_formatting():
+def identify_articles_with_incident_formatting(db_session):
     """
     Identify articles that contain incidents in the headline or keywords.
     """
-    DBsession = DBSession()
-    articles = DBsession.query(Article).where(Article.section == 'Police/Fire').all()
+    articles = db_session.query(Article).where(Article.section == 'Police/Fire').all()
     articles_with_incidents = []
     for article in articles:
         if 'Accused:' in article.html_content and 'Charges:' in article.html_content and 'Details:' in article.html_content:
@@ -19,11 +18,11 @@ def identify_articles_with_incident_formatting():
     return articles_with_incidents
 
 
-def scrape_incident_details(article):
+def scrape_structured_incident_details(article, DBsession):
     """
     Scrape incident details from article.
     """
-    DBsession = DBSession()
+    incidents = []
     print(article.url)
     soup = BeautifulSoup(article.html_content, 'html.parser')
     accused = soup.find_all('strong', string=re.compile('Accused'))
@@ -39,6 +38,11 @@ def scrape_incident_details(article):
     # for legal_action in legal_actions:
     #     print(legal_action.next_sibling)
 
+    print(len(accused))
+    print(len(charges))
+    print(len(details))
+    print(len(legal_actions))
+
     if len(accused) != len(charges) or len(accused) != len(details) or len(accused) != len(legal_actions):
         incidentWithError = IncidentsWithErrors(
             article_id=article.id,
@@ -49,8 +53,6 @@ def scrape_incident_details(article):
             DBsession.commit()
         except IntegrityError:
             DBsession.rollback()
-        finally:
-            DBsession.close()
         return
 
     for index, accused in enumerate(accused):
@@ -62,11 +64,21 @@ def scrape_incident_details(article):
                 accused_str = accused_element.text.strip()
             charges_element = charges[index].next_sibling
             charges_str = charges_element.text.strip()
+            if charges_str == '':
+                charges_element = charges[index].find_next('span')
+                charges_str = charges_element.text.strip()
             details_element = details[index].next_sibling
             details_str = details_element.text.strip()
+            if details_str == '':
+                details_element = details[index].find_next('span')
+                details_str = details_element.text.strip()
             legal_actions_element = legal_actions[index].next_sibling
             legal_actions_str = legal_actions_element.text.strip()
+            if legal_actions_str == '':
+                legal_actions_element = legal_actions[index].find_next('span')
+                legal_actions_str = legal_actions_element.text.strip()
         except IndexError:
+            print('IndexError')
             incidentWithError = IncidentsWithErrors(
                 article_id=article.id,
                 url=article.url
@@ -76,8 +88,6 @@ def scrape_incident_details(article):
                 DBsession.commit()
             except IntegrityError:
                 DBsession.rollback()
-            finally:
-                DBsession.close()
             continue
 
         # clean up accused record
@@ -91,6 +101,7 @@ def scrape_incident_details(article):
             accused_str = accused_str.replace(' and ', ';')
 
         if ';' in accused_str:
+            print('; in accused_str')
             incidentWithError = IncidentsWithErrors(
                 article_id=article.id,
                 url=article.url
@@ -100,11 +111,9 @@ def scrape_incident_details(article):
                 DBsession.commit()
             except IntegrityError:
                 DBsession.rollback()
-            finally:
-                DBsession.close()
             continue
 
-        accused_name = accused_str.split(',')[0].strip()
+        accused_name = accused_str.split(',')[0].strip().split(' of ')[0].strip()
         try:
             accused_age = accused_str.split(',')[1].strip()
         except IndexError:
@@ -147,32 +156,37 @@ def scrape_incident_details(article):
         incident = Incidents(
             article_id=article.id,
             url=article.url,
+            incident_reported_date=article.date_published,
             accused_name=accused_name,
             accused_age=accused_age,
             accused_location=accused_location,
             charges=charges_str,
             details=details_str,
-            legal_actions=legal_actions_str
+            legal_actions=legal_actions_str,
+            structured_source=True
         )
 
         # add incident to database if it doesn't already exist
         try:
             DBsession.add(incident)
             DBsession.commit()
-        except IntegrityError:
+        except IntegrityError as e:
+            print('Integrity error: ', e)
             DBsession.rollback()
-        finally:
-            DBsession.close()
 
     return
 
 
 def main():
-    articles_with_incidents = identify_articles_with_incident_formatting()
+    database_session, engine = get_database_session(test=False)
+    articles_with_incidents = identify_articles_with_incident_formatting(database_session)
     print(f'{len(articles_with_incidents)} articles with incident formatting.')
-    for index, article in enumerate(articles_with_incidents):
-        print('\n---Scraping article ' + str(index + 1) + ' of ' + str(len(articles_with_incidents)) + '---\n')
-        scrape_incident_details(article)
+    try:
+        for index, article in enumerate(articles_with_incidents):
+            print('\n---Scraping article ' + str(index + 1) + ' of ' + str(len(articles_with_incidents)) + '---\n')
+            scrape_structured_incident_details(article, database_session)
+    finally:
+        database_session.close()
 
 
 if __name__ == '__main__':
