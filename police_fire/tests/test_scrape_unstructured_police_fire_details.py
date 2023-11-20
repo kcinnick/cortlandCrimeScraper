@@ -29,4 +29,20 @@ def test_duplicate_structured_incident_does_not_get_added():
     incidents = DBsession.query(Incidents).all()
     assert len(incidents) == 5
 
+def test_multiple_unstructured_incidents_get_added():
+    Base.metadata.drop_all(engine)
+    Base.metadata.create_all(engine)
+    incidents = DBsession.query(Incidents).all()
+    assert len(incidents) == 0
 
+    logged_in_session = login()
+    scrape_article('https://www.cortlandstandard.com/stories/brooklyn-man-found-with-5700-in-cocaine,33840', logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+    test_article = DBsession.query(Article).where(
+        Article.url == 'https://www.cortlandstandard.com/stories/brooklyn-man-found-with-5700-in-cocaine,33840').first()
+
+    article_content = test_article.content
+    article_date_published = test_article.date_published
+    scrape_unstructured_incident_details(test_article.id, test_article.url, article_content, article_date_published, DBsession)
+    incidents = DBsession.query(Incidents).all()
+    assert len(incidents) == 5
