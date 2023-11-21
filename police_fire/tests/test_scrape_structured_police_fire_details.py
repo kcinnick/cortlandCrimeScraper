@@ -17,9 +17,16 @@ create_tables(test=True)
 DBsession, engine = get_database_session(test=True)
 
 
+def delete_table_contents():
+    DBsession.query(IncidentsWithErrors).delete()
+    DBsession.query(Incidents).delete()
+    DBsession.query(Article).delete()
+    DBsession.commit()
+
+
 def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_table():
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+    delete_table_contents()
+
     incidents_with_errors = DBsession.query(IncidentsWithErrors).all()
     assert len(incidents_with_errors) == 0
 
@@ -38,8 +45,8 @@ def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_tab
 
 
 def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+    delete_table_contents()
+
     incidents = DBsession.query(Incidents).all()
     assert len(incidents) == 0
 
@@ -69,9 +76,10 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
 
 
 def test_structure_data_with_multiple_incidents_gets_added_correctly():
+    delete_table_contents()
+
     article_url = 'https://www.cortlandstandard.com/stories/groton-driver-charged-after-crash-causes-injury,13070?'
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+
     incidents = DBsession.query(Incidents).all()
     assert len(incidents) == 0
 
@@ -88,9 +96,10 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly():
 
 
 def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correctly():
+    delete_table_contents()
+
     article_url = 'https://www.cortlandstandard.com/stories/two-charged-with-drunken-driving,12273?'
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
+
     incidents = DBsession.query(Incidents).all()
     assert len(incidents) == 0
 
@@ -107,3 +116,37 @@ def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correct
     for incident in incidents:
         assert incident.details is not ''
 
+
+def test_structure_data_with_br_tags_gets_added_correctly():
+    delete_table_contents()
+
+    article_url = 'https://www.cortlandstandard.com/stories/10-year-old-hurt-when-vehicle-tips,19473?'
+    incidents = DBsession.query(Incidents).all()
+    assert len(incidents) == 0
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+    test_article = DBsession.query(Article).where(
+        Article.url == article_url).first()
+
+    scrape_structured_incident_details(test_article, DBsession)
+    incidents = DBsession.query(Incidents).all()
+
+    assert len(incidents) == 2
+    first_incident = incidents[0]
+    second_incident = incidents[1]
+
+    assert first_incident.accused_name == 'Wendy Caswell'
+    assert first_incident.accused_age == '40'
+    assert first_incident.accused_location == 'Cortland'
+    assert first_incident.charges == 'Third-degree criminal possession of a controlled substance, third-degree criminal possession of a weapon, criminal possession of a firearm, felonies; three counts of seventh-degree criminal possession of a controlled substance, two counts of ssecond degree criminally using drug paraphernalia and fourth-degree criminal possession of a weapon, misdemeanors'
+    assert first_incident.details == 'The Cortland County Drug Task Force executed a search warrant Wednesday of a home on Main Street in Cortland. Officers seized 3 grams of fentanyl, a half-gram of methamphetamine, packaging materials, scales, Tramadol and Alprazolam. The drugs had a street value of more than $400, police said.'
+    assert first_incident.legal_actions == "Caswell was awaiting arraignment Wednesday evening at the Cortland County Sheriff's Office."
+
+    assert second_incident.accused_name == 'Cypress Jana V. Hill'
+    assert second_incident.accused_age == '25'
+    assert second_incident.accused_location == 'Groton'
+    assert second_incident.charges == 'First-degree burglary, first-degree criminal contempt, felonies; second-degree menacing, a misdemeanor'
+    assert second_incident.details == 'Hill kicked open the door to a residence then threatened the resident with a knife on Oct. 9 on Ward Boulevard in Newfield, state police said, violating an order of protection in the process.A day later, Hill menaced the same person with a knife near Miller Hill and Elmira Road in Newfield, police said.'
+    assert second_incident.legal_actions == 'Hill was arrested Oct. 14 and taken to Tompkins County central arraignment and awaits an appearance in Newfield Town Court.'

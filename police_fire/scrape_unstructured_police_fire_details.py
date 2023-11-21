@@ -1,3 +1,4 @@
+import ast
 import os
 
 from pydantic import BaseModel, Field
@@ -5,7 +6,7 @@ from simpleaichat import AIChat
 from sqlalchemy.exc import IntegrityError
 from tqdm import tqdm
 
-from database import Article, Incidents, get_database_session
+from database import Article, Incidents, get_database_session, IncidentsWithErrors
 
 ai = AIChat(
     console=False,
@@ -32,66 +33,91 @@ class get_incident_metadata(BaseModel):
 
 def scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published, DBsession):
     #print('Article content: ', article.content)
-    query = "List all of the incident details provided in the following article, in the original language of the article where possible.  Use an array of dictionaries if there is more than one incident specified. If the article is not about a crime, the output should be N/A." + article_content
-    response = ai(query, output_schema=get_incident_metadata)
-    incident = Incidents(
-        article_id=article_id,
-        url=article_url,
-        incident_reported_date=article_date_published,
-        accused_name=response['accused_name'],
-        accused_age=str(response['accused_age']),
-        accused_location=response['accused_location'],
-        charges=response['charges'],
-        details=response['details'],
-        legal_actions=response['legal_actions'],
-        structured_source=False
-    )
-
-    # look up potentially-duplicated incidents first.
-    # do not add this incident to the database if it's a duplicate.
-
-    incidents = DBsession.query(Incidents).filter(
-        Incidents.url == article_url,
-        Incidents.accused_name == incident.accused_name,
-        Incidents.accused_age == incident.accused_age,
-        Incidents.accused_location == incident.accused_location,
-        Incidents.charges == incident.charges
-    ).all()
-
-    if len(incidents) > 0:
-        print('Potential duplicate incident found.  Not adding to database.')
+    query = "List all of the incident details provided in the following article that do not start with Accused:, in the original language of the article.  Use an Python style array of Python-style dictionaries with the keys \'accused_name\', \'accused_age\', \'accused_location\', \'charges\', \'details\', \'legal_actions\' if there is more than one incident specified. All values need to be strings. If the article is not about a crime, the output should be N/A." + article_content
+    response = ai(query)
+    print(article_url)
+    if response == 'N/A':
+        print('No incident details found.  Not adding to database.')
+        print(article_url)
         return
-    else:
-        print('No potential duplicate incidents found.  Filtering for nulls before adding to database.')
-        nulls_found = 0
-        print(incident.url)
-        print(incident.accused_name)
-        if incident.accused_name == 'N/A':
-            nulls_found += 1
-        if incident.accused_age in ['N/A', '0', 0]:
-            nulls_found += 1
-        if incident.accused_location == 'N/A':
-            nulls_found += 1
-        print(incident.accused_location)
-        if incident.charges == 'N/A':
-            nulls_found += 1
-        print(incident.charges)
-        if incident.details == 'N/A':
-            nulls_found += 1
-        print(incident.details)
-        if incident.legal_actions == 'N/A':
-            nulls_found += 1
+    try:
+        parsed_response = ast.literal_eval(response)
+    except TypeError as e:
+        incidentWithError = IncidentsWithErrors(
+            url=article_url
+        )
+        DBsession.add(incidentWithError)
+        DBsession.commit()
+        return
+    except SyntaxError as e:
+        incidentWithError = IncidentsWithErrors(
+            url=article_url
+        )
+        DBsession.add(incidentWithError)
+        DBsession.commit()
+        return
 
-        if nulls_found > 4:
-            print('Too many nulls found.  Not adding to database.')
-            return
+    for response in tqdm(parsed_response, desc='Parsing incident details'):
+        charges = dict(response).get('charges')
+        if charges:
+            if type(response['charges']) == list:
+                response['charges'] = '; '.join(response['charges'])
+
+        accused_name = dict(response).get('accused_name')
+        accused_location = dict(response).get('accused_location')
+        incident = Incidents(
+            article_id=article_id,
+            url=article_url,
+            incident_reported_date=article_date_published,
+            accused_name=accused_name,
+            accused_age=response['accused_age'],
+            accused_location=accused_location,
+            charges=charges,
+            details=response['details'],
+            legal_actions=response['legal_actions'],
+            structured_source=False
+        )
+
+        # look up potentially-duplicated incidents first.
+        # do not add this incident to the database if it's a duplicate.
+
+        incidents = DBsession.query(Incidents).filter(
+            Incidents.url == article_url,
+            Incidents.accused_name == incident.accused_name,
+            Incidents.accused_age == incident.accused_age,
+            Incidents.accused_location == incident.accused_location,
+            Incidents.charges == incident.charges
+        ).all()
+
+        if len(incidents) > 0:
+            print('Potential duplicate incident found.  Not adding to database.')
+            continue
         else:
-            try:
-                DBsession.add(incident)
-                DBsession.commit()
-            except IntegrityError as e:
-                print('Integrity error: ', e)
-                DBsession.rollback()
+            print('No potential duplicate incidents found.  Filtering for nulls before adding to database.')
+            nulls_found = 0
+            if incident.accused_name == 'N/A':
+                nulls_found += 1
+            if incident.accused_age in ['N/A', '0', 0]:
+                nulls_found += 1
+            if incident.accused_location == 'N/A':
+                nulls_found += 1
+            if incident.charges == 'N/A':
+                nulls_found += 1
+            if incident.details == 'N/A':
+                nulls_found += 1
+            if incident.legal_actions == 'N/A':
+                nulls_found += 1
+
+            if nulls_found > 4:
+                print('Too many nulls found.  Not adding to database.')
+                return
+            else:
+                try:
+                    DBsession.add(incident)
+                    DBsession.commit()
+                except IntegrityError as e:
+                    print('Integrity error: ', e)
+                    DBsession.rollback()
 
     return
 
@@ -101,16 +127,12 @@ def main():
     police_fire_articles = DBsession.query(Article).where(Article.section == 'Police/Fire')
     police_fire_articles = list(police_fire_articles)
     index = 0
-    try:
-        for article in tqdm(police_fire_articles):
-            article_id, article_url, article_content, article_date_published = article.id, article.url, article.content, article.date_published
-            index += 1
-            #pprint('Article content: ', article.content)
-            scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published, DBsession)
-    except Exception as e:
-        print(e)
-    finally:
-        DBsession.close()
+    for article in tqdm(police_fire_articles):
+        article_id, article_url, article_content, article_date_published = article.id, article.url, article.content, article.date_published
+        index += 1
+        scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published, DBsession)
+
+    DBsession.close()
 
 
 if __name__ == '__main__':
