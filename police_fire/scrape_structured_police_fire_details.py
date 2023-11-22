@@ -5,7 +5,8 @@ from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
 from database import get_database_session, Article, Incidents, IncidentsWithErrors
-from police_fire.utilities import add_incident_with_error_if_not_already_exists
+from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
+    clean_up_charges_details_and_legal_actions_records
 
 
 def identify_articles_with_incident_formatting(db_session):
@@ -85,18 +86,8 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
 
     # clean up charges, details, and legal actions records
-    if charges_str.startswith(': '):
-        charges_str = charges_str[2:]
-    else:
-        charges_str = charges_str.replace('Charges: ', '')
-    if details_str.startswith(': '):
-        details_str = details_str[2:]
-    else:
-        details_str = details_str.replace('Details: ', '')
-    if legal_actions_str.startswith(': '):
-        legal_actions_str = legal_actions_str[2:]
-    else:
-        legal_actions_str = re.sub(r'Legal [Aa]ctions: ', '', legal_actions_str)
+    charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
+        charges_str, details_str, legal_actions_str)
 
     incident = Incidents(
         article_id=article.id,
@@ -244,12 +235,8 @@ def scrape_structured_incident_details(article, DBsession):
         accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
 
         # clean up charges, details, and legal actions records
-        if charges_str.startswith(': '):
-            charges_str = charges_str[2:]
-        if details_str.startswith(': '):
-            details_str = details_str[2:]
-        if legal_actions_str.startswith(': '):
-            legal_actions_str = legal_actions_str[2:]
+        charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
+            charges_str, details_str, legal_actions_str)
 
         incident = Incidents(
             article_id=article.id,
