@@ -114,7 +114,7 @@ def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correct
 
     assert len(incidents) == 2
     for incident in incidents:
-        assert incident.details is not ''
+        assert incident.details != ''
 
 
 def test_structure_data_with_br_tags_gets_added_correctly():
