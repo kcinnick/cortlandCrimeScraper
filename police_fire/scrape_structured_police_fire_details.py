@@ -1,10 +1,8 @@
-from pprint import pprint
-
 import regex as re
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import get_database_session, Article, Incidents, IncidentsWithErrors
+from database import get_database_session, Article, Incidents
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records
 

@@ -1,17 +1,7 @@
-from pprint import pprint
-
-from tqdm import tqdm
-
-from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details
-
-import regex as re
-from bs4 import BeautifulSoup
-from sqlalchemy.exc import IntegrityError
-
+from database import get_database_session, Article, Incidents, IncidentsWithErrors, create_tables
 from main import login, scrape_article
-from newspaper import Article as NewspaperArticle
-
-from database import get_database_session, Article, Incidents, IncidentsWithErrors, create_tables, Base
+from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details, \
+    identify_articles_with_incident_formatting
 
 create_tables(test=True)
 DBsession, engine = get_database_session(test=True)
@@ -68,7 +58,9 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
     assert scraped_incident.accused_age == '34'
     assert scraped_incident.accused_location == 'Cold Brook Road, Homer'
     assert scraped_incident.charges == 'Driving while intoxicated, a misdemeanor; parked on a highway, a violation'
-    assert scraped_incident.details == 'Cortland County sheriff’s officers found Conners’ vehicle parked abut 1:38 a.m. Sunday on Riley Road in Cortlandville. Police said they found Conners intoxicated.'
+    assert scraped_incident.details == ('Cortland County sheriff’s officers found Conners’ vehicle parked abut 1:38 '
+                                        'a.m. Sunday on Riley Road in Cortlandville. Police said they found Conners '
+                                        'intoxicated.')
     assert scraped_incident.legal_actions == 'Conners was ticketed to appear Nov. 27 in Cortlandville Town Court.'
 
     DBsession.close()
@@ -140,13 +132,59 @@ def test_structure_data_with_br_tags_gets_added_correctly():
     assert first_incident.accused_name == 'Wendy Caswell'
     assert first_incident.accused_age == '40'
     assert first_incident.accused_location == 'Cortland'
-    assert first_incident.charges == 'Third-degree criminal possession of a controlled substance, third-degree criminal possession of a weapon, criminal possession of a firearm, felonies; three counts of seventh-degree criminal possession of a controlled substance, two counts of ssecond degree criminally using drug paraphernalia and fourth-degree criminal possession of a weapon, misdemeanors'
-    assert first_incident.details == 'The Cortland County Drug Task Force executed a search warrant Wednesday of a home on Main Street in Cortland. Officers seized 3 grams of fentanyl, a half-gram of methamphetamine, packaging materials, scales, Tramadol and Alprazolam. The drugs had a street value of more than $400, police said.'
-    assert first_incident.legal_actions == "Caswell was awaiting arraignment Wednesday evening at the Cortland County Sheriff's Office."
+    assert first_incident.charges == ('Third-degree criminal possession of a controlled substance, third-degree '
+                                      'criminal possession of a weapon, criminal possession of a firearm, '
+                                      'felonies; three counts of seventh-degree criminal possession of a controlled '
+                                      'substance, two counts of ssecond degree criminally using drug paraphernalia '
+                                      'and fourth-degree criminal possession of a weapon, misdemeanors')
+    assert first_incident.details == ('The Cortland County Drug Task Force executed a search warrant Wednesday of a '
+                                      'home on Main Street in Cortland. Officers seized 3 grams of fentanyl, '
+                                      'a half-gram of methamphetamine, packaging materials, scales, Tramadol and '
+                                      'Alprazolam. The drugs had a street value of more than $400, police said.')
+    assert first_incident.legal_actions == ("Caswell was awaiting arraignment Wednesday evening at the Cortland County "
+                                            "Sheriff's Office.")
 
     assert second_incident.accused_name == 'Cypress Jana V. Hill'
     assert second_incident.accused_age == '25'
     assert second_incident.accused_location == 'Groton'
-    assert second_incident.charges == 'First-degree burglary, first-degree criminal contempt, felonies; second-degree menacing, a misdemeanor'
-    assert second_incident.details == 'Hill kicked open the door to a residence then threatened the resident with a knife on Oct. 9 on Ward Boulevard in Newfield, state police said, violating an order of protection in the process.A day later, Hill menaced the same person with a knife near Miller Hill and Elmira Road in Newfield, police said.'
-    assert second_incident.legal_actions == 'Hill was arrested Oct. 14 and taken to Tompkins County central arraignment and awaits an appearance in Newfield Town Court.'
+    assert second_incident.charges == ('First-degree burglary, first-degree criminal contempt, felonies; second-degree '
+                                       'menacing, a misdemeanor')
+    assert second_incident.details == ('Hill kicked open the door to a residence then threatened the resident with a '
+                                       'knife on Oct. 9 on Ward Boulevard in Newfield, state police said, '
+                                       'violating an order of protection in the process.A day later, Hill menaced the '
+                                       'same person with a knife near Miller Hill and Elmira Road in Newfield, '
+                                       'police said.')
+    assert second_incident.legal_actions == ('Hill was arrested Oct. 14 and taken to Tompkins County central '
+                                             'arraignment and awaits an appearance in Newfield Town Court.')
+
+
+def test_identify_articles_with_incident_formatting_correctly_returns_one_incident():
+    delete_table_contents(DBsession)
+
+    article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053??'
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+
+    articles = identify_articles_with_incident_formatting(
+        DBsession
+    )
+
+    assert len(articles) == 1
+
+
+def test_identify_articles_with_incident_formatting_correctly_returns_0_incidents():
+    delete_table_contents(DBsession)
+
+    article_url = 'https://www.cortlandstandard.com/stories/one-charged-with-assault-4-others-arrested-in-palm-gardens-brawl,70665?'
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+
+    articles = identify_articles_with_incident_formatting(
+        DBsession
+    )
+
+    assert len(articles) == 0
