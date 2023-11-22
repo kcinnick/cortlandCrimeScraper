@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
 from database import get_database_session, Article, Incidents, IncidentsWithErrors
+from police_fire.utilities import add_incident_with_error_if_not_already_exists
 
 
 def identify_articles_with_incident_formatting(db_session):
@@ -28,17 +29,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     if len(separate_incident_tags) in [0, 1]:
         print('No separate incident tags found.')
         # add the article to IncidentsWithErrors if it's not already there
-        if DBsession.query(IncidentsWithErrors).filter_by(article_id=article.id).count() == 0:
-            incidentWithError = IncidentsWithErrors(
-                article_id=article.id,
-                url=article.url
-            )
-            try:
-                DBsession.add(incidentWithError)
-                DBsession.commit()
-            except IntegrityError as e:
-                DBsession.rollback()
-                raise e
+        add_incident_with_error_if_not_already_exists(article, DBsession)
         return
     accused_tag_index = 0
     if 'Accused' in separate_incident_tags[accused_tag_index]:
@@ -58,7 +49,6 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     else:
         print(f'No Charges found: {separate_incident_tags[charges_tag_index]}')
         return
-
 
     details_tag_index = charges_tag_index + 1
     if 'Details' in separate_incident_tags[details_tag_index]:
@@ -123,12 +113,8 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
 
     # add incident to database if it doesn't already exist
     if DBsession.query(Incidents).filter_by(details=details_str).count() == 0:
-        try:
-            DBsession.add(incident)
-            DBsession.commit()
-        except IntegrityError as e:
-            print('Integrity error: ', e)
-            DBsession.rollback()
+        DBsession.add(incident)
+        DBsession.commit()
 
     return
 
@@ -147,17 +133,7 @@ def clean_up_accused_record(article, accused_str, DBsession):
     if ';' in accused_str:
         print('; in accused_str')
         # only add the article to IncidentsWithErrors if it's not already there
-        if DBsession.query(IncidentsWithErrors).filter_by(article_id=article.id).count() == 0:
-            incidentWithError = IncidentsWithErrors(
-                article_id=article.id,
-                url=article.url
-            )
-            try:
-                DBsession.add(incidentWithError)
-                DBsession.commit()
-            except IntegrityError as e:
-                DBsession.rollback()
-                raise e
+        add_incident_with_error_if_not_already_exists(article, DBsession)
 
     accused_name = accused_str.split(',')[0].strip().split(' of ')[0].strip()
     try:
@@ -227,22 +203,14 @@ def scrape_structured_incident_details(article, DBsession):
         main_body = soup.find('div', class_='body main-body clearfix')
         separate_incidents = main_body.find_all('p')
         for separate_incident in separate_incidents:
-            br_tags = str(separate_incident).split('<br/>')
+            br_tags = str(separate_incident).replace('<br>', '<br/>').split('<br/>')
             soupy_br_tags = [BeautifulSoup(br_tag, 'html.parser').text.strip() for br_tag in br_tags if
                              br_tag.strip() != '']
             scrape_separate_incident_details(soupy_br_tags, article, DBsession)
         return
 
     if len(accused) != len(charges) or len(accused) != len(details) or len(accused) != len(legal_actions):
-        incidentWithError = IncidentsWithErrors(
-            article_id=article.id,
-            url=article.url
-        )
-        try:
-            DBsession.add(incidentWithError)
-            DBsession.commit()
-        except IntegrityError:
-            DBsession.rollback()
+        add_incident_with_error_if_not_already_exists(article, DBsession)
         return
 
     for index, accused in enumerate(accused):
@@ -269,15 +237,7 @@ def scrape_structured_incident_details(article, DBsession):
                 legal_actions_str = legal_actions_element.text.strip()
         except IndexError:
             print('IndexError')
-            incidentWithError = IncidentsWithErrors(
-                article_id=article.id,
-                url=article.url
-            )
-            try:
-                DBsession.add(incidentWithError)
-                DBsession.commit()
-            except IntegrityError:
-                DBsession.rollback()
+            add_incident_with_error_if_not_already_exists(article, DBsession)
             continue
 
         # clean up accused record

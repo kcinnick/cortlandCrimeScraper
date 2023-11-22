@@ -17,7 +17,7 @@ create_tables(test=True)
 DBsession, engine = get_database_session(test=True)
 
 
-def delete_table_contents():
+def delete_table_contents(DBsession):
     DBsession.query(IncidentsWithErrors).delete()
     DBsession.query(Incidents).delete()
     DBsession.query(Article).delete()
@@ -25,7 +25,7 @@ def delete_table_contents():
 
 
 def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_table():
-    delete_table_contents()
+    delete_table_contents(DBsession)
 
     incidents_with_errors = DBsession.query(IncidentsWithErrors).all()
     assert len(incidents_with_errors) == 0
@@ -45,7 +45,7 @@ def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_tab
 
 
 def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
-    delete_table_contents()
+    delete_table_contents(DBsession)
 
     incidents = DBsession.query(Incidents).all()
     assert len(incidents) == 0
@@ -76,7 +76,7 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
 
 
 def test_structure_data_with_multiple_incidents_gets_added_correctly():
-    delete_table_contents()
+    delete_table_contents(DBsession)
 
     article_url = 'https://www.cortlandstandard.com/stories/groton-driver-charged-after-crash-causes-injury,13070?'
 
@@ -96,7 +96,7 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly():
 
 
 def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correctly():
-    delete_table_contents()
+    delete_table_contents(DBsession)
 
     article_url = 'https://www.cortlandstandard.com/stories/two-charged-with-drunken-driving,12273?'
 
@@ -118,7 +118,7 @@ def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correct
 
 
 def test_structure_data_with_br_tags_gets_added_correctly():
-    delete_table_contents()
+    delete_table_contents(DBsession)
 
     article_url = 'https://www.cortlandstandard.com/stories/10-year-old-hurt-when-vehicle-tips,19473?'
     incidents = DBsession.query(Incidents).all()
