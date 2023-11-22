@@ -1,6 +1,7 @@
 from database import get_database_session, Article, Incidents, IncidentsWithErrors, create_tables
 from main import login, scrape_article
-from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details
+from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details, \
+    identify_articles_with_incident_formatting
 
 create_tables(test=True)
 DBsession, engine = get_database_session(test=True)
@@ -156,3 +157,34 @@ def test_structure_data_with_br_tags_gets_added_correctly():
     assert second_incident.legal_actions == ('Hill was arrested Oct. 14 and taken to Tompkins County central '
                                              'arraignment and awaits an appearance in Newfield Town Court.')
 
+
+def test_identify_articles_with_incident_formatting_correctly_returns_one_incident():
+    delete_table_contents(DBsession)
+
+    article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053??'
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+
+    articles = identify_articles_with_incident_formatting(
+        DBsession
+    )
+
+    assert len(articles) == 1
+
+
+def test_identify_articles_with_incident_formatting_correctly_returns_0_incidents():
+    delete_table_contents(DBsession)
+
+    article_url = 'https://www.cortlandstandard.com/stories/one-charged-with-assault-4-others-arrested-in-palm-gardens-brawl,70665?'
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+
+    articles = identify_articles_with_incident_formatting(
+        DBsession
+    )
+
+    assert len(articles) == 0
