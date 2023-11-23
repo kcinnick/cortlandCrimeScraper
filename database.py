@@ -69,9 +69,10 @@ class Incidents(Base):
     details = Column(String, primary_key=True)
     legal_actions = Column(String)
     structured_source = Column(Boolean)
+    incident_date = Column(Date, nullable=True)
 
     def __str__(self):
-        return f'{self.article_id} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source}'
+        return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
 
 
 def create_tables(test):
