@@ -4,7 +4,8 @@ from sqlalchemy.exc import IntegrityError
 
 from database import get_database_session, Article, Incidents
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
-    clean_up_charges_details_and_legal_actions_records
+    clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
+    update_incident_date_if_necessary, check_if_details_references_an_actual_date
 
 
 def identify_articles_with_incident_formatting(db_session):
@@ -87,6 +88,9 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
         charges_str, details_str, legal_actions_str)
 
+    print('91 checking for incident date')
+    incident_date = check_if_details_references_a_relative_date(details_str, article.date_published)
+    print('93 incident date: ', incident_date)
     incident = Incidents(
         article_id=article.id,
         url=article.url,
@@ -97,13 +101,20 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         charges=charges_str,
         details=details_str,
         legal_actions=legal_actions_str,
-        structured_source=True
+        structured_source=True,
+        incident_date=incident_date
     )
 
     # add incident to database if it doesn't already exist
     if DBsession.query(Incidents).filter_by(details=details_str).count() == 0:
         DBsession.add(incident)
         DBsession.commit()
+    else:
+        print('Incident already exists. Updating if necessary.')
+        incident_date_response = check_if_details_references_a_relative_date(details_str, article.date_published)
+        print(incident_date_response)
+        if incident_date_response:
+            update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
 
     return
 
@@ -236,6 +247,12 @@ def scrape_structured_incident_details(article, DBsession):
         charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
             charges_str, details_str, legal_actions_str)
 
+        # check if details references a relative date
+        incident_date_response = check_if_details_references_a_relative_date(details_str, article.date_published)
+        if not incident_date_response:
+            # check if details references an actual date
+            incident_date_response = check_if_details_references_an_actual_date(details_str, article.date_published)
+
         incident = Incidents(
             article_id=article.id,
             url=article.url,
@@ -246,7 +263,8 @@ def scrape_structured_incident_details(article, DBsession):
             charges=charges_str,
             details=details_str,
             legal_actions=legal_actions_str,
-            structured_source=True
+            structured_source=True,
+            incident_date=incident_date_response
         )
 
         # add incident to database if it doesn't already exist
@@ -257,6 +275,10 @@ def scrape_structured_incident_details(article, DBsession):
             except IntegrityError as e:
                 print('Integrity error: ', e)
                 DBsession.rollback()
+        else:
+            print('Incident already exists. Updating if necessary.')
+            if incident_date_response:
+                update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
 
     return
 
