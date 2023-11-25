@@ -1,5 +1,5 @@
 from database import get_database_session, Article, create_tables, Base, Incidents, IncidentsWithErrors
-from main import login, scrape_article
+from scrape_articles_by_section import login, scrape_article
 
 from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details
 from police_fire.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
