@@ -75,6 +75,24 @@ class Incidents(Base):
         return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
 
 
+class IncidentsFromPdf(Base):
+    __tablename__ = 'incidents_from_pdf'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    incident_reported_date = Column(Date, primary_key=True)
+    accused_name = Column(String, primary_key=True)
+    accused_age = Column(String, nullable=True)
+    accused_location = Column(String)
+    charges = Column(String, primary_key=True)
+    details = Column(String, primary_key=True)
+    legal_actions = Column(String)
+    incident_date = Column(Date, nullable=True)
+
+    def __str__(self):
+        return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
+
+
 def create_tables(test):
     print('test==', test)
     DBsession, engine = get_database_session(test=test)
