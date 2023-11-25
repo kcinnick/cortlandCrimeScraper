@@ -10,6 +10,7 @@ from requests import Session
 from tqdm import tqdm
 
 from database import get_database_session, Article
+from utilities import login
 
 config = Config()
 userAgent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 "
@@ -141,29 +142,6 @@ def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date
             hasMore = False
 
     return articleUrls
-
-
-def login():
-    session = Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'})
-    session.get('https://www.cortlandstandard.com/login.html')
-
-    login_username = os.getenv('LOGIN_EMAIL')
-    login_password = os.getenv('LOGIN_PASSWORD')
-
-    r = session.post('https://www.cortlandstandard.com/login.html?action=login', data={
-        'login_username': login_username,
-        'login_password': login_password,
-        'referer': '',
-        'ssoreturn': '',
-        'referer_content': '',
-        'login_standard': '',
-    })
-    assert r.status_code == 200
-
-    return session
-
 
 def scrape_article(article_url, logged_in_session, section, DBsession):
     print(article_url)
