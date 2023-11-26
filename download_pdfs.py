@@ -23,17 +23,23 @@ def get_eeditions_urls(logged_in_session, page_number=1):
 
 def get_pdf_url(logged_in_session, eedition_url):
     print(eedition_url)
+    pdf_url = None
     r = logged_in_session.get(eedition_url)
     soup = BeautifulSoup(r.content, 'html.parser')
+    if 'This item is available in full to subscribers.' in soup.text:
+        raise AttributeError(f'Not logged in.')
     links = soup.find_all('a')
     for link in links:
-        #print(link)
         url = link.get('href')
         if url:
             if 'cortland/files' in url:
+                pdf_url = url
                 break
 
-    return url
+    if not pdf_url:
+        print(soup.prettify())
+        raise AttributeError(f'pdf_url not found for {eedition_url}')
+    return pdf_url
 
 
 def main():
@@ -66,11 +72,12 @@ def main():
                 os.mkdir(f'pdfs/{year}/{month}/{day}')
             # if pdf_title not already in pdfs/ folder, download the pdf
             pdf_path = f'pdfs/{year}/{month}/{day}/{pdf_title}.pdf'
-            if os.path.exists(pdf_path):
-                continue
+            #if os.path.exists(pdf_path):
+            #    continue
             sleep(5)
             try:
                 pdf_url = get_pdf_url(logged_in_session, url)
+                print('pdf_url:', pdf_url)
             except AttributeError:
                 raise AttributeError(f'pdf_url not found for {url}')
                 continue
