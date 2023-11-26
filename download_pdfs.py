@@ -25,7 +25,14 @@ def get_pdf_url(logged_in_session, eedition_url):
     print(eedition_url)
     r = logged_in_session.get(eedition_url)
     soup = BeautifulSoup(r.content, 'html.parser')
-    url = soup.find('p', class_='pdfview-notice text-center').find('a')['href']
+    links = soup.find_all('a')
+    for link in links:
+        #print(link)
+        url = link.get('href')
+        if url:
+            if 'cortland/files' in url:
+                break
+
     return url
 
 
@@ -34,6 +41,7 @@ def main():
     page_number = 0
     while True:
         page_number += 1
+        print(f'page_number: {page_number}')
         urls = get_eeditions_urls(logged_in_session, page_number=page_number)
         if len(urls) == 0:
             break
@@ -64,7 +72,7 @@ def main():
             try:
                 pdf_url = get_pdf_url(logged_in_session, url)
             except AttributeError:
-                print(url)
+                raise AttributeError(f'pdf_url not found for {url}')
                 continue
             r = logged_in_session.get(pdf_url)
             with open(f'{pdf_path}', 'wb') as f:
