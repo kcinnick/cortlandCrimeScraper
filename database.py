@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
-from sqlalchemy import Column, Integer, String, Date, Boolean
+from sqlalchemy import Column, Integer, String, Date, Boolean, text
 
 Base = declarative_base()
 
@@ -93,6 +93,18 @@ class IncidentsFromPdf(Base):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
 
 
+class CombinedIncidents(Base):
+    __tablename__ = 'combined_incidents'  # Name of the view
+    id = Column(Integer, primary_key=True)
+    incident_reported_date = Column(Date)
+    accused_name = Column(String)
+    accused_age = Column(Integer)
+    accused_location = Column(String)
+    charges = Column(String)
+    details = Column(String)
+    legal_actions = Column(String)
+
+
 def create_tables(test):
     print('test==', test)
     DBsession, engine = get_database_session(test=test)
@@ -109,5 +121,22 @@ def create_tables(test):
         Base.metadata.create_all(engine)
 
 
+def create_view(test):
+    print('test==', test)
+    create_view_sql = text("""
+    CREATE OR REPLACE VIEW public.combined_incidents AS
+    SELECT incident_reported_date, accused_name, accused_age, accused_location, charges, details, legal_actions
+    FROM incidents
+    UNION ALL
+    SELECT incident_reported_date, accused_name, accused_age, accused_location, charges, details, legal_actions
+    FROM incidents_from_pdf;
+    """)
+    DBsession, engine = get_database_session(test=test)
+    with engine.connect() as connection:
+        connection.execute(create_view_sql)
+    DBsession.close()
+
+
 if __name__ == "__main__":
     create_tables(test=False)
+    create_view(test=False)
