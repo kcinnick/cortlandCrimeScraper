@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from database import get_database_session, Article, Incidents
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
-    update_incident_date_if_necessary, check_if_details_references_an_actual_date
+    update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details
 
 
 def identify_articles_with_incident_formatting(db_session):
@@ -102,7 +102,8 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         details=details_str,
         legal_actions=legal_actions_str,
         structured_source=True,
-        incident_date=incident_date
+        incident_date=incident_date,
+        incident_location=get_incident_location_from_details(details_str),
     )
 
     # add incident to database if it doesn't already exist
@@ -264,7 +265,8 @@ def scrape_structured_incident_details(article, DBsession):
             details=details_str,
             legal_actions=legal_actions_str,
             structured_source=True,
-            incident_date=incident_date_response
+            incident_date=incident_date_response,
+            incident_location = get_incident_location_from_details(details_str)
         )
 
         # add incident to database if it doesn't already exist
@@ -279,6 +281,13 @@ def scrape_structured_incident_details(article, DBsession):
             print('Incident already exists. Updating if necessary.')
             if incident_date_response:
                 update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
+            incident_location = get_incident_location_from_details(details_str)
+            if incident_location:
+                existing_incident = DBsession.query(Incidents).filter_by(details=details_str).first()
+                existing_incident.incident_location = incident_location
+                DBsession.add(existing_incident)
+                DBsession.commit()
+                print('Incident location updated for ' + existing_incident.url)
 
     return
 
