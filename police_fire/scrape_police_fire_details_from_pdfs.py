@@ -46,26 +46,18 @@ month_str_to_int = {
 def get_pdf_path(year, month, day):
     pdf_glob_path = rf'C:\Users\Nick\PycharmProjects\cortlandStandardScraper\pdfs\{year}\{month}\{day}\*'
     try:
-        pdf_path = glob.glob(pdf_glob_path)[-1]
+        path_results = glob.glob(pdf_glob_path)
+        pdf_path = [path_result for path_result in path_results if path_result.endswith('.pdf')][0]
         return pdf_path
     except IndexError:
         print(f'No PDF found for {year}-{month}-{day}.')
         return
 
 
-def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
-    print(pdf_path)
-    pages_path = '\\'.join(pdf_path.split('\\')[:-1]) + '\\pages'
-    if not os.path.exists(pages_path):
-        os.mkdir(pages_path)
-
-    try:
-        input_pdf = PdfReader(pdf_path)
-    except PermissionError:
-        print('PermissionError')
-        return
+def convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path):
+    #print('newspaper_page_number:', newspaper_page_number)
     output = PdfWriter()
-    page_object = input_pdf.pages[2]
+    page_object = input_pdf.pages[newspaper_page_number]
     output.add_page(page_object)
 
     policeFirePagePath = pages_path + '\\' + "police_fire_page.pdf"
@@ -74,61 +66,99 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
 
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-    doc = convert_from_path(policeFirePagePath,
-                            poppler_path=r'C:\Users\Nick\Downloads\Release-23.11.0-0\poppler-23.11.0\Library\bin')
-    path, fileName = os.path.split(policeFirePagePath)
+    page_data = convert_from_path(policeFirePagePath,
+                                  poppler_path=r'C:\Users\Nick\Downloads\Release-23.11.0-0\poppler-23.11.0\Library\bin')
+    page_data = page_data[0]
 
-    query = "List all of the incident details provided in the following string, in the original language of the article.  Use a Python-style dictionaries with the keys \'accused_name\', \'accused_age\', \'accused_location\', \'charges\', \'details\', \'legal_actions\'. All values need to be strings. If the article is not about a crime, the output should be N/A."
+    #print('newspaper_page_number:', newspaper_page_number)
+    txt = pytesseract.pytesseract.image_to_string(page_data).encode("utf-8")
+    return txt
 
-    for page_number, page_data in enumerate(doc):
-        txt = pytesseract.pytesseract.image_to_string(page_data).encode("utf-8")
+
+def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
+    #print(pdf_path)
+    pages_path = '\\'.join(pdf_path.split('\\')[:-1]) + '\\pages'
+    if not os.path.exists(pages_path):
+        os.mkdir(pages_path)
+
+    try:
+        input_pdf = PdfReader(pdf_path)
+    except PermissionError as e:
+        raise e
+    for newspaper_page_number in [2, 1]:
+        # it's more often the case that the police/fire details are on the 3rd page of the PDF,
+        # but sometimes they're on the 2nd page.
+        txt = convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path)
         try:
             police_fire_txt = str(txt).split('Police/')[1]
-        except IndexError:
-            print('No police/fire details found.  Not adding to database.')
-            return
+        except IndexError as e:
+            print(f'No police/fire details found on page {str(newspaper_page_number)}.  Not adding to database.')
+            continue
         raw_incidents = ['Accused:' + i for i in police_fire_txt.split('Accused:')][1:]
+        query = "List all of the incident details provided in the following string, in the original language of the article.  Use a Python-style dictionaries with the keys \'accused_name\', \'accused_age\', \'accused_location\', \'charges\', \'details\', \'legal_actions\'. All values need to be strings. If the article is not about a crime, the output should be N/A."
+
         for raw_incident in raw_incidents:
             query_with_incident = query + raw_incident
             response = ai(query_with_incident)
             response_as_dict = ast.literal_eval(response)
-            incident_date_response = check_if_details_references_a_relative_date(response_as_dict['details'],
-                                                                                 year_month_day_str)
-            if not incident_date_response:
-                # check if details references an actual date
-                incident_date_response = check_if_details_references_an_actual_date(response_as_dict['details'],
-                                                                                    year_month_day_str)
-            existing_incident = DBsession.query(IncidentsFromPdf).filter(
-                IncidentsFromPdf.incident_reported_date == year_month_day_str,
-                IncidentsFromPdf.accused_name == response_as_dict['accused_name'],
-                IncidentsFromPdf.charges == response_as_dict['charges'],
-                IncidentsFromPdf.details == response_as_dict['details']
-            ).all()
-            existing_incident = existing_incident[0] if len(existing_incident) > 0 else None
-            if existing_incident:
-                print('Existing incident found.  Not adding to database.')
+            if type(response_as_dict) is list:
+                for incident in response_as_dict:
+                    if incident == 'N/A':
+                        print('No police/fire details found.  Not adding to database.')
+                        continue
+                    else:
+                        parse_details_for_incident(incident, year_month_day_str)
+            elif type(response_as_dict) is dict:
+                parse_details_for_incident(response_as_dict, year_month_day_str)
+            elif response_as_dict == 'N/A':
                 continue
             else:
-                incidentFromPdf = IncidentsFromPdf(
-                    incident_reported_date=year_month_day_str,
-                    accused_name=response_as_dict['accused_name'],
-                    accused_age=response_as_dict['accused_age'],
-                    accused_location=response_as_dict['accused_location'],
-                    charges=response_as_dict['charges'],
-                    details=response_as_dict['details'],
-                    legal_actions=response_as_dict['legal_actions'],
-                    incident_date=incident_date_response
-                )
-                DBsession.add(incidentFromPdf)
-                DBsession.commit()
-                sleep(1)
+                raise ValueError(f'Unexpected response: {response_as_dict}')
+        # if we've gotten this far, we've successfully scraped the police/fire details from the first page of the PDF
+        # and there's no need to continue the loop to check the 3rd page.
+        break
+
+    return
+
+
+def parse_details_for_incident(incident, year_month_day_str):
+    #pprint(incident)
+    incident_date_response = check_if_details_references_a_relative_date(incident['details'],
+                                                                         year_month_day_str)
+    if not incident_date_response:
+        # check if details references an actual date
+        incident_date_response = check_if_details_references_an_actual_date(incident['details'],
+                                                                            year_month_day_str)
+    existing_incident = DBsession.query(IncidentsFromPdf).filter(
+        IncidentsFromPdf.incident_reported_date == year_month_day_str,
+        IncidentsFromPdf.accused_name == incident['accused_name'],
+        IncidentsFromPdf.charges == incident['charges'],
+        IncidentsFromPdf.details == incident['details']
+    ).all()
+    existing_incident = existing_incident[0] if len(existing_incident) > 0 else None
+    if existing_incident:
+        print('Existing incident found.  Not adding to database.')
+        return
+    else:
+        incidentFromPdf = IncidentsFromPdf(
+            incident_reported_date=year_month_day_str,
+            accused_name=incident['accused_name'],
+            accused_age=incident['accused_age'],
+            accused_location=incident['accused_location'],
+            charges=incident['charges'],
+            details=incident['details'],
+            legal_actions=incident['legal_actions'],
+            incident_date=incident_date_response
+        )
+        DBsession.add(incidentFromPdf)
+        DBsession.commit()
+        sleep(1)
 
     return
 
 
 def main():
     years = [
-        '2016',
         '2017',
         '2018',
         '2019',
