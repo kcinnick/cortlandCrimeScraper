@@ -97,6 +97,7 @@ class CombinedIncidents(Base):
     __tablename__ = 'combined_incidents'  # Name of the view
     id = Column(Integer, primary_key=True)
     incident_reported_date = Column(Date)
+    incident_date = Column(Date)
     accused_name = Column(String)
     accused_age = Column(Integer)
     accused_location = Column(String)
@@ -125,11 +126,27 @@ def create_view(test):
     print('test==', test)
     create_view_sql = text("""
     CREATE OR REPLACE VIEW public.combined_incidents AS
-    SELECT incident_reported_date, accused_name, accused_age, accused_location, charges, details, legal_actions
-    FROM incidents
-    UNION ALL
-    SELECT incident_reported_date, accused_name, accused_age, accused_location, charges, details, legal_actions
-    FROM incidents_from_pdf;
+SELECT 
+    incident_reported_date::date, 
+    accused_name, 
+    accused_age, 
+    accused_location, 
+    charges, 
+    details, 
+    legal_actions, 
+    incident_date::date
+FROM incidents
+UNION ALL
+SELECT 
+    incident_reported_date::date, 
+    accused_name, 
+    accused_age, 
+    accused_location, 
+    charges, 
+    details, 
+    legal_actions, 
+    incident_date::date
+FROM incidents_from_pdf;
     """)
     DBsession, engine = get_database_session(test=test)
     with engine.connect() as connection:
