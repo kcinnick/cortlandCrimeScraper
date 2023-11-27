@@ -70,6 +70,7 @@ class Incidents(Base):
     legal_actions = Column(String)
     structured_source = Column(Boolean)
     incident_date = Column(Date, nullable=True)
+    incident_location = Column(String, nullable=True)
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
@@ -88,6 +89,7 @@ class IncidentsFromPdf(Base):
     details = Column(String, primary_key=True)
     legal_actions = Column(String)
     incident_date = Column(Date, nullable=True)
+    incident_location = Column(String, nullable=True)
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
@@ -104,6 +106,7 @@ class CombinedIncidents(Base):
     charges = Column(String)
     details = Column(String)
     legal_actions = Column(String)
+    incident_location = Column(String, nullable=True)
 
 
 def create_tables(test):

@@ -1,9 +1,10 @@
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import IncidentsWithErrors, Article, get_database_session
+from database import IncidentsWithErrors, Article, get_database_session, Incidents
 from police_fire.scrape_structured_police_fire_details import scrape_separate_incident_details
-from police_fire.utilities import add_incident_with_error_if_not_already_exists, delete_table_contents
+from police_fire.utilities import add_incident_with_error_if_not_already_exists, delete_table_contents, \
+    get_incident_location_from_details
 
 
 def test_add_incident_with_error_that_does_not_already_exist():
@@ -65,4 +66,11 @@ def test_do_not_add_incident_with_error_if_already_exists():
 
         assert DBsession.query(IncidentsWithErrors).filter_by(article_id=article.id).count() == 1
 
+    return
+
+
+def test_get_incident_location():
+    details_str = "Cortland police detained Axelrod about 2:05 a.m. today when they saw him urinating in the parking lot of 110 Main St., the Cortland Standard. Police said he ran from them and when he was apprehended he gave them a fictitious license."
+    incident_location = get_incident_location_from_details(details_str)
+    assert incident_location == '110 Main St., Cortland'
     return
