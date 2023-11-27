@@ -14,7 +14,7 @@ from PyPDF2 import PdfFileWriter, PdfReader, PdfWriter
 import pytesseract
 
 from police_fire.utilities import check_if_details_references_a_relative_date, \
-    check_if_details_references_an_actual_date
+    check_if_details_references_an_actual_date, get_incident_location_from_details
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 DBsession, engine = get_database_session(test=False)
@@ -57,7 +57,11 @@ def get_pdf_path(year, month, day):
 def convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path):
     #print('newspaper_page_number:', newspaper_page_number)
     output = PdfWriter()
-    page_object = input_pdf.pages[newspaper_page_number]
+    try:
+        page_object = input_pdf.pages[newspaper_page_number]
+    except IndexError:
+        print(f'No page {str(newspaper_page_number)} found.  Not adding to database.')
+        return
     output.add_page(page_object)
 
     policeFirePagePath = pages_path + '\\' + "police_fire_page.pdf"
@@ -125,6 +129,7 @@ def parse_details_for_incident(incident, year_month_day_str):
     #pprint(incident)
     incident_date_response = check_if_details_references_a_relative_date(incident['details'],
                                                                          year_month_day_str)
+    incident_location = get_incident_location_from_details(incident['details'])
     if not incident_date_response:
         # check if details references an actual date
         incident_date_response = check_if_details_references_an_actual_date(incident['details'],
@@ -148,7 +153,8 @@ def parse_details_for_incident(incident, year_month_day_str):
             charges=incident['charges'],
             details=incident['details'],
             legal_actions=incident['legal_actions'],
-            incident_date=incident_date_response
+            incident_date=incident_date_response,
+            incident_location=incident_location
         )
         DBsession.add(incidentFromPdf)
         DBsession.commit()
