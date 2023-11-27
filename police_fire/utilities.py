@@ -93,7 +93,6 @@ def check_if_details_references_an_actual_date(details_str, article_published_da
 
 
 def update_incident_date_if_necessary(DBsession, incident_date_response, details_str):
-
     existing_incident = DBsession.query(Incidents).filter_by(details=details_str).first()
     if existing_incident:
         existing_incident.incident_date = incident_date_response
@@ -102,3 +101,12 @@ def update_incident_date_if_necessary(DBsession, incident_date_response, details
         print('Incident date updated for ' + existing_incident.url)
 
     return
+
+
+def get_incident_location_from_details(details_str):
+    """if the details contain a location, return the location that matched"""
+    query = "What was the location of the incident: " + details_str + "? Return only the location. If none, return N/A."
+    response = ai(query)
+    response = response.replace('The location of the incident was ', '')
+    response = response.replace(' in ', ', ')
+    return response
