@@ -1,6 +1,7 @@
 import ast
 import glob
 import os
+from pprint import pprint
 from time import sleep
 
 from openai import OpenAI
@@ -13,6 +14,7 @@ from database import IncidentsFromPdf, get_database_session
 from PyPDF2 import PdfFileWriter, PdfReader, PdfWriter
 import pytesseract
 
+from police_fire.maps.get_lat_lng_of_addresses import get_lat_lng_of_address
 from police_fire.utilities import check_if_details_references_a_relative_date, \
     check_if_details_references_an_actual_date, get_incident_location_from_details
 
@@ -126,7 +128,7 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
 
 
 def parse_details_for_incident(incident, year_month_day_str):
-    #pprint(incident)
+    pprint(incident)
     incident_date_response = check_if_details_references_a_relative_date(incident['details'],
                                                                          year_month_day_str)
     incident_location = get_incident_location_from_details(incident['details'])
@@ -140,6 +142,7 @@ def parse_details_for_incident(incident, year_month_day_str):
         IncidentsFromPdf.charges == incident['charges'],
         IncidentsFromPdf.details == incident['details']
     ).all()
+    lat, lng = get_lat_lng_of_address(incident_location)
     existing_incident = existing_incident[0] if len(existing_incident) > 0 else None
     if existing_incident:
         print('Existing incident found.  Not adding to database.')
@@ -154,7 +157,9 @@ def parse_details_for_incident(incident, year_month_day_str):
             details=incident['details'],
             legal_actions=incident['legal_actions'],
             incident_date=incident_date_response,
-            incident_location=incident_location
+            incident_location=incident_location,
+            incident_location_lat=lat,
+            incident_location_lng=lng
         )
         DBsession.add(incidentFromPdf)
         DBsession.commit()
