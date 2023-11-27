@@ -7,6 +7,8 @@ from police_fire.utilities import add_incident_with_error_if_not_already_exists,
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
     update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details
 
+from maps import get_lat_lng_of_addresses
+
 
 def identify_articles_with_incident_formatting(db_session):
     """
@@ -91,6 +93,8 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     print('91 checking for incident date')
     incident_date = check_if_details_references_a_relative_date(details_str, article.date_published)
     print('93 incident date: ', incident_date)
+    incident_location = get_incident_location_from_details(details_str)
+    incident_lat, incident_lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
     incident = Incidents(
         article_id=article.id,
         url=article.url,
@@ -103,7 +107,9 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         legal_actions=legal_actions_str,
         structured_source=True,
         incident_date=incident_date,
-        incident_location=get_incident_location_from_details(details_str),
+        incident_location=incident_location,
+        incident_location_lat=incident_lat,
+        incident_location_lng=incident_lng
     )
 
     # add incident to database if it doesn't already exist
@@ -254,6 +260,13 @@ def scrape_structured_incident_details(article, DBsession):
             # check if details references an actual date
             incident_date_response = check_if_details_references_an_actual_date(details_str, article.date_published)
 
+        incident_location = get_incident_location_from_details(details_str)
+        response = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
+        if response:
+            incident_lat, incident_lng = response
+        else:
+            incident_lat, incident_lng = None, None
+
         incident = Incidents(
             article_id=article.id,
             url=article.url,
@@ -266,7 +279,9 @@ def scrape_structured_incident_details(article, DBsession):
             legal_actions=legal_actions_str,
             structured_source=True,
             incident_date=incident_date_response,
-            incident_location = get_incident_location_from_details(details_str)
+            incident_location=incident_location,
+            incident_location_lat=incident_lat,
+            incident_location_lng=incident_lng
         )
 
         # add incident to database if it doesn't already exist
@@ -283,8 +298,11 @@ def scrape_structured_incident_details(article, DBsession):
                 update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
             incident_location = get_incident_location_from_details(details_str)
             if incident_location:
+                lat, lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
                 existing_incident = DBsession.query(Incidents).filter_by(details=details_str).first()
                 existing_incident.incident_location = incident_location
+                existing_incident.incident_location_lat = lat
+                existing_incident.incident_location_lng = lng
                 DBsession.add(existing_incident)
                 DBsession.commit()
                 print('Incident location updated for ' + existing_incident.url)

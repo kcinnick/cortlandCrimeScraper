@@ -108,5 +108,6 @@ def get_incident_location_from_details(details_str):
     query = "What was the location of the incident: " + details_str + "? Return only the location. If none, return N/A."
     response = ai(query)
     response = response.replace('The location of the incident was ', '')
+    response = response.replace('The location of the incident is ', '')
     response = response.replace(' in ', ', ')
     return response
