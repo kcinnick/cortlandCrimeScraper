@@ -46,7 +46,8 @@ month_str_to_int = {
 def get_pdf_path(year, month, day):
     pdf_glob_path = rf'C:\Users\Nick\PycharmProjects\cortlandStandardScraper\pdfs\{year}\{month}\{day}\*'
     try:
-        pdf_path = glob.glob(pdf_glob_path)[-1]
+        path_results = glob.glob(pdf_glob_path)
+        pdf_path = [path_result for path_result in path_results if path_result.endswith('.pdf')][0]
         return pdf_path
     except IndexError:
         print(f'No PDF found for {year}-{month}-{day}.')
@@ -61,9 +62,8 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
 
     try:
         input_pdf = PdfReader(pdf_path)
-    except PermissionError:
-        print('PermissionError')
-        return
+    except PermissionError as e:
+        raise e
     output = PdfWriter()
     page_object = input_pdf.pages[2]
     output.add_page(page_object)
@@ -128,7 +128,6 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
 
 def main():
     years = [
-        '2016',
         '2017',
         '2018',
         '2019',
