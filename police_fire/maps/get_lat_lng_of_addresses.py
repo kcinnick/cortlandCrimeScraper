@@ -4,8 +4,9 @@ from time import sleep
 
 import requests
 from sqlalchemy import or_
+from tqdm import tqdm
 
-from database import get_database_session, Incidents
+from database import get_database_session, Incidents, IncidentsFromPdf
 from police_fire.utilities import get_incident_location_from_details
 
 
@@ -39,15 +40,17 @@ def get_incident_location(DBsession, incident):
 
 def main():
     DBsession, engine = get_database_session(test=False)
-    incidents = DBsession.query(Incidents).filter(or_(Incidents.incident_location_lat == None, Incidents.incident_location_lng == None)).all()
-    for incident in incidents:
+    incidents = DBsession.query(IncidentsFromPdf).filter(or_(Incidents.incident_location_lat == None, Incidents.incident_location_lng == None)).all()
+    for incident in tqdm(incidents):
         incident_location = get_incident_location(DBsession, incident)
         if incident_location:
             lat_lng = get_lat_lng_of_address(incident_location)
             if lat_lng:
                 print(lat_lng)
-                # DBsession.add(incident)
-                # DBsession.commit()
+                incident.incident_location_lat = lat_lng[0]
+                incident.incident_location_lng = lat_lng[1]
+                DBsession.add(incident)
+                DBsession.commit()
                 sleep(1)
             else:
                 print('No lat/lng found for ' + incident_location)
