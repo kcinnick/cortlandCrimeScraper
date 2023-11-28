@@ -20,7 +20,7 @@ def get_lat_lng_of_address(address):
         lng = resp_json_payload['results'][0]['geometry']['location']['lng']
         return lat, lng
     else:
-        pprint(resp_json_payload)
+        print('get_lat_lng_of_address: ', resp_json_payload['status'])
         return None, None
 
 
