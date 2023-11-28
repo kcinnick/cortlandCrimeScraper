@@ -141,7 +141,10 @@ SELECT
     charges, 
     details, 
     legal_actions, 
-    incident_date::date
+    incident_date::date,
+    incident_location,
+    incident_location_lat,
+    incident_location_lng
 FROM incidents
 UNION ALL
 SELECT 
@@ -152,7 +155,10 @@ SELECT
     charges, 
     details, 
     legal_actions, 
-    incident_date::date
+    incident_date::date,
+    incident_location,
+    incident_location_lat,
+    incident_location_lng
 FROM incidents_from_pdf;
     """)
     DBsession, engine = get_database_session(test=test)

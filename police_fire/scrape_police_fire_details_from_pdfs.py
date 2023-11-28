@@ -4,6 +4,7 @@ import os
 from pprint import pprint
 from time import sleep
 
+import PyPDF2.errors
 from openai import OpenAI
 from pdf2image import convert_from_path
 from simpleaichat import AIChat
@@ -91,6 +92,9 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
         input_pdf = PdfReader(pdf_path)
     except PermissionError as e:
         raise e
+    except PyPDF2.errors.PdfReadError:
+        raise Exception(f'Could not read PDF: {pdf_path}')
+        return
     for newspaper_page_number in [2, 1]:
         # it's more often the case that the police/fire details are on the 3rd page of the PDF,
         # but sometimes they're on the 2nd page.
@@ -101,7 +105,10 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
             print(f'No police/fire details found on page {str(newspaper_page_number)}.  Not adding to database.')
             continue
         raw_incidents = ['Accused:' + i for i in police_fire_txt.split('Accused:')][1:]
-        query = "List all of the incident details provided in the following string, in the original language of the article.  Use a Python-style dictionaries with the keys \'accused_name\', \'accused_age\', \'accused_location\', \'charges\', \'details\', \'legal_actions\'. All values need to be strings. If the article is not about a crime, the output should be N/A."
+        query = ("List all of the incident details provided in the following string, in the original language"
+                 " of the article.  Use a Python-style dictionaries with the keys \'accused_name\', \'accused_age\',"
+                 " \'accused_location\', \'charges\', \'details\', \'legal_actions\'. All values need to be strings. "
+                 "If the article is not about a crime, the output should be N/A.")
 
         for raw_incident in raw_incidents:
             query_with_incident = query + raw_incident
@@ -170,7 +177,7 @@ def parse_details_for_incident(incident, year_month_day_str):
 
 def main():
     years = [
-        '2017',
+        #'2017',
         '2018',
         '2019',
         '2020',
@@ -178,8 +185,8 @@ def main():
         '2022'
     ]
     months = [
-        'jan',
-        'feb',
+        #'jan',
+        #'feb',
         'mar',
         'apr',
         'may',
