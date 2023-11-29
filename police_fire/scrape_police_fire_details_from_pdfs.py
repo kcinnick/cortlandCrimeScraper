@@ -176,25 +176,25 @@ def parse_details_for_incident(incident, year_month_day_str):
 def main():
     years = [
         #'2017',
-        '2018',
+        #'2018',
         '2019',
-        '2020',
-        '2021',
-        '2022'
+        #'2020',
+        #'2021',
+        #'2022'
     ]
     months = [
         #'jan',
         #'feb',
-        'mar',
-        'apr',
-        'may',
-        'jun',
-        'jul'
-        'aug',
-        'sep',
+        #'mar',
+        #'apr',
+        #'may',
+        #'jun',
+        #'jul'
+        #'aug',
+        #'sep',
         'oct',
-        'nov',
-        'dec',
+        #'nov',
+        #'dec',
     ]
     day_numbers = [str(day_number) for day_number in range(1, 32)]
     for year in tqdm(years, desc='year'):
