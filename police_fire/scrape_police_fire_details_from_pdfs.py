@@ -51,6 +51,7 @@ def get_pdf_path(year, month, day):
     try:
         path_results = glob.glob(pdf_glob_path)
         pdf_path = [path_result for path_result in path_results if path_result.endswith('.pdf')][0]
+        print('pdf_path:', pdf_path)
         return pdf_path
     except IndexError:
         print(f'No PDF found for {year}-{month}-{day}.')
@@ -99,18 +100,15 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
         # it's more often the case that the police/fire details are on the 3rd page of the PDF,
         # but sometimes they're on the 2nd page.
         txt = convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path)
-        try:
-            police_fire_txt = str(txt).split('Police/')[1]
-        except IndexError as e:
-            print(f'No police/fire details found on page {str(newspaper_page_number)}.  Not adding to database.')
-            continue
-        raw_incidents = ['Accused:' + i for i in police_fire_txt.split('Accused:')][1:]
+        txt = str(txt)
+        raw_incidents = ['Accused:' + i for i in txt.split('Accused:')][1:]
         query = ("List all of the incident details provided in the following string, in the original language"
                  " of the article.  Use a Python-style dictionaries with the keys \'accused_name\', \'accused_age\',"
                  " \'accused_location\', \'charges\', \'details\', \'legal_actions\'. All values need to be strings. "
                  "If the article is not about a crime, the output should be N/A.")
 
         for raw_incident in raw_incidents:
+            #print(raw_incident)
             query_with_incident = query + raw_incident
             response = ai(query_with_incident)
             response_as_dict = ast.literal_eval(response)
@@ -208,6 +206,7 @@ def main():
                     continue
                 else:
                     scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str)
+    return
 
 
 if __name__ == '__main__':
