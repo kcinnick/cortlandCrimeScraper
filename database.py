@@ -10,15 +10,18 @@ from tqdm import tqdm
 Base = declarative_base()
 
 
-def get_database_session(test=False):
+def get_database_session(environment='development'):
     database_username = os.getenv('DATABASE_USERNAME')
     database_password = os.getenv('DATABASE_PASSWORD')
 
     # SQLAlchemy connection string for PostgreSQL
-    if test:
+    if environment == 'test':
         DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test'
+    elif environment == 'development':
+        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_dev'
     else:
-        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard'
+        raise ValueError('environment must be either "test" or "development"')
+
 
     engine = create_engine(DATABASE_URI, echo=False)
     Session = sessionmaker(bind=engine)
@@ -114,26 +117,6 @@ class CombinedIncidents(Base):
     incident_location = Column(String, nullable=True)
 
 
-class Persons(Base):
-    __tablename__ = 'persons'
-    __table_args__ = {'schema': 'public'}
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String)
-    age = Column(Integer)
-    location = Column(String)
-    charges = Column(String)
-    details = Column(String)
-    legal_actions = Column(String)
-    incident_date = Column(Date, nullable=True)
-    incident_location = Column(String, nullable=True)
-    incident_location_lat = Column(String, nullable=True)
-    incident_location_lng = Column(String, nullable=True)
-
-    def __str__(self):
-        return f'{self.name}'
-
-
 class Addresses(Base):
     __tablename__ = 'addresses'
     __table_args__ = {'schema': 'public'}
@@ -161,10 +144,10 @@ class PersonAddress(Base):
     AsOfDate = Column(Date)
 
 
-def create_tables(test):
-    print('test==', test)
-    DBsession, engine = get_database_session(test=test)
-    if test:
+def create_tables(environment='development'):
+    print('environment==', environment)
+    DBsession, engine = get_database_session(environment)
+    if environment == 'test':
         Base.metadata.drop_all(engine)
         Base.metadata.create_all(engine)
         article = Article(
