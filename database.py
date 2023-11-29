@@ -2,8 +2,7 @@ import os
 
 import unicodedata
 from sqlalchemy import create_engine, ForeignKey, MetaData
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 
 from sqlalchemy import Column, Integer, String, Date, Boolean, text
 from tqdm import tqdm
@@ -115,6 +114,53 @@ class CombinedIncidents(Base):
     incident_location = Column(String, nullable=True)
 
 
+class Persons(Base):
+    __tablename__ = 'persons'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    age = Column(Integer)
+    location = Column(String)
+    charges = Column(String)
+    details = Column(String)
+    legal_actions = Column(String)
+    incident_date = Column(Date, nullable=True)
+    incident_location = Column(String, nullable=True)
+    incident_location_lat = Column(String, nullable=True)
+    incident_location_lng = Column(String, nullable=True)
+
+    def __str__(self):
+        return f'{self.name}'
+
+
+class Addresses(Base):
+    __tablename__ = 'addresses'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    address = Column(String, unique=True)
+    city = Column(String)
+    state = Column(String)
+    zip_code = Column(String)
+    country = Column(String)
+
+    lat = Column(String)
+    lng = Column(String)
+
+    def __str__(self):
+        return f'{self.address}'
+
+
+class PersonAddress(Base):
+    __tablename__ = 'PersonAddress'
+    __table_args__ = {'schema': 'public'}
+
+    PersonID = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
+    AddressID = Column(Integer, ForeignKey('public.addresses.id'), primary_key=True)
+    AsOfDate = Column(Date)
+
+
 def create_tables(test):
     print('test==', test)
     DBsession, engine = get_database_session(test=test)
@@ -206,8 +252,8 @@ def clean_strings_in_table(test=False):
 
 
 if __name__ == "__main__":
-    # create_tables(test=False)
-    # create_view(test=False)
-    clean_strings_in_table(
-        test=False
-    )
+    create_tables(test=False)
+    create_view(test=False)
+    # clean_strings_in_table(
+    #    test=False
+    # )
