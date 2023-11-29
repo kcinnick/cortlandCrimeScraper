@@ -1,10 +1,12 @@
 import os
 
-from sqlalchemy import create_engine, ForeignKey
+import unicodedata
+from sqlalchemy import create_engine, ForeignKey, MetaData
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
 from sqlalchemy import Column, Integer, String, Date, Boolean, text
+from tqdm import tqdm
 
 Base = declarative_base()
 
@@ -167,6 +169,45 @@ FROM incidents_from_pdf;
     DBsession.close()
 
 
+def remove_non_standard_characters(string):
+    # Normalize unicode characters
+    if string is None:
+        return None
+    string = unicodedata.normalize('NFKD', string).encode('ascii', 'ignore').decode('ascii')
+    # Replace unwanted characters, e.g., line breaks, extra spaces
+    string = string.replace("\n", "").replace("\r", "").strip()
+    return string
+
+
+def clean_strings_in_table(test=False):
+    DBsession, engine = get_database_session(test=test)
+    # get the Incidents table
+    incidents = DBsession.query(Incidents).all()
+    for incident in tqdm(incidents):
+        incident.accused_name = remove_non_standard_characters(incident.accused_name)
+        incident.accused_location = remove_non_standard_characters(incident.accused_location)
+        incident.charges = remove_non_standard_characters(incident.charges)
+        incident.details = remove_non_standard_characters(incident.details)
+        incident.legal_actions = remove_non_standard_characters(incident.legal_actions)
+        incident.incident_location = remove_non_standard_characters(incident.incident_location)
+        DBsession.commit()
+
+    incidents_from_pdf = DBsession.query(IncidentsFromPdf).all()
+    for incident in tqdm(incidents_from_pdf):
+        incident.accused_name = remove_non_standard_characters(incident.accused_name)
+        incident.accused_location = remove_non_standard_characters(incident.accused_location)
+        incident.charges = remove_non_standard_characters(incident.charges)
+        incident.details = remove_non_standard_characters(incident.details)
+        incident.legal_actions = remove_non_standard_characters(incident.legal_actions)
+        incident.incident_location = remove_non_standard_characters(incident.incident_location)
+        DBsession.commit()
+
+    return
+
+
 if __name__ == "__main__":
-    create_tables(test=False)
-    create_view(test=False)
+    # create_tables(test=False)
+    # create_view(test=False)
+    clean_strings_in_table(
+        test=False
+    )
