@@ -123,7 +123,7 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
 
 
 def main():
-    DBsession, engine = get_database_session(test=False)
+    DBsession, engine = get_database_session(environment='prod')
     police_fire_articles = DBsession.query(Article).where(Article.section == 'Police/Fire')
     police_fire_articles = list(police_fire_articles)
     index = 0

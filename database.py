@@ -20,8 +20,7 @@ def get_database_session(environment='development'):
     elif environment == 'development':
         DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_dev'
     else:
-        raise ValueError('environment must be either "test" or "development"')
-
+        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard'
 
     engine = create_engine(DATABASE_URI, echo=False)
     Session = sessionmaker(bind=engine)

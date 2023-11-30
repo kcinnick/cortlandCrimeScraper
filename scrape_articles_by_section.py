@@ -179,7 +179,7 @@ def scrape_article(article_url, logged_in_session, section, DBsession):
 
 
 def main():
-    DBsession, engine = get_database_session(test=False)
+    DBsession, engine = get_database_session(environment='prod')
     logged_in_session = login()
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',

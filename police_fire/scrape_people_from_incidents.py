@@ -8,7 +8,7 @@ from database import get_database_session, Incidents, Persons, IncidentsFromPdf
 # if so, do nothing
 
 def main():
-    db_session, engine = get_database_session(test=False)
+    db_session, engine = get_database_session(environment='prod')
     incidents = db_session.query(Incidents).all()
     for incident in incidents:
         people = incident.accused_name.split(',')
