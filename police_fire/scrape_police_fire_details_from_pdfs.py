@@ -10,14 +10,15 @@ from pdf2image import convert_from_path
 from simpleaichat import AIChat
 from tqdm import tqdm
 
-from database import IncidentsFromPdf, get_database_session
+from database import IncidentsFromPdf, get_database_session, Persons
 
 from PyPDF2 import PdfFileWriter, PdfReader, PdfWriter
 import pytesseract
 
 from police_fire.maps.get_lat_lng_of_addresses import get_lat_lng_of_address
 from police_fire.utilities import check_if_details_references_a_relative_date, \
-    check_if_details_references_an_actual_date, get_incident_location_from_details
+    check_if_details_references_an_actual_date, get_incident_location_from_details \
+    , add_or_get_person
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 DBsession, engine = get_database_session(test=False)
@@ -164,7 +165,8 @@ def parse_details_for_incident(incident, year_month_day_str):
             incident_date=incident_date_response,
             incident_location=incident_location,
             incident_location_lat=lat,
-            incident_location_lng=lng
+            incident_location_lng=lng,
+            accused_person_id=add_or_get_person(DBsession, incident['accused_name'])
         )
         DBsession.add(incidentFromPdf)
         DBsession.commit()
@@ -192,11 +194,11 @@ def main():
         #'jul'
         #'aug',
         #'sep',
-        'oct',
+        #'oct',
         #'nov',
-        #'dec',
+        'dec',
     ]
-    day_numbers = [str(day_number) for day_number in range(1, 32)]
+    day_numbers = [str(day_number) for day_number in range(16, 32)]
     for year in tqdm(years, desc='year'):
         for month in tqdm(months, desc='month'):
             for day_number in tqdm(day_numbers, desc='day'):
