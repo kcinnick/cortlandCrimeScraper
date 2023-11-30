@@ -30,6 +30,17 @@ def get_database_session(environment='development'):
     return db_session, engine
 
 
+class Persons(Base):
+    __tablename__ = 'persons'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True)
+
+    def __str__(self):
+        return f'{self.name}'
+
+
 class Article(Base):
     __tablename__ = 'article'
     __table_args__ = {'schema': 'public'}
@@ -61,12 +72,12 @@ class Incidents(Base):
     __table_args__ = {'schema': 'public'}
 
     article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
-    article = relationship("Article")  # This creates a link to the Article model
 
     id = Column(Integer, autoincrement=True, primary_key=True)
     url = Column(String, primary_key=True)
     incident_reported_date = Column(Date, primary_key=True)
     accused_name = Column(String, primary_key=True)
+    accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
     charges = Column(String, primary_key=True)
@@ -78,8 +89,11 @@ class Incidents(Base):
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
+    accused_person = relationship("Persons", backref="incidents")
+    article = relationship("Article")  # This creates a link to the Article model
+
     def __str__(self):
-        return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
+        return f'{self.incident_reported_date} - {self.url} - {self.accused_person_id} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
 
 
 class IncidentsFromPdf(Base):
@@ -89,6 +103,7 @@ class IncidentsFromPdf(Base):
     id = Column(Integer, autoincrement=True, primary_key=True)
     incident_reported_date = Column(Date, primary_key=True)
     accused_name = Column(String, primary_key=True)
+    accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
     charges = Column(String, primary_key=True)
@@ -98,6 +113,8 @@ class IncidentsFromPdf(Base):
     incident_location = Column(String, nullable=True)
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
+
+    accused_person = relationship("Persons", backref="incidents_from_pdf")
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'

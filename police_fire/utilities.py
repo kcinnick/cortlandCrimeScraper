@@ -4,7 +4,7 @@ import re
 
 from simpleaichat import AIChat
 
-from database import IncidentsWithErrors, Incidents, Article
+from database import IncidentsWithErrors, Incidents, Article, Persons, get_database_session
 
 
 def delete_table_contents(DBsession):
@@ -111,3 +111,34 @@ def get_incident_location_from_details(details_str):
     response = response.replace('The location of the incident is ', '')
     response = response.replace(' in ', ', ')
     return response
+
+
+def link_persons_to_incident(DBsession):
+    index = 0
+    persons = DBsession.query(Persons).all()
+    for person in persons:
+        incidents = DBsession.query(Incidents).filter_by(accused_name=person.name).all()
+        for incident in incidents:
+            incident.accused_person_id = person.id
+            DBsession.add(incident)
+            DBsession.commit()
+            print(f"Person ID: {person.id} linked to Incident ID: {incident.id}")
+            index += 1
+            if index > 10:
+                return
+
+    return
+
+
+def add_or_get_person(session, name):
+    person = session.query(Persons).filter_by(name=name).first()
+    if person is None:
+        person = Persons(name=name)
+        session.add(person)
+        session.commit()
+    return person.id
+
+
+def main():
+    DBsession, engine = get_database_session(test=False)
+    link_persons_to_incident(DBsession)
