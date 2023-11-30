@@ -3,8 +3,9 @@ import os
 import re
 
 from simpleaichat import AIChat
+from tqdm import tqdm
 
-from database import IncidentsWithErrors, Incidents, Article, Persons, get_database_session
+from database import IncidentsWithErrors, Incidents, Article, Persons, get_database_session, IncidentsFromPdf
 
 
 def delete_table_contents(DBsession):
@@ -116,7 +117,7 @@ def get_incident_location_from_details(details_str):
 def link_persons_to_incident(DBsession):
     index = 0
     persons = DBsession.query(Persons).all()
-    for person in persons:
+    for person in tqdm(persons):
         incidents = DBsession.query(Incidents).filter_by(accused_name=person.name).all()
         for incident in incidents:
             incident.accused_person_id = person.id
@@ -124,8 +125,15 @@ def link_persons_to_incident(DBsession):
             DBsession.commit()
             print(f"Person ID: {person.id} linked to Incident ID: {incident.id}")
             index += 1
-            if index > 10:
-                return
+
+    for person in tqdm(persons):
+        incidents = DBsession.query(IncidentsFromPdf).filter_by(accused_name=person.name).all()
+        for incident in incidents:
+            incident.accused_person_id = person.id
+            DBsession.add(incident)
+            DBsession.commit()
+            print(f"Person ID: {person.id} linked to Incident ID: {incident.id}")
+            index += 1
 
     return
 
@@ -140,5 +148,9 @@ def add_or_get_person(session, name):
 
 
 def main():
-    DBsession, engine = get_database_session(test=False)
+    DBsession, engine = get_database_session(environment='prod')
     link_persons_to_incident(DBsession)
+
+
+if __name__ == '__main__':
+    main()
