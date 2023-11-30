@@ -2,11 +2,11 @@ import regex as re
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import get_database_session, Article, Incidents
+from database import get_database_session, Article, Incidents, Persons
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
-    update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details
-
+    update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details, \
+    add_or_get_person
 from maps import get_lat_lng_of_addresses
 
 
@@ -17,7 +17,7 @@ def identify_articles_with_incident_formatting(db_session):
     articles = db_session.query(Article).where(Article.section == 'Police/Fire').all()
     articles_with_incidents = []
     for article in articles:
-        if 'Accused:' in article.html_content and 'Charges:' in article.html_content and 'Details:' in article.html_content:
+        if 'Accused' in article.html_content and 'Charges' in article.html_content and 'Details' in article.html_content:
             articles_with_incidents.append(article)
 
     return articles_with_incidents
@@ -85,6 +85,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
 
     accused_str = separate_incident_tags[accused_tag_index].replace('Accused: ', '')
     accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
+    accused_person_id = add_or_get_person(DBsession, accused_name)
 
     # clean up charges, details, and legal actions records
     charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
@@ -109,7 +110,9 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         incident_date=incident_date,
         incident_location=incident_location,
         incident_location_lat=incident_lat,
-        incident_location_lng=incident_lng
+        incident_location_lng=incident_lng,
+
+        accused_person_id=accused_person_id
     )
 
     # add incident to database if it doesn't already exist
@@ -249,6 +252,7 @@ def scrape_structured_incident_details(article, DBsession):
 
         # clean up accused record
         accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
+        accused_person_id = add_or_get_person(DBsession, accused_name)
 
         # clean up charges, details, and legal actions records
         charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
@@ -281,7 +285,8 @@ def scrape_structured_incident_details(article, DBsession):
             incident_date=incident_date_response,
             incident_location=incident_location,
             incident_location_lat=incident_lat,
-            incident_location_lng=incident_lng
+            incident_location_lng=incident_lng,
+            accused_person_id=accused_person_id
         )
 
         # add incident to database if it doesn't already exist
