@@ -21,7 +21,7 @@ from police_fire.utilities import check_if_details_references_a_relative_date, \
     , add_or_get_person
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-DBsession, engine = get_database_session(test=False)
+DBsession, engine = get_database_session(environment='prod')
 
 ai = AIChat(
     console=False,
@@ -145,8 +145,7 @@ def parse_details_for_incident(incident, year_month_day_str):
     existing_incident = DBsession.query(IncidentsFromPdf).filter(
         IncidentsFromPdf.incident_reported_date == year_month_day_str,
         IncidentsFromPdf.accused_name == incident['accused_name'],
-        IncidentsFromPdf.charges == incident['charges'],
-        IncidentsFromPdf.details == incident['details']
+        IncidentsFromPdf.accused_age == incident['accused_age'],
     ).all()
     lat, lng = get_lat_lng_of_address(incident_location)
     existing_incident = existing_incident[0] if len(existing_incident) > 0 else None
