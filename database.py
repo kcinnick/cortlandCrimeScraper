@@ -251,8 +251,8 @@ def clean_strings_in_table(test=False):
 
 
 if __name__ == "__main__":
-    #create_tables(environment='prod')
-    create_view(environment='prod')
+    create_tables(environment='test')
+    # create_view(environment='prod')
     # clean_strings_in_table(
     #    test=False
     # )

@@ -1,14 +1,37 @@
-from bs4 import BeautifulSoup
-from sqlalchemy.exc import IntegrityError
+import os
 
-from database import IncidentsWithErrors, Article, get_database_session, Incidents
+import pytest
+from bs4 import BeautifulSoup
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
+
+from database import IncidentsWithErrors, Article, get_database_session, Base
 from police_fire.scrape_structured_police_fire_details import scrape_separate_incident_details
-from police_fire.utilities import add_incident_with_error_if_not_already_exists, delete_table_contents, \
+from police_fire.utilities import delete_table_contents, \
     get_incident_location_from_details
 
+database_username = os.getenv('DATABASE_USERNAME')
+database_password = os.getenv('DATABASE_PASSWORD')
 
-def test_add_incident_with_error_that_does_not_already_exist():
-    DBsession, engine = get_database_session(test=True)
+
+@pytest.fixture(scope="function")
+def setup_database():
+    # Connect to your test database
+    engine = create_engine(
+        f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test')
+    Base.metadata.create_all(engine)  # Create tables
+
+    # Create a new session for testing
+    db_session = scoped_session(sessionmaker(bind=engine))
+
+    yield db_session  # Provide the session for testing
+
+    db_session.close()
+    Base.metadata.drop_all(engine)  # Drop tables after tests are done
+
+
+def test_add_incident_with_error_that_does_not_already_exist(setup_database):
+    DBsession = setup_database
     delete_table_contents(DBsession)
     article = Article(
         html_content="""
@@ -35,9 +58,8 @@ def test_add_incident_with_error_that_does_not_already_exist():
     return
 
 
-def test_do_not_add_incident_with_error_if_already_exists():
-    DBsession, engine = get_database_session(test=True)
-    delete_table_contents(DBsession)
+def test_do_not_add_incident_with_error_if_already_exists(setup_database):
+    DBsession = setup_database
 
     article = Article(
         html_content="""
