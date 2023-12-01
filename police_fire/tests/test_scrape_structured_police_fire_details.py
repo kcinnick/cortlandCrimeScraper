@@ -1,22 +1,37 @@
-from database import get_database_session, Article, Incidents, IncidentsWithErrors, create_tables
-from scrape_articles_by_section import login, scrape_article
+import os
+
+import pytest
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
+
+from database import Article, Incidents, IncidentsWithErrors, Base
 from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details, \
     identify_articles_with_incident_formatting
+from police_fire.utilities import add_or_get_person
+from scrape_articles_by_section import login, scrape_article
 
-create_tables(environment='test')
-DBsession, engine = get_database_session(environment='test')
-
-
-def delete_table_contents(DBsession):
-    DBsession.query(IncidentsWithErrors).delete()
-    DBsession.query(Incidents).delete()
-    DBsession.query(Article).delete()
-    DBsession.commit()
+database_username = os.getenv('DATABASE_USERNAME')
+database_password = os.getenv('DATABASE_PASSWORD')
 
 
-def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_table():
-    delete_table_contents(DBsession)
+@pytest.fixture(scope="function")
+def setup_database():
+    # Connect to your test database
+    engine = create_engine(
+        f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test')
+    Base.metadata.create_all(engine)  # Create tables
 
+    # Create a new session for testing
+    db_session = scoped_session(sessionmaker(bind=engine))
+
+    yield db_session  # Provide the session for testing
+
+    db_session.close()
+    Base.metadata.drop_all(engine)  # Drop tables after tests are done
+
+
+def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_table(setup_database):
+    DBsession = setup_database
     incidents_with_errors = DBsession.query(IncidentsWithErrors).all()
     assert len(incidents_with_errors) == 0
 
@@ -34,8 +49,8 @@ def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_tab
     return
 
 
-def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
-    delete_table_contents(DBsession)
+def test_structure_data_with_matching_counts_gets_added_to_incidents_table(setup_database):
+    DBsession = setup_database
 
     incidents = DBsession.query(Incidents).all()
     assert len(incidents) == 0
@@ -54,7 +69,7 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
     scraped_incident = incidents[0]
 
     assert scraped_incident.url == 'https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?'
-    assert scraped_incident.accused_name == 'Julie M. Conners'
+    assert scraped_incident.accused_person_id == add_or_get_person(DBsession, 'Julie M. Conners')
     assert scraped_incident.accused_age == '34'
     assert scraped_incident.accused_location == 'Cold Brook Road, Homer'
     assert scraped_incident.charges == 'Driving while intoxicated, a misdemeanor; parked on a highway, a violation'
@@ -67,8 +82,8 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table():
     return
 
 
-def test_structure_data_with_multiple_incidents_gets_added_correctly():
-    delete_table_contents(DBsession)
+def test_structure_data_with_multiple_incidents_gets_added_correctly(setup_database):
+    DBsession = setup_database
 
     article_url = 'https://www.cortlandstandard.com/stories/groton-driver-charged-after-crash-causes-injury,13070?'
 
@@ -87,9 +102,8 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly():
     assert len(incidents) == 9
 
 
-def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correctly():
-    delete_table_contents(DBsession)
-
+def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correctly(setup_database):
+    DBsession = setup_database
     article_url = 'https://www.cortlandstandard.com/stories/two-charged-with-drunken-driving,12273?'
 
     incidents = DBsession.query(Incidents).all()
@@ -109,8 +123,8 @@ def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correct
         assert incident.details != ''
 
 
-def test_structure_data_with_br_tags_gets_added_correctly():
-    delete_table_contents(DBsession)
+def test_structure_data_with_br_tags_gets_added_correctly(setup_database):
+    DBsession = setup_database
 
     article_url = 'https://www.cortlandstandard.com/stories/10-year-old-hurt-when-vehicle-tips,19473?'
     incidents = DBsession.query(Incidents).all()
@@ -129,7 +143,7 @@ def test_structure_data_with_br_tags_gets_added_correctly():
     first_incident = incidents[0]
     second_incident = incidents[1]
 
-    assert first_incident.accused_name == 'Wendy Caswell'
+    assert first_incident.accused_person_id == add_or_get_person(DBsession, 'Wendy Caswell')
     assert first_incident.accused_age == '40'
     assert first_incident.accused_location == 'Cortland'
     assert first_incident.charges == ('Third-degree criminal possession of a controlled substance, third-degree '
@@ -144,7 +158,7 @@ def test_structure_data_with_br_tags_gets_added_correctly():
     assert first_incident.legal_actions == ("Caswell was awaiting arraignment Wednesday evening at the Cortland County "
                                             "Sheriff's Office.")
 
-    assert second_incident.accused_name == 'Cypress Jana V. Hill'
+    assert second_incident.accused_person_id == add_or_get_person(DBsession, 'Cypress Jana V. Hill')
     assert second_incident.accused_age == '25'
     assert second_incident.accused_location == 'Groton'
     assert second_incident.charges == ('First-degree burglary, first-degree criminal contempt, felonies; second-degree '
@@ -158,8 +172,8 @@ def test_structure_data_with_br_tags_gets_added_correctly():
                                              'arraignment and awaits an appearance in Newfield Town Court.')
 
 
-def test_identify_articles_with_incident_formatting_correctly_returns_one_incident():
-    delete_table_contents(DBsession)
+def test_identify_articles_with_incident_formatting_correctly_returns_one_incident(setup_database):
+    DBsession = setup_database
 
     article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053??'
 
@@ -174,8 +188,8 @@ def test_identify_articles_with_incident_formatting_correctly_returns_one_incide
     assert len(articles) == 1
 
 
-def test_identify_articles_with_incident_formatting_correctly_returns_0_incidents():
-    delete_table_contents(DBsession)
+def test_identify_articles_with_incident_formatting_correctly_returns_0_incidents(setup_database):
+    DBsession = setup_database
 
     article_url = 'https://www.cortlandstandard.com/stories/one-charged-with-assault-4-others-arrested-in-palm-gardens-brawl,70665?'
 
