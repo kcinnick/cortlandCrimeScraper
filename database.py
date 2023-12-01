@@ -190,7 +190,8 @@ SELECT
     i.incident_date::date,
     i.incident_location,
     i.incident_location_lat,
-    i.incident_location_lng
+    i.incident_location_lng,
+    'url' AS source  -- Static value indicating the source of the data
 FROM incidents i
 JOIN persons p ON i.accused_person_id = p.id  -- Join with persons table
 UNION ALL
@@ -205,7 +206,8 @@ SELECT
     ip.incident_date::date,
     ip.incident_location,
     ip.incident_location_lat,
-    ip.incident_location_lng
+    ip.incident_location_lng,
+    'pdf' AS source  -- Static value indicating the source of the data
 FROM incidents_from_pdf ip
 JOIN persons pp ON ip.accused_person_id = pp.id;  -- Join with persons table
 """)
