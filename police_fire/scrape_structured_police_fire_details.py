@@ -91,16 +91,13 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
         charges_str, details_str, legal_actions_str)
 
-    print('91 checking for incident date')
     incident_date = check_if_details_references_a_relative_date(details_str, article.date_published)
-    print('93 incident date: ', incident_date)
     incident_location = get_incident_location_from_details(details_str)
     incident_lat, incident_lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
     incident = Incidents(
         article_id=article.id,
         url=article.url,
         incident_reported_date=article.date_published,
-        accused_name=accused_name,
         accused_age=accused_age,
         accused_location=accused_location,
         charges=charges_str,
@@ -111,7 +108,6 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         incident_location=incident_location,
         incident_location_lat=incident_lat,
         incident_location_lng=incident_lng,
-
         accused_person_id=accused_person_id
     )
 
@@ -275,7 +271,6 @@ def scrape_structured_incident_details(article, DBsession):
             article_id=article.id,
             url=article.url,
             incident_reported_date=article.date_published,
-            accused_name=accused_name,
             accused_age=accused_age,
             accused_location=accused_location,
             charges=charges_str,
