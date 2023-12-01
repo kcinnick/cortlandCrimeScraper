@@ -11,6 +11,7 @@ Base = declarative_base()
 
 
 def get_database_session(environment='development'):
+    print('environment==', environment)
     database_username = os.getenv('DATABASE_USERNAME')
     database_password = os.getenv('DATABASE_PASSWORD')
 
