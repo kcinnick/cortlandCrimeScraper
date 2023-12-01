@@ -3,8 +3,8 @@ from scrape_articles_by_section import login, scrape_article
 from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details, \
     identify_articles_with_incident_formatting
 
-create_tables(test=True)
-DBsession, engine = get_database_session(test=True)
+create_tables(environment='test')
+DBsession, engine = get_database_session(environment='test')
 
 
 def delete_table_contents(DBsession):
