@@ -75,7 +75,6 @@ class Incidents(Base):
     id = Column(Integer, autoincrement=True, primary_key=True)
     url = Column(String, primary_key=True)
     incident_reported_date = Column(Date, primary_key=True)
-    accused_name = Column(String, primary_key=True)
     accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
@@ -176,39 +175,40 @@ def create_tables(environment='development'):
         Base.metadata.create_all(engine)
 
 
-def create_view(test):
-    print('test==', test)
-    create_view_sql = text("""
-    CREATE OR REPLACE VIEW public.combined_incidents AS
+def create_view(environment='test'):
+    print('environment==', environment)
+    create_view_sql = text("""CREATE OR REPLACE VIEW public.combined_incidents AS
 SELECT 
-    incident_reported_date::date, 
-    accused_name, 
-    accused_age, 
-    accused_location, 
-    charges, 
-    details, 
-    legal_actions, 
-    incident_date::date,
-    incident_location,
-    incident_location_lat,
-    incident_location_lng
-FROM incidents
+    i.incident_reported_date::date, 
+    p.name AS accused_name,  -- Using name from persons table
+    i.accused_age, 
+    i.accused_location, 
+    i.charges, 
+    i.details, 
+    i.legal_actions, 
+    i.incident_date::date,
+    i.incident_location,
+    i.incident_location_lat,
+    i.incident_location_lng
+FROM incidents i
+JOIN persons p ON i.accused_person_id = p.id  -- Join with persons table
 UNION ALL
 SELECT 
-    incident_reported_date::date, 
-    accused_name, 
-    accused_age, 
-    accused_location, 
-    charges, 
-    details, 
-    legal_actions, 
-    incident_date::date,
-    incident_location,
-    incident_location_lat,
-    incident_location_lng
-FROM incidents_from_pdf;
-    """)
-    DBsession, engine = get_database_session(test=test)
+    ip.incident_reported_date::date, 
+    pp.name AS accused_name,  -- Using name from persons table
+    ip.accused_age, 
+    ip.accused_location, 
+    ip.charges, 
+    ip.details, 
+    ip.legal_actions, 
+    ip.incident_date::date,
+    ip.incident_location,
+    ip.incident_location_lat,
+    ip.incident_location_lng
+FROM incidents_from_pdf ip
+JOIN persons pp ON ip.accused_person_id = pp.id;  -- Join with persons table
+""")
+    DBsession, engine = get_database_session(environment=environment)
     with engine.connect() as connection:
         connection.execute(create_view_sql)
     DBsession.close()
@@ -251,8 +251,8 @@ def clean_strings_in_table(test=False):
 
 
 if __name__ == "__main__":
-    create_tables(test=False)
-    create_view(test=False)
+    #create_tables(environment='prod')
+    create_view(environment='prod')
     # clean_strings_in_table(
     #    test=False
     # )
