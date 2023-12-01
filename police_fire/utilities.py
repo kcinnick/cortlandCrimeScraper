@@ -94,8 +94,15 @@ def check_if_details_references_an_actual_date(details_str, article_published_da
 
 
 def update_incident_date_if_necessary(DBsession, incident_date_response, details_str):
+    if not incident_date_response:
+        print('No incident date found.  Not updating database.')
+        return
+    elif not incident_date_response[0].isdigit():
+        print(f'Incident date found was not date-formatted: {incident_date_response}.  Not updating database.')
+        return
     existing_incident = DBsession.query(Incidents).filter_by(details=details_str).first()
     if existing_incident:
+        print('incident date response', incident_date_response)
         existing_incident.incident_date = incident_date_response
         DBsession.add(existing_incident)
         DBsession.commit()
