@@ -8,7 +8,7 @@ from police_fire.utilities import add_incident_with_error_if_not_already_exists,
 
 
 def test_add_incident_with_error_that_does_not_already_exist():
-    DBsession, engine = get_database_session(test=True)
+    DBsession, engine = get_database_session(environment='test')
     delete_table_contents(DBsession)
     article = Article(
         html_content="""
@@ -36,7 +36,7 @@ def test_add_incident_with_error_that_does_not_already_exist():
 
 
 def test_do_not_add_incident_with_error_if_already_exists():
-    DBsession, engine = get_database_session(test=True)
+    DBsession, engine = get_database_session(environment='test')
     delete_table_contents(DBsession)
 
     article = Article(

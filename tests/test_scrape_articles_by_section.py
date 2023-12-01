@@ -3,7 +3,7 @@ from scrape_articles_by_section import login, scrape_article, get_article_urls
 
 
 def test_scrape_article():
-    DBsession, engine = get_database_session(test=True)
+    DBsession, engine = get_database_session(environment='test')
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     # assert database is empty
