@@ -106,7 +106,7 @@ def update_incident_date_if_necessary(DBsession, incident_date_response, details
 
 def get_incident_location_from_details(details_str):
     """if the details contain a location, return the location that matched"""
-    query = "What was the location of the incident: " + details_str + "? Return only the location. If none, return N/A."
+    query = "What was the location of the incident: " + details_str + "? Return only the address, city and state where available. If none, return N/A."
     response = ai(query)
     response = response.replace('The location of the incident was ', '')
     response = response.replace('The location of the incident is ', '')
