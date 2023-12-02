@@ -151,6 +151,18 @@ class Addresses(Base):
         return f'{self.address}'
 
 
+class Charges(Base):
+    __tablename__ = 'charges'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    charge = Column(String, unique=True)
+    charge_type = Column(String)
+
+    def __str__(self):
+        return f'{self.charge}'
+
+
 class PersonAddress(Base):
     __tablename__ = 'PersonAddress'
     __table_args__ = {'schema': 'public'}
@@ -227,12 +239,11 @@ def remove_non_standard_characters(string):
     return string
 
 
-def clean_strings_in_table(test=False):
-    DBsession, engine = get_database_session(test=test)
+def clean_strings_in_table(environment):
+    DBsession, engine = get_database_session(environment)
     # get the Incidents table
     incidents = DBsession.query(Incidents).all()
     for incident in tqdm(incidents):
-        incident.accused_name = remove_non_standard_characters(incident.accused_name)
         incident.accused_location = remove_non_standard_characters(incident.accused_location)
         incident.charges = remove_non_standard_characters(incident.charges)
         incident.details = remove_non_standard_characters(incident.details)
@@ -242,7 +253,6 @@ def clean_strings_in_table(test=False):
 
     incidents_from_pdf = DBsession.query(IncidentsFromPdf).all()
     for incident in tqdm(incidents_from_pdf):
-        incident.accused_name = remove_non_standard_characters(incident.accused_name)
         incident.accused_location = remove_non_standard_characters(incident.accused_location)
         incident.charges = remove_non_standard_characters(incident.charges)
         incident.details = remove_non_standard_characters(incident.details)
@@ -254,7 +264,7 @@ def clean_strings_in_table(test=False):
 
 
 if __name__ == "__main__":
-    create_tables(environment='test')
+    create_tables(environment='prod')
     # create_view(environment='prod')
     # clean_strings_in_table(
     #    test=False
