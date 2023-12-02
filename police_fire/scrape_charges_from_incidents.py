@@ -2,7 +2,7 @@ import re
 
 from sqlalchemy import text
 
-from database import CombinedIncidents, get_database_session
+from database import CombinedIncidents, get_database_session, Charges
 
 DBsession, engine = get_database_session(environment='prod')
 columns = [
@@ -54,13 +54,22 @@ def separate_charges_from_charge_descriptions(charges):
     charges = charges.replace('afelony', 'a felony')
     charges = charges.replace('controlledsubstance', 'controlled substance')
     charges = charges.replace('mis-demeanors', 'misdemeanors')
+    charges = charges.replace('speed not reasonable and prudent', 'speed not reasonable or prudent')
+    charges = charges.replace('grlarceny', 'grand larceny')
+    charges = charges.replace('inadequte', 'inadequate')
 
-    charges = charges.replace(', a', '')
     charges = charges.replace(' and ', ', ')
-    charges.replace('; ', '')
+    charges = charges.replace('; ', ', ')
     charges = charges.replace(' Those are in additions to ', '')
 
+    charges = charges.replace('no license place', 'no license plate')
+    charges = charges.replace('no distinctive plate', 'no distinctive license plate')
+    charges = charges.replace('no distinct plate', 'no distinctive license plate')
+
+
+
     separated_charges = charges.split(', ')
+
     # clean separated charges
     separated_charges = [charge.strip() for charge in separated_charges]
     separated_charges = [charge.lstrip('.') for charge in separated_charges]
@@ -80,12 +89,24 @@ def main():
         print('------')
         print(incident.charges)
         charges = categorize_charges(incident.charges)
+
         # clean up charge descriptions
         for key, value in charges.items():
-            print(key)
             charges[key] = separate_charges_from_charge_descriptions(value)
-            print(charges[key])
-            # add charges to database
+            if charges[key]:
+                for individual_charge in charges[key]:
+                    if individual_charge:
+                        charge_id = add_or_get_charge(DBsession, individual_charge, key)
+                        print(f'{key}: {individual_charge} ({charge_id})')
+
+
+def add_or_get_charge(session, charge_str, charge_type):
+    charge = session.query(Charges).filter_by(charge=charge_str).first()
+    if charge is None:
+        charge = Charges(charge=charge_str, charge_type=charge_type)
+        session.add(charge)
+        session.commit()
+    return charge.id
 
 
 if __name__ == '__main__':
