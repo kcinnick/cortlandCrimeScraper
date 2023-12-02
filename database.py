@@ -151,6 +151,18 @@ class Addresses(Base):
         return f'{self.address}'
 
 
+class Charges(Base):
+    __tablename__ = 'charges'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    charge = Column(String, unique=True)
+    charge_type = Column(String)
+
+    def __str__(self):
+        return f'{self.charge}'
+
+
 class PersonAddress(Base):
     __tablename__ = 'PersonAddress'
     __table_args__ = {'schema': 'public'}
@@ -252,7 +264,7 @@ def clean_strings_in_table(environment):
 
 
 if __name__ == "__main__":
-    create_tables(environment='test')
+    create_tables(environment='prod')
     # create_view(environment='prod')
     # clean_strings_in_table(
     #    test=False
