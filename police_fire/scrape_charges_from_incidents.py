@@ -6,6 +6,7 @@ from database import CombinedIncidents, get_database_session, Charges
 
 DBsession, engine = get_database_session(environment='prod')
 columns = [
+    CombinedIncidents.id,
     CombinedIncidents.charges,
 ]
 
@@ -15,7 +16,7 @@ all_combined_incidents = DBsession.query(*columns).all()
 def categorize_charges(text):
     # Regular expression to match charge descriptions
     # The regex captures all text up to your target words
-    regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|violation|infraction)"
+    regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|violation|traffic infraction)"
 
     # Find all matches
     matches = re.findall(regex, text, re.IGNORECASE | re.DOTALL)
@@ -28,17 +29,59 @@ def categorize_charges(text):
 
     for match in matches:
         charge_description, charge_type = match
+        original_charge_description = charge_description
+
         charge_description = charge_description.strip().rstrip(',')
 
+
+        # get rid of ', a' at the end of the charge description
+        if charge_description.endswith(', a'):
+            charge_description = charge_description[:-3]
+
+        if charge_description.endswith(', a '):
+            charge_description = charge_description[:-4]
+
+        if charge_description.startswith('; '):
+            charge_description = charge_description[2:]
+
+        if charge_description.endswith(', '):
+            charge_description = charge_description[:-2]
+
+
+        cleaned_charge_description = charge_description
         # Categorize based on charge type
         if 'felony' in charge_type.lower():
-            categorized_charges['felonies'] = charge_description
+            categorized_charges['felonies'] = {
+                'original_charge_description': original_charge_description,
+                'cleaned_charge_description': cleaned_charge_description,
+                'charge_type': 'felony'
+            }
         elif 'felonies' in charge_type.lower():
-            categorized_charges['felonies'] = charge_description
+            categorized_charges['felonies'] = {
+                'original_charge_description': original_charge_description,
+                'cleaned_charge_description': cleaned_charge_description,
+                'charge_type': 'felony'
+            }
         elif 'misdemeanor' in charge_type.lower():
-            categorized_charges['misdemeanors'] = charge_description
+            categorized_charges['misdemeanors'] = {
+                'original_charge_description': original_charge_description,
+                'cleaned_charge_description': cleaned_charge_description,
+                'charge_type': 'misdemeanor'
+            }
         elif 'violation' in charge_type.lower():
-            categorized_charges['violations'] = charge_description
+            categorized_charges['misdemeanors'] = {
+                'original_charge_description': original_charge_description,
+                'cleaned_charge_description': cleaned_charge_description,
+                'charge_type': 'violation'
+            }
+        elif 'traffic infraction' in charge_type.lower():
+            categorized_charges['traffic_infraction'] = {
+                'original_charge_description': original_charge_description,
+                'cleaned_charge_description': cleaned_charge_description,
+                'charge_type': 'traffic_infraction'
+            }
+        else:
+            raise Exception('Charge type not found: ' + charge_description)
 
     return categorized_charges
 
@@ -47,26 +90,6 @@ def separate_charges_from_charge_descriptions(charges):
     if not charges:
         return None
     # fix missing spaces
-    charges = charges.replace('  ', ' ')
-    charges = charges.replace('offirst', 'of first')
-    charges = charges.replace('ofsecond', 'of second')
-    charges = charges.replace('ofthird', 'of third')
-    charges = charges.replace('afelony', 'a felony')
-    charges = charges.replace('controlledsubstance', 'controlled substance')
-    charges = charges.replace('mis-demeanors', 'misdemeanors')
-    charges = charges.replace('speed not reasonable and prudent', 'speed not reasonable or prudent')
-    charges = charges.replace('grlarceny', 'grand larceny')
-    charges = charges.replace('inadequte', 'inadequate')
-
-    charges = charges.replace(' and ', ', ')
-    charges = charges.replace('; ', ', ')
-    charges = charges.replace(' Those are in additions to ', '')
-
-    charges = charges.replace('no license place', 'no license plate')
-    charges = charges.replace('no distinctive plate', 'no distinctive license plate')
-    charges = charges.replace('no distinct plate', 'no distinctive license plate')
-
-
 
     separated_charges = charges.split(', ')
 
@@ -87,17 +110,12 @@ def separate_charges_from_charge_descriptions(charges):
 def main():
     for incident in all_combined_incidents:
         print('------')
-        print(incident.charges)
-        charges = categorize_charges(incident.charges)
+        print(incident)
+        categorized_charges = categorize_charges(incident.charges)
+        # add incident ID to categorized_charges
+        categorized_charges['incident_id'] = incident.id
 
-        # clean up charge descriptions
-        for key, value in charges.items():
-            charges[key] = separate_charges_from_charge_descriptions(value)
-            if charges[key]:
-                for individual_charge in charges[key]:
-                    if individual_charge:
-                        charge_id = add_or_get_charge(DBsession, individual_charge, key)
-                        print(f'{key}: {individual_charge} ({charge_id})')
+        print(categorized_charges)
 
 
 def add_or_get_charge(session, charge_str, charge_type):
