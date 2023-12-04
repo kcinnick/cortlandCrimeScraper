@@ -3,6 +3,7 @@ import os
 import unicodedata
 from sqlalchemy import create_engine, ForeignKey, MetaData
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
+from sqlalchemy.schema import UniqueConstraint
 
 from sqlalchemy import Column, Integer, String, Date, Boolean, text
 from tqdm import tqdm
@@ -151,16 +152,20 @@ class Addresses(Base):
         return f'{self.address}'
 
 
-class Charges(Base):
-    __tablename__ = 'charges'
-    __table_args__ = {'schema': 'public'}
+class ChargeTypes(Base):
+    __tablename__ = 'charge_types'
+    __table_args__ = (
+        UniqueConstraint('charge_description', 'charge_class', 'degree', name='unique_charge_combination'),
+        {'schema': 'public'},
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    charge = Column(String, unique=True)
-    charge_type = Column(String)
+    charge_description = Column(String)
+    charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
+    degree = Column(String, nullable=True)
 
     def __str__(self):
-        return f'{self.charge}'
+        return f'{self.charge_description}, {self.charge_class}, {self.degree}'
 
 
 class PersonAddress(Base):
@@ -192,6 +197,7 @@ def create_view(environment='test'):
     print('environment==', environment)
     create_view_sql = text("""CREATE OR REPLACE VIEW public.combined_incidents AS
 SELECT 
+    i.id,
     i.incident_reported_date::date, 
     p.name AS accused_name,  -- Using name from persons table
     i.accused_age, 
@@ -208,6 +214,7 @@ FROM incidents i
 JOIN persons p ON i.accused_person_id = p.id  -- Join with persons table
 UNION ALL
 SELECT 
+    ip.id,
     ip.incident_reported_date::date, 
     pp.name AS accused_name,  -- Using name from persons table
     ip.accused_age, 
@@ -265,7 +272,7 @@ def clean_strings_in_table(environment):
 
 if __name__ == "__main__":
     create_tables(environment='prod')
-    # create_view(environment='prod')
+    create_view(environment='prod')
     # clean_strings_in_table(
     #    test=False
     # )
