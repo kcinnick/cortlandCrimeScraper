@@ -180,11 +180,20 @@ class PersonAddress(Base):
     AddressID = Column(Integer, ForeignKey('public.addresses.id'), primary_key=True)
     AsOfDate = Column(Date)
 
+
 class AlreadyScrapedUrls(Base):
     __tablename__ = 'already_scraped_urls'
     __table_args__ = {'schema': 'public'}
 
     url = Column(String, primary_key=True)
+
+
+class AlreadyScrapedPdfs(Base):
+    __tablename__ = 'already_scraped_pdfs'
+    __table_args__ = {'schema': 'public'}
+
+    pdf_date = Column(String, primary_key=True)
+
 
 def create_tables(environment='development'):
     print('environment==', environment)
@@ -250,7 +259,7 @@ def create_view_for_already_scraped_urls(environment='test'):
     create_view_sql = text(
         """CREATE OR REPLACE VIEW public.already_scraped_urls AS
             SELECT
-                url
+                DISTINCT url
             FROM
             incidents""")
     DBsession, engine = get_database_session(environment=environment)
@@ -258,6 +267,19 @@ def create_view_for_already_scraped_urls(environment='test'):
         connection.execute(create_view_sql)
     DBsession.close()
 
+
+def create_view_for_already_scraped_pdfs(environment='test'):
+    print('environment==', environment)
+    create_view_sql = text(
+        """CREATE OR REPLACE VIEW public.already_scraped_pdfs AS
+            SELECT
+                incident_reported_date
+            FROM
+            incidents_from_pdf""")
+    DBsession, engine = get_database_session(environment=environment)
+    with engine.connect() as connection:
+        connection.execute(create_view_sql)
+    DBsession.close()
 
 def remove_non_standard_characters(string):
     # Normalize unicode characters
@@ -304,20 +326,14 @@ if __name__ == "__main__":
 # helpful query for finding duplicates:
 # SELECT
 #     accused_person_id,
-#     accused_location,
-#     charges,
-#     details,
-#     legal_actions,
+#     incident_reported_date,
 #     incident_location,
 #     COUNT(*) as duplicate_count
 # FROM
 #     incidents
 # GROUP BY
 #     accused_person_id,
-#     accused_location,
-#     charges,
-#     details,
-#     legal_actions,
+#     incident_reported_date,
 #     incident_location
 # HAVING
 #     COUNT(*) > 1
