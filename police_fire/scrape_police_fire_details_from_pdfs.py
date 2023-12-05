@@ -102,6 +102,8 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
         # but sometimes they're on the 2nd page.
         txt = convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path)
         txt = str(txt)
+        with open(pages_path + '\\' + f'police_fire_page_{str(newspaper_page_number)}.txt', 'w') as f:
+            f.write(txt)
         raw_incidents = ['Accused:' + i for i in txt.split('Accused:')][1:]
         query = ("List all of the incident details provided in the following string, in the original language"
                  " of the article.  Use a Python-style dictionaries with the keys \'accused_name\', \'accused_age\',"
@@ -184,18 +186,18 @@ def main():
         #'2022'
     ]
     months = [
-        'jan',
-        'feb',
-        'mar',
-        'apr',
-        'may',
+        #'jan',
+        #'feb',
+        #'mar',
+        #'apr',
+        #'may',
         'jun',
-        #'jul'
-        #'aug',
-        #'sep',
-        #'oct',
-        #'nov',
-        #'dec',
+        'jul'
+        'aug',
+        'sep',
+        'oct',
+        'nov',
+        'dec',
     ]
     day_numbers = [str(day_number) for day_number in range(1, 32)]
     for year in tqdm(years, desc='year'):
