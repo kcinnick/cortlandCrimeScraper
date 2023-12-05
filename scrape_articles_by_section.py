@@ -9,7 +9,7 @@ from newspaper import Config
 from requests import Session
 from tqdm import tqdm
 
-from database import get_database_session, Article
+from database import get_database_session, Article, AlreadyScrapedUrls
 from utilities import login
 
 config = Config()
@@ -133,7 +133,10 @@ def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date
         story_list = story_container.find('div', class_='story_list')
         stories = story_list.find_all('div', class_='item')
         for story in stories:
-            articleUrls.append('https://www.cortlandstandard.com' + story.find('a')['href'])
+            article_url = 'https://www.cortlandstandard.com' + story.find('a')['href']
+            # if article_url not in already_scraped_urls view, add it to articleUrls
+
+            articleUrls.append(article_url)
         if soup.find('span', class_='next'):
             page_number += 1
             if page_number > max_pages:
@@ -188,9 +191,11 @@ def main():
         '', '', [], session=logged_in_session,
         max_pages=2
     )
-    already_scraped_urls = [article.url for article in DBsession.query(Article).all()]
+    print(str(len(article_urls)) + ' articles found.')
+    already_scraped_urls = [article.url for article in DBsession.query(AlreadyScrapedUrls).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
     for article_url in tqdm(article_urls):
+        print(article_url, ' not in already_scraped_urls')
         scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)
 
 

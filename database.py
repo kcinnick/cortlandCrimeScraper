@@ -180,6 +180,11 @@ class PersonAddress(Base):
     AddressID = Column(Integer, ForeignKey('public.addresses.id'), primary_key=True)
     AsOfDate = Column(Date)
 
+class AlreadyScrapedUrls(Base):
+    __tablename__ = 'already_scraped_urls'
+    __table_args__ = {'schema': 'public'}
+
+    url = Column(String, primary_key=True)
 
 def create_tables(environment='development'):
     print('environment==', environment)
@@ -240,6 +245,20 @@ JOIN persons pp ON ip.accused_person_id = pp.id;  -- Join with persons table
     DBsession.close()
 
 
+def create_view_for_already_scraped_urls(environment='test'):
+    print('environment==', environment)
+    create_view_sql = text(
+        """CREATE OR REPLACE VIEW public.already_scraped_urls AS
+            SELECT
+                url
+            FROM
+            incidents""")
+    DBsession, engine = get_database_session(environment=environment)
+    with engine.connect() as connection:
+        connection.execute(create_view_sql)
+    DBsession.close()
+
+
 def remove_non_standard_characters(string):
     # Normalize unicode characters
     if string is None:
@@ -277,10 +296,10 @@ def clean_strings_in_table(environment):
 if __name__ == "__main__":
     create_tables(environment='prod')
     create_view(environment='prod')
+    create_view_for_already_scraped_urls(environment='prod')
     # clean_strings_in_table(
     #    test=False
     # )
-
 
 # helpful query for finding duplicates:
 # SELECT
