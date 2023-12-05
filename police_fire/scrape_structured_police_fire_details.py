@@ -112,7 +112,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     )
 
     # add incident to database if it doesn't already exist
-    if DBsession.query(Incidents).filter_by(details=details_str).count() == 0:
+    if DBsession.query(Incidents).filter_by(details=details_str, accused_person_id=accused_person_id).count() == 0:
         DBsession.add(incident)
         DBsession.commit()
     else:
@@ -313,6 +313,8 @@ def scrape_structured_incident_details(article, DBsession):
 def main():
     database_session, engine = get_database_session(environment='prod')
     articles_with_incidents = identify_articles_with_incident_formatting(database_session)
+    # reverse the list so that the most recent articles are scraped first
+    articles_with_incidents = articles_with_incidents[::-1]
     print(f'{len(articles_with_incidents)} articles with incident formatting.')
     try:
         for index, article in enumerate(articles_with_incidents):

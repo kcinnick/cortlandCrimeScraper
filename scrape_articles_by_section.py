@@ -66,7 +66,8 @@ topic_ids = {
 }
 
 
-def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date, end_date, max_pages=9999, session=None):
+def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date, end_date, max_pages=9999,
+                     session=None):
     if match_type not in ['all', 'any', 'phrase']:
         print('match must be one of all, any, or phrase. defaulting to \'any\'.')
         match = 'any'
@@ -143,6 +144,7 @@ def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date
 
     return articleUrls
 
+
 def scrape_article(article_url, logged_in_session, section, DBsession):
     print(article_url)
     parsed_article = NewspaperArticle(article_url, config=config)
@@ -184,6 +186,7 @@ def main():
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',
         '', '', [], session=logged_in_session,
+        max_pages=2
     )
     already_scraped_urls = [article.url for article in DBsession.query(Article).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
