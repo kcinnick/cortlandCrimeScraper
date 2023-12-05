@@ -70,18 +70,17 @@ class IncidentsWithErrors(Base):
 
 class Incidents(Base):
     __tablename__ = 'incidents'
-    __table_args__ = {'schema': 'public'}
 
     article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
 
     id = Column(Integer, autoincrement=True, primary_key=True)
-    url = Column(String, primary_key=True)
-    incident_reported_date = Column(Date, primary_key=True)
+    url = Column(String)
+    incident_reported_date = Column(Date)
     accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
-    charges = Column(String, primary_key=True)
-    details = Column(String, primary_key=True)
+    charges = Column(String)
+    details = Column(String)
     legal_actions = Column(String)
     structured_source = Column(Boolean)
     incident_date = Column(Date, nullable=True)
@@ -91,6 +90,11 @@ class Incidents(Base):
 
     accused_person = relationship("Persons", backref="incidents")
     article = relationship("Article")  # This creates a link to the Article model
+
+    __table_args__ = (
+        UniqueConstraint('url', 'incident_reported_date', 'charges', 'details', name='uix_incident_details'),
+        {'schema': 'public'},
+    )
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.url} - {self.accused_person_id} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
@@ -176,6 +180,11 @@ class PersonAddress(Base):
     AddressID = Column(Integer, ForeignKey('public.addresses.id'), primary_key=True)
     AsOfDate = Column(Date)
 
+class AlreadyScrapedUrls(Base):
+    __tablename__ = 'already_scraped_urls'
+    __table_args__ = {'schema': 'public'}
+
+    url = Column(String, primary_key=True)
 
 def create_tables(environment='development'):
     print('environment==', environment)
@@ -236,6 +245,20 @@ JOIN persons pp ON ip.accused_person_id = pp.id;  -- Join with persons table
     DBsession.close()
 
 
+def create_view_for_already_scraped_urls(environment='test'):
+    print('environment==', environment)
+    create_view_sql = text(
+        """CREATE OR REPLACE VIEW public.already_scraped_urls AS
+            SELECT
+                url
+            FROM
+            incidents""")
+    DBsession, engine = get_database_session(environment=environment)
+    with engine.connect() as connection:
+        connection.execute(create_view_sql)
+    DBsession.close()
+
+
 def remove_non_standard_characters(string):
     # Normalize unicode characters
     if string is None:
@@ -273,6 +296,30 @@ def clean_strings_in_table(environment):
 if __name__ == "__main__":
     create_tables(environment='prod')
     create_view(environment='prod')
+    create_view_for_already_scraped_urls(environment='prod')
     # clean_strings_in_table(
     #    test=False
     # )
+
+# helpful query for finding duplicates:
+# SELECT
+#     accused_person_id,
+#     accused_location,
+#     charges,
+#     details,
+#     legal_actions,
+#     incident_location,
+#     COUNT(*) as duplicate_count
+# FROM
+#     incidents
+# GROUP BY
+#     accused_person_id,
+#     accused_location,
+#     charges,
+#     details,
+#     legal_actions,
+#     incident_location
+# HAVING
+#     COUNT(*) > 1
+# ORDER BY
+#     duplicate_count DESC;

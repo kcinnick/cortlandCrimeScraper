@@ -136,6 +136,8 @@ def main():
     DBsession, engine = get_database_session(environment='prod')
     police_fire_articles = DBsession.query(Article).where(Article.section == 'Police/Fire')
     police_fire_articles = list(police_fire_articles)
+    # reverse list
+    police_fire_articles = police_fire_articles[::-1]
     index = 0
     for article in tqdm(police_fire_articles):
         article_id, article_url, article_content, article_date_published = article.id, article.url, article.content, article.date_published

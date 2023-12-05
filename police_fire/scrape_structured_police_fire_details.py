@@ -2,7 +2,7 @@ import regex as re
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import get_database_session, Article, Incidents, Persons
+from database import get_database_session, Article, Incidents, Persons, AlreadyScrapedUrls
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
     update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details, \
@@ -112,7 +112,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
     )
 
     # add incident to database if it doesn't already exist
-    if DBsession.query(Incidents).filter_by(details=details_str).count() == 0:
+    if DBsession.query(Incidents).filter_by(details=details_str, accused_person_id=accused_person_id).count() == 0:
         DBsession.add(incident)
         DBsession.commit()
     else:
@@ -181,7 +181,16 @@ def scrape_structured_incident_details(article, DBsession):
     Scrape incident details from article.
     """
     incidents = []
+    # get already scraped urls
+    alreadyScrapedUrls = DBsession.query(AlreadyScrapedUrls).all()
+    alreadyScrapedUrls = [alreadyScrapedUrl.url for alreadyScrapedUrl in alreadyScrapedUrls]
+    print(alreadyScrapedUrls)
     print(article.url)
+    if article.url in alreadyScrapedUrls:
+        print('Article already scraped. Skipping.')
+        return
+    else:
+        print('Article not already scraped. Scraping now.')
     soup = BeautifulSoup(article.html_content, 'html.parser')
 
     # check for <strong> tags first
@@ -313,6 +322,8 @@ def scrape_structured_incident_details(article, DBsession):
 def main():
     database_session, engine = get_database_session(environment='prod')
     articles_with_incidents = identify_articles_with_incident_formatting(database_session)
+    # reverse the list so that the most recent articles are scraped first
+    articles_with_incidents = articles_with_incidents[::-1]
     print(f'{len(articles_with_incidents)} articles with incident formatting.')
     try:
         for index, article in enumerate(articles_with_incidents):
