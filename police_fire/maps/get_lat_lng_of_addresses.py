@@ -21,6 +21,8 @@ def get_lat_lng_of_address(address):
         return lat, lng
     else:
         print('get_lat_lng_of_address: ', resp_json_payload['status'])
+        with open('get_lat_lng_of_address_errors.txt', 'a') as f:
+            f.write(f'{address}\n')
         return None, None
 
 
@@ -39,13 +41,16 @@ def get_incident_location(DBsession, incident):
 
 
 def main():
+    with open('get_lat_lng_of_address_errors.txt', 'w') as f:
+        f.write('address\n')
     DBsession, engine = get_database_session(environment='prod')
-    incidents = DBsession.query(IncidentsFromPdf).filter(IncidentsFromPdf.incident_location_lat == None,).all()
+    incidents = DBsession.query(Incidents).filter(Incidents.incident_location_lat == None,).all()
     for incident in tqdm(incidents):
         incident_location = get_incident_location(DBsession, incident)
         if incident_location.strip() == 'N/A':
             continue
         if incident_location:
+            print(incident_location)
             lat_lng = get_lat_lng_of_address(incident_location)
             if lat_lng:
                 print(lat_lng)
