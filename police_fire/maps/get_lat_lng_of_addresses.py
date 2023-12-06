@@ -39,10 +39,12 @@ def get_incident_location(DBsession, incident):
 
 
 def main():
-    DBsession, engine = get_database_session(test=False)
-    incidents = DBsession.query(IncidentsFromPdf).filter(or_(Incidents.incident_location_lat == None, Incidents.incident_location_lng == None)).all()
+    DBsession, engine = get_database_session(environment='prod')
+    incidents = DBsession.query(IncidentsFromPdf).filter(IncidentsFromPdf.incident_location_lat == None,).all()
     for incident in tqdm(incidents):
         incident_location = get_incident_location(DBsession, incident)
+        if incident_location.strip() == 'N/A':
+            continue
         if incident_location:
             lat_lng = get_lat_lng_of_address(incident_location)
             if lat_lng:
