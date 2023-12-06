@@ -218,6 +218,7 @@ SELECT
     i.id,
     i.incident_reported_date::date, 
     p.name AS accused_name,  -- Using name from persons table
+    p.id AS accused_person_id,  -- Using id from persons table
     i.accused_age, 
     i.accused_location, 
     i.charges, 
@@ -235,6 +236,7 @@ SELECT
     ip.id,
     ip.incident_reported_date::date, 
     pp.name AS accused_name,  -- Using name from persons table
+    pp.id AS accused_person_id,  -- Using id from persons table
     ip.accused_age, 
     ip.accused_location, 
     ip.charges, 
@@ -320,7 +322,7 @@ if __name__ == "__main__":
     create_view(environment='prod')
     create_view_for_already_scraped_urls(environment='prod')
     # clean_strings_in_table(
-    #    test=False
+    # environment = 'prod'
     # )
 
 # helpful query for finding duplicates:
