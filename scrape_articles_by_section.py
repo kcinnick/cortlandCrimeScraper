@@ -176,9 +176,14 @@ def scrape_article(article_url, logged_in_session, section, DBsession):
         html_content=soup.prettify()
     )
 
-    DBsession.add(article)
-    DBsession.commit()
-    DBsession.close()
+    try:
+        DBsession.add(article)
+        DBsession.commit()
+        DBsession.close()
+    except Exception as e:
+        print('Error adding article to database: ', e)
+        DBsession.rollback()
+        DBsession.close()
 
     return
 
