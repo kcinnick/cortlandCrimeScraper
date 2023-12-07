@@ -188,6 +188,13 @@ class AlreadyScrapedUrls(Base):
     url = Column(String, primary_key=True)
 
 
+class ManuallyVerifiedUrls(Base):
+    __tablename__ = 'manually_verified_urls'
+    __table_args__ = {'schema': 'public'}
+
+    url = Column(String, primary_key=True)
+
+
 class AlreadyScrapedPdfs(Base):
     __tablename__ = 'already_scraped_pdfs'
     __table_args__ = {'schema': 'public'}
