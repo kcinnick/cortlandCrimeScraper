@@ -77,6 +77,8 @@ class Incidents(Base):
     url = Column(String)
     incident_reported_date = Column(Date)
     accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
+    accused_name = Column(String)
+
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
     charges = Column(String)
