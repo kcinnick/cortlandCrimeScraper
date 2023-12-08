@@ -202,3 +202,28 @@ def test_identify_articles_with_incident_formatting_correctly_returns_0_incident
     )
 
     assert len(articles) == 0
+
+
+def test_duplicate_incident_does_not_get_added_twice(setup_database):
+    # test setup - add the article to the database
+    DBsession = setup_database
+
+    article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053??'
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+
+    article = DBsession.query(Article).where(
+        Article.url == article_url).first()
+
+    # scrape the article for the first time
+    scrape_structured_incident_details(article, DBsession)
+
+    # scrape the article for the second time
+    scrape_structured_incident_details(article, DBsession)
+
+    # check that there is only one incident in the database
+    incidents = DBsession.query(Incidents).all()
+    assert len(incidents) == 3
+
