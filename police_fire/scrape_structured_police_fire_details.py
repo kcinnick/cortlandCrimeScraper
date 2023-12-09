@@ -108,7 +108,8 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         incident_location=incident_location,
         incident_location_lat=incident_lat,
         incident_location_lng=incident_lng,
-        accused_person_id=accused_person_id
+        accused_person_id=accused_person_id,
+        accused_name=accused_name
     )
 
     # add incident to database if it doesn't already exist
@@ -184,13 +185,12 @@ def scrape_structured_incident_details(article, DBsession):
     # get already scraped urls
     alreadyScrapedUrls = DBsession.query(AlreadyScrapedUrls).all()
     alreadyScrapedUrls = [alreadyScrapedUrl.url for alreadyScrapedUrl in alreadyScrapedUrls]
-    print(alreadyScrapedUrls)
-    print(article.url)
     if article.url in alreadyScrapedUrls:
         print('Article already scraped. Skipping.')
         return
     else:
         print('Article not already scraped. Scraping now.')
+        print(article.url)
     soup = BeautifulSoup(article.html_content, 'html.parser')
 
     # check for <strong> tags first

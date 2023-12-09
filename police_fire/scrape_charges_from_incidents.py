@@ -1,4 +1,5 @@
 import re
+from pprint import pprint
 
 from sqlalchemy import text
 
@@ -116,8 +117,8 @@ def separate_charges_from_charge_descriptions(charges):
 def main():
     for incident in all_combined_incidents:
         print('------')
-        print(incident)
         categorized_charges = categorize_charges(incident)
+        pprint(categorized_charges)
         # add charges to charges table
         for charge_type, charge in categorized_charges.items():
             if charge is None:
