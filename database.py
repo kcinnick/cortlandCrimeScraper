@@ -158,8 +158,8 @@ class Addresses(Base):
         return f'{self.address}'
 
 
-class ChargeTypes(Base):
-    __tablename__ = 'charge_types'
+class Charges(Base):
+    __tablename__ = 'charges'
     __table_args__ = (
         UniqueConstraint('charge_description', 'charge_class', 'degree', name='unique_charge_combination'),
         {'schema': 'public'},
@@ -169,6 +169,8 @@ class ChargeTypes(Base):
     charge_description = Column(String)
     charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
     degree = Column(String, nullable=True)
+
+    incident_id = Column(Integer, ForeignKey('public.incidents.id'))
 
     def __str__(self):
         return f'{self.charge_description}, {self.charge_class}, {self.degree}'

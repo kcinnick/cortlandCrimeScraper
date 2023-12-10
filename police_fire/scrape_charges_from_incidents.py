@@ -3,12 +3,20 @@ from pprint import pprint
 
 from sqlalchemy import text
 
-from database import CombinedIncidents, get_database_session, ChargeTypes
+from database import CombinedIncidents, get_database_session, Charges
 
 DBsession, engine = get_database_session(environment='prod')
 columns = [
     CombinedIncidents.id,
+    CombinedIncidents.incident_reported_date,
+    CombinedIncidents.accused_name,
+    CombinedIncidents.accused_age,
+    CombinedIncidents.accused_location,
     CombinedIncidents.charges,
+    CombinedIncidents.details,
+    CombinedIncidents.legal_actions,
+    CombinedIncidents.incident_date,
+    CombinedIncidents.incident_location,
 ]
 
 all_combined_incidents = DBsession.query(*columns).all()
@@ -34,7 +42,6 @@ def categorize_charges(incident):
 
         charge_description = charge_description.strip().rstrip(',')
 
-
         # get rid of ', a' at the end of the charge description
         if charge_description.endswith(', a '):
             charge_description = charge_description[:-4]
@@ -47,7 +54,6 @@ def categorize_charges(incident):
 
         if charge_description.endswith(', '):
             charge_description = charge_description[:-2]
-
 
         cleaned_charge_description = charge_description
 
@@ -106,93 +112,106 @@ def separate_charges_from_charge_descriptions(charges):
     separated_charges = [charge.lstrip('; ') for charge in separated_charges]
     separated_charges = [charges.replace('and ', '') for charges in separated_charges]
 
-    separated_charges_with_counts_removed = []
-    for charge in separated_charges:
-        charge = charge.split(' counts of ')[-1]
-        separated_charges_with_counts_removed.append(charge)
+    return separated_charges
 
-    return separated_charges_with_counts_removed
+
+def split_charges_by_and(charges, charge_type):
+    split_charges_by_and = charges.split(' and ')
+    split_charges = []
+    for split_charge in split_charges_by_and:
+        split_charge = split_charge.strip()
+        if split_charge.startswith('and '):
+            split_charge = split_charge[4:]
+        split_charges.append(split_charge)
+
+    return split_charges
+
+
+def process_charge(charge_description):
+    degrees = [
+        "First", "Second", "Third", "Fourth",
+        "Fifth", "Sixth", "Seventh", "Eighth", "Ninth"
+    ]
+
+    charge_degree = None
+    for degree in degrees:
+        if degree.lower() + '-degree' in charge_description.lower():
+            charge_degree = degree
+            # Normalize the charge description by removing the degree part
+            charge_description = charge_description.replace(f'{degree}-degree ', '', 1)
+            charge_description = charge_description.replace(f'{degree.lower()}-degree ', '', 1)
+            break
+
+    charge_description = charge_description.strip()
+    if charge_degree:
+        charge_degree = charge_degree.strip()
+
+    return charge_description, charge_degree
 
 
 def main():
     for incident in all_combined_incidents:
-        print('------')
+        print(incident)
+        if ',' in incident.accused_name:
+            print('Accused name contains more than one name. Incident should be scraped manually. Skipping.')
+            continue
         categorized_charges = categorize_charges(incident)
-        pprint(categorized_charges)
+        # pprint(categorized_charges)
         # add charges to charges table
         for charge_type, charge in categorized_charges.items():
             if charge is None:
                 continue
-            for c in charge['cleaned_charge_description'].split(','):
-                split_charges_by_and = c.split(' and ')
-                for split_charge in split_charges_by_and:
+            separated_charges_by_comma = charge['cleaned_charge_description'].split(',')
+            for c in separated_charges_by_comma:
+                charges_split_by_and = split_charges_by_and(c, charge_type)
+                for split_charge in charges_split_by_and:
                     split_charge = split_charge.strip()
                     if split_charge.startswith('and '):
                         split_charge = split_charge[4:]
-                    charge_description = split_charge
-                    charge_type = charge['charge_type']
-                    charge_degree = None
-                    if 'First-degree' in charge_description:
-                        charge_degree = 'First'
-                    elif 'Second-degree' in charge_description:
-                        charge_degree = 'Second'
-                    elif 'Third-degree' in charge_description:
-                        charge_degree = 'Third'
-                    elif 'Fourth-degree' in charge_description:
-                        charge_degree = 'Fourth'
-                    elif 'Fifth-degree' in charge_description:
-                        charge_degree = 'Fifth'
-                    elif 'Sixth-degree' in charge_description:
-                        charge_degree = 'Sixth'
-                    elif 'Seventh-degree' in charge_description:
-                        charge_degree = 'Seventh'
-                    elif 'Eighth-degree' in charge_description:
-                        charge_degree = 'Eighth'
-                    elif 'Ninth-degree' in charge_description:
-                        charge_degree = 'Ninth'
-                    if 'first-degree' in charge_description:
-                        charge_degree = 'First'
-                    elif 'second-degree' in charge_description:
-                        charge_degree = 'Second'
-                    elif 'third-degree' in charge_description:
-                        charge_degree = 'Third'
-                    elif 'fourth-degree' in charge_description:
-                        charge_degree = 'Fourth'
-                    elif 'fifth-degree' in charge_description:
-                        charge_degree = 'Fifth'
-                    elif 'sixth-degree' in charge_description:
-                        charge_degree = 'Sixth'
-                    elif 'seventh-degree' in charge_description:
-                        charge_degree = 'Seventh'
-                    elif 'eighth-degree' in charge_description:
-                        charge_degree = 'Eighth'
-                    elif 'ninth-degree' in charge_description:
-                        charge_degree = 'Ninth'
 
-                    if charge_degree:
-                        charge_description = charge_description.replace(f'{charge_degree}-degree ', '')
-                        charge_description = charge_description.replace(f'{charge_degree.lower()}-degree ', '')
+                    if ';' in split_charge:
+                        split_charge = split_charge.split(';')
+                        for s in split_charge:
+                            print('------')
+                            print('incident id: ', incident.id)
+                            add_or_get_charge(
+                                session=DBsession,
+                                charge_str=s,
+                                charge_type=charge_type,
+                                incident_id = incident.id,
+                            )
+                    else:
+                        add_or_get_charge(
+                            session=DBsession,
+                            charge_str=split_charge,
+                            charge_type=charge_type,
+                            incident_id=incident.id,
+                        )
 
-                    charge_id = add_or_get_charge(
-                        DBsession, charge_description, charge_type, charge_degree
-                    )
-                    print(charge_id)
     return
 
 
-def add_or_get_charge(session, charge_str, charge_type, charge_degree):
-    charge = session.query(ChargeTypes).filter(
-        ChargeTypes.charge_description == charge_str,
-        ChargeTypes.charge_class == charge_type,
-        ChargeTypes.degree == charge_degree
+def add_or_get_charge(session, charge_str, charge_type, incident_id):
+    charge_description, charge_degree = process_charge(charge_str)
+    print('------')
+    print('incident id: ', incident_id)
+    print('charge_description: ', charge_description)
+    print('charge_degree: ', charge_degree)
+
+    charge = session.query(Charges).filter(
+        Charges.charge_description == charge_str,
+        Charges.charge_class == charge_type,
+        Charges.degree == charge_degree,
+        incident_id == incident_id
     ).first()
     if charge:
         return charge.id
     else:
-        charge = ChargeTypes(
+        charge = Charges(
             charge_description=charge_str,
             charge_class=charge_type,
-            degree=charge_degree
+            degree=charge_degree,
+            incident_id=incident_id
         )
         session.add(charge)
         session.commit()
