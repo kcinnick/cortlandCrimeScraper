@@ -38,6 +38,8 @@ class Persons(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True)
 
+    charges = relationship('Charges', back_populates='person')
+
     def __str__(self):
         return f'{self.name}'
 
@@ -92,6 +94,7 @@ class Incidents(Base):
 
     accused_person = relationship("Persons", backref="incidents")
     article = relationship("Article")  # This creates a link to the Article model
+    charges_relationship = relationship('Charges', back_populates='incident')
 
     __table_args__ = (
         UniqueConstraint('url', 'incident_reported_date', 'charges', 'details', name='uix_incident_details'),
@@ -165,11 +168,16 @@ class Charges(Base):
         {'schema': 'public'},
     )
 
+    # Define the relationships
+    person = relationship('Persons', back_populates='charges')
+    incident = relationship('Incidents', back_populates='charges')
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
     charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
     degree = Column(String, nullable=True)
 
+    person_id = Column(Integer, ForeignKey('public.persons.id'))
     incident_id = Column(Integer, ForeignKey('public.incidents.id'))
 
     def __str__(self):
