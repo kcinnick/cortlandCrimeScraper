@@ -170,7 +170,7 @@ class Charges(Base):
 
     # Define the relationships
     person = relationship('Persons', back_populates='charges')
-    incident = relationship('Incidents', back_populates='charges')
+    incident = relationship('Incidents', back_populates='charges_relationship')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
@@ -332,7 +332,7 @@ def clean_strings_in_table(environment):
 if __name__ == "__main__":
     create_tables(environment='prod')
     create_view(environment='prod')
-    create_view_for_already_scraped_urls(environment='prod')
+    #create_view_for_already_scraped_urls(environment='prod')
     # clean_strings_in_table(
     # environment = 'prod'
     # )
