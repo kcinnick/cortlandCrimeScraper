@@ -1,7 +1,4 @@
 import re
-from pprint import pprint
-
-from sqlalchemy import text
 
 from database import CombinedIncidents, get_database_session, Charges
 
@@ -25,15 +22,16 @@ all_combined_incidents = DBsession.query(*columns).all()
 def categorize_charges(incident):
     # Regular expression to match charge descriptions
     # The regex captures all text up to your target words
-    regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|midemeanor|misdemean-or|violation|traffic infraction)"
+    regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|midemeanor|misdemean-or|traffic infractions?|traffic violations|violations|violation)"
     text = incident.charges
     # Find all matches
     matches = re.findall(regex, text, re.IGNORECASE | re.DOTALL)
 
     categorized_charges = {
-        'felonies': None,
-        'misdemeanors': None,
-        'violations': None
+        'felonies': [],
+        'misdemeanors': [],
+        'violations': [],
+        'traffic_infraction': [],
     }
 
     for match in matches:
@@ -59,40 +57,40 @@ def categorize_charges(incident):
 
         # Categorize based on charge type
         if 'felony' in charge_type.lower():
-            categorized_charges['felonies'] = {
+            categorized_charges['felonies'].append({
                 'original_charge_description': original_charge_description,
                 'cleaned_charge_description': cleaned_charge_description,
                 'charge_type': 'felony',
                 'incident_id': incident.id
-            }
+            })
         elif 'felonies' in charge_type.lower():
-            categorized_charges['felonies'] = {
+            categorized_charges['felonies'].append({
                 'original_charge_description': original_charge_description,
                 'cleaned_charge_description': cleaned_charge_description,
                 'charge_type': 'felony',
                 'incident_id': incident.id
-            }
+            })
         elif 'misdemeanor' in charge_type.lower():
-            categorized_charges['misdemeanors'] = {
+            categorized_charges['misdemeanors'].append({
                 'original_charge_description': original_charge_description,
                 'cleaned_charge_description': cleaned_charge_description,
                 'charge_type': 'misdemeanor',
                 'incident_id': incident.id
-            }
+            })
         elif 'violation' in charge_type.lower():
-            categorized_charges['misdemeanors'] = {
+            categorized_charges['misdemeanors'].append({
                 'original_charge_description': original_charge_description,
                 'cleaned_charge_description': cleaned_charge_description,
                 'charge_type': 'violation',
                 'incident_id': incident.id
-            }
+            })
         elif 'traffic infraction' in charge_type.lower():
-            categorized_charges['traffic_infraction'] = {
+            categorized_charges['traffic_infraction'].append({
                 'original_charge_description': original_charge_description,
                 'cleaned_charge_description': cleaned_charge_description,
                 'charge_type': 'traffic_infraction',
                 'incident_id': incident.id
-            }
+            })
         else:
             raise Exception('Charge type not found: ' + charge_description)
 
@@ -130,7 +128,8 @@ def split_charges_by_and(charges, charge_type):
 def process_charge(charge_description):
     degrees = [
         "First", "Second", "Third", "Fourth",
-        "Fifth", "Sixth", "Seventh", "Eighth", "Ninth"
+        "Fifth", "Sixth", "Seventh", "Eighth",
+        "Ninth"
     ]
 
     charge_degree = None
@@ -158,9 +157,15 @@ def main():
         categorized_charges = categorize_charges(incident)
         # pprint(categorized_charges)
         # add charges to charges table
-        for charge_type, charge in categorized_charges.items():
-            if charge is None:
-                continue
+        add_charges_to_charges_table(incident, categorized_charges)
+
+
+def add_charges_to_charges_table(incident, categorized_charges):
+    print(categorized_charges)
+    for charge_type, charges in categorized_charges.items():
+        if len(charges) == 0:
+            continue
+        for charge in charges:
             separated_charges_by_comma = charge['cleaned_charge_description'].split(',')
             for c in separated_charges_by_comma:
                 charges_split_by_and = split_charges_by_and(c, charge_type)
@@ -172,15 +177,20 @@ def main():
                     if ';' in split_charge:
                         split_charge = split_charge.split(';')
                         for s in split_charge:
-                            print('------')
-                            print('incident id: ', incident.id)
+                            #print('179 ', s)
+                            #continue
+                            #print('------')
+                            #print('incident id: ', incident.id)
                             add_or_get_charge(
                                 session=DBsession,
                                 charge_str=s,
                                 charge_type=charge_type,
-                                incident_id = incident.id,
+                                incident_id=incident.id,
                             )
                     else:
+                        #print('190 ', split_charge)
+
+                        #continue
                         add_or_get_charge(
                             session=DBsession,
                             charge_str=split_charge,
