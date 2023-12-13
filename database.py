@@ -38,6 +38,8 @@ class Persons(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True)
 
+    charges = relationship('Charges', back_populates='person')
+
     def __str__(self):
         return f'{self.name}'
 
@@ -92,6 +94,7 @@ class Incidents(Base):
 
     accused_person = relationship("Persons", backref="incidents")
     article = relationship("Article")  # This creates a link to the Article model
+    charges_relationship = relationship('Charges', back_populates='incident')
 
     __table_args__ = (
         UniqueConstraint('url', 'incident_reported_date', 'charges', 'details', name='uix_incident_details'),
@@ -158,17 +161,24 @@ class Addresses(Base):
         return f'{self.address}'
 
 
-class ChargeTypes(Base):
-    __tablename__ = 'charge_types'
+class Charges(Base):
+    __tablename__ = 'charges'
     __table_args__ = (
         UniqueConstraint('charge_description', 'charge_class', 'degree', name='unique_charge_combination'),
         {'schema': 'public'},
     )
 
+    # Define the relationships
+    person = relationship('Persons', back_populates='charges')
+    incident = relationship('Incidents', back_populates='charges_relationship')
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
     charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
     degree = Column(String, nullable=True)
+
+    person_id = Column(Integer, ForeignKey('public.persons.id'))
+    incident_id = Column(Integer, ForeignKey('public.incidents.id'))
 
     def __str__(self):
         return f'{self.charge_description}, {self.charge_class}, {self.degree}'
@@ -322,7 +332,7 @@ def clean_strings_in_table(environment):
 if __name__ == "__main__":
     create_tables(environment='prod')
     create_view(environment='prod')
-    create_view_for_already_scraped_urls(environment='prod')
+    #create_view_for_already_scraped_urls(environment='prod')
     # clean_strings_in_table(
     # environment = 'prod'
     # )
