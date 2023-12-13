@@ -281,6 +281,7 @@ def scrape_structured_incident_details(article, DBsession):
             url=article.url,
             incident_reported_date=article.date_published,
             accused_age=accused_age,
+            accused_name=accused_name,
             accused_location=accused_location,
             charges=charges_str,
             details=details_str,
