@@ -77,3 +77,19 @@ def test_multiple_unstructured_incidents_get_added(setup_database):
 
     incidents = DBsession.query(Incidents).all()
     assert len(incidents) == 2
+
+
+def test_add_unstructured_incident_with_multiple_people(setup_database):
+    DBsession = setup_database
+    article_url = "https://www.cortlandstandard.com/stories/two-charged-in-drug-possession-case,65066?"
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)
+    article_object = DBsession.query(Article).filter(Article.url == article_url).first()
+    scrape_unstructured_incident_details(article_object.id, article_url, article_object.content, article_object.date_published, DBsession)
+
+    incidents = DBsession.query(Incidents).all()
+
+    last_incident = incidents[-1]
+    assert last_incident.accused_name == 'Amber L. Harris, Tammy M. Smith'
+    assert last_incident.accused_age == '35, 49'
+    assert last_incident.accused_location == 'Wheeler Ave., Cortland, Grove Street, Marathon'
