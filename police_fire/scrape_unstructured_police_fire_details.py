@@ -70,12 +70,12 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             article_id=article_id,
             url=article_url,
             incident_reported_date=article_date_published,
-            accused_person_id=add_or_get_person(DBsession, accused_name),
             accused_age=response['accused_age'],
             accused_location=accused_location,
             charges=charges,
             details=response['details'],
             legal_actions=response['legal_actions'],
+            accused_name=accused_name,
             structured_source=False
         )
 
@@ -84,28 +84,19 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
 
         incidents = DBsession.query(Incidents).filter(
             Incidents.url == article_url,
-            Incidents.accused_person_id == incident.accused_person_id,
+            Incidents.accused_name == incident.accused_name,
             Incidents.accused_age == incident.accused_age,
             Incidents.accused_location == incident.accused_location,
             Incidents.charges == incident.charges
         ).all()
 
-        accused_person = DBsession.query(Persons).filter(
-            Persons.id == incident.accused_person_id
-        ).first()
-
-        if accused_person:
-            accused_person_name = accused_person.name
-        else:
-            # Handle the case where no person is found
-            accused_person_name = None  # or some default value
         if len(incidents) > 0:
             print('Potential duplicate incident found.  Not adding to database.')
             continue
         else:
             print('No potential duplicate incidents found.  Filtering for nulls before adding to database.')
             nulls_found = 0
-            if accused_person_name == 'N/A':
+            if incident.accused_name == 'N/A':
                 nulls_found += 1
             if incident.accused_age in ['N/A', '0', 0]:
                 nulls_found += 1
