@@ -76,7 +76,6 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             charges=charges,
             details=response['details'],
             legal_actions=response['legal_actions'],
-            accused_name=accused_name,
             structured_source=False
         )
 
