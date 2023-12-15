@@ -76,6 +76,7 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             charges=charges,
             details=response['details'],
             legal_actions=response['legal_actions'],
+            accused_name=accused_name,
             structured_source=False
         )
 
@@ -96,7 +97,7 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
         else:
             print('No potential duplicate incidents found.  Filtering for nulls before adding to database.')
             nulls_found = 0
-            if accused_name == 'N/A':
+            if incident.accused_name == 'N/A':
                 nulls_found += 1
             if incident.accused_age in ['N/A', '0', 0]:
                 nulls_found += 1
