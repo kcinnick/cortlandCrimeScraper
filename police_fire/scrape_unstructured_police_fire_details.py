@@ -70,6 +70,7 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             article_id=article_id,
             url=article_url,
             incident_reported_date=article_date_published,
+            accused_name=accused_name,
             accused_age=response['accused_age'],
             accused_location=accused_location,
             charges=charges,

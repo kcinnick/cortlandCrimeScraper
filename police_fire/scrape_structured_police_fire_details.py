@@ -2,12 +2,11 @@ import regex as re
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import get_database_session, Article, Incidents, Persons, AlreadyScrapedUrls
+from database import get_database_session, Article, Incidents, AlreadyScrapedUrls
+from police_fire.maps import get_lat_lng_of_addresses
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
-    update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details, \
-    add_or_get_person
-from police_fire.maps import get_lat_lng_of_addresses
+    update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details
 
 
 def identify_articles_with_incident_formatting(db_session):
@@ -84,44 +83,47 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
             return
 
     accused_str = separate_incident_tags[accused_tag_index].replace('Accused: ', '')
-    accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
-    accused_person_id = add_or_get_person(DBsession, accused_name)
+    accused_names, accused_ages, accused_locations = clean_up_accused_record(article, accused_str, DBsession)
 
-    # clean up charges, details, and legal actions records
-    charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
-        charges_str, details_str, legal_actions_str)
+    for index, record in enumerate(accused_names):
+        accused_name = accused_names[index]
+        accused_age = accused_ages[index]
+        accused_location = accused_locations[index]
 
-    incident_date = check_if_details_references_a_relative_date(details_str, article.date_published)
-    incident_location = get_incident_location_from_details(details_str)
-    incident_lat, incident_lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
-    incident = Incidents(
-        article_id=article.id,
-        url=article.url,
-        incident_reported_date=article.date_published,
-        accused_age=accused_age,
-        accused_location=accused_location,
-        charges=charges_str,
-        details=details_str,
-        legal_actions=legal_actions_str,
-        structured_source=True,
-        incident_date=incident_date,
-        incident_location=incident_location,
-        incident_location_lat=incident_lat,
-        incident_location_lng=incident_lng,
-        accused_person_id=accused_person_id,
-        accused_name=accused_name
-    )
+        # clean up charges, details, and legal actions records
+        charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
+            charges_str, details_str, legal_actions_str)
 
-    # add incident to database if it doesn't already exist
-    if DBsession.query(Incidents).filter_by(details=details_str, accused_person_id=accused_person_id).count() == 0:
-        DBsession.add(incident)
-        DBsession.commit()
-    else:
-        print('Incident already exists. Updating if necessary.')
-        incident_date_response = check_if_details_references_a_relative_date(details_str, article.date_published)
-        print(incident_date_response)
-        if incident_date_response:
-            update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
+        incident_date = check_if_details_references_a_relative_date(details_str, article.date_published)
+        incident_location = get_incident_location_from_details(details_str)
+        incident_lat, incident_lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
+        incident = Incidents(
+            article_id=article.id,
+            url=article.url,
+            incident_reported_date=article.date_published,
+            accused_age=accused_age,
+            accused_location=accused_location,
+            charges=charges_str,
+            details=details_str,
+            legal_actions=legal_actions_str,
+            structured_source=True,
+            incident_date=incident_date,
+            incident_location=incident_location,
+            incident_location_lat=incident_lat,
+            incident_location_lng=incident_lng,
+            accused_name=accused_name
+        )
+
+        # add incident to database if it doesn't already exist
+        if DBsession.query(Incidents).filter_by(details=details_str, accused_name=accused_name).count() == 0:
+            DBsession.add(incident)
+            DBsession.commit()
+        else:
+            print('Incident already exists. Updating if necessary.')
+            incident_date_response = check_if_details_references_a_relative_date(details_str, article.date_published)
+            print(incident_date_response)
+            if incident_date_response:
+                update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
 
     return
 
@@ -138,50 +140,104 @@ def clean_up_accused_record(article, accused_str, DBsession):
         accused_str = accused_str.replace(' and ', ';')
 
     if ';' in accused_str:
-        print('; in accused_str')
-        # only add the article to IncidentsWithErrors if it's not already there
-        add_incident_with_error_if_not_already_exists(article, DBsession)
+        accused_people = accused_str.split(';')
+        accused_names = []
+        accused_ages = []
+        accused_locations = []
+        for accused_person in accused_people:
+            print('accused_person: ', accused_person)
+            accused_name = accused_person.split(',')[0].strip().split(' of ')[0].strip()
+            try:
+                accused_age = accused_person.split(',')[1].strip()
+            except IndexError:
+                accused_age = None
+            # if accused_age isn't a digit, it's probably a location
+            if accused_age and not accused_age.isdigit():
+                accused_age = None
 
-    accused_name = accused_str.split(',')[0].strip().split(' of ')[0].strip()
-    try:
-        accused_age = accused_str.split(',')[1].strip()
-    except IndexError:
-        accused_age = None
-    # if accused_age isn't a digit, it's probably a location
-    if accused_age and not accused_age.isdigit():
-        accused_age = None
-
-    if ' of ' in accused_name:
-        accused_location = accused_name.split(' of ')[1]
-    elif accused_age:
-        accused_location_index = 2
-        accused_location = None
-    else:
-        accused_location_index = 1
-        accused_location = None
-
-    if not accused_location:
-        try:
-            accused_location = ', '.join([i.strip() for i in accused_str.split(',')[accused_location_index:]])
-            if accused_location[-1] == '.':
-                accused_location = accused_location[:-1]
-            if accused_location.startswith('of '):
-                accused_location = accused_location[3:]
-        except IndexError:
-            if accused_location.strip() == '':
+            if ' of ' in accused_name:
+                accused_location = accused_person.split(' of ')[1]
+                print('accused_location: ', accused_location)
+            elif accused_age:
+                print('accused_age: ', accused_age)
+                accused_location_index = 2
                 accused_location = None
             else:
-                print(accused_location)
-                raise IndexError('accused_location was incorrectly formatted.')
+                print('else')
+                accused_location_index = 1
+                accused_location = None
 
-    return accused_name, accused_age, accused_location
+            if not accused_location:
+                print('not accused_location')
+                try:
+                    accused_location = ', '.join([i.strip() for i in accused_person.split(',')[accused_location_index:]])
+                    print('accused_location: ', accused_location)
+                    if accused_location[-1] == '.':
+                        accused_location = accused_location[:-1]
+                    if accused_location.startswith('of '):
+                        accused_location = accused_location[3:]
+                except IndexError:
+                    print('IndexError')
+                    if accused_location.strip() == '':
+                        accused_location = None
+                    else:
+                        print(accused_location)
+                        raise IndexError('accused_location was incorrectly formatted.')
+
+            if accused_name is None:
+                accused_name = 'N/A'
+            if accused_age is None:
+                accused_age = 'N/A'
+            if accused_location is None:
+                accused_location = 'N/A'
+
+            accused_names.append(accused_name)
+            accused_ages.append(accused_age)
+            accused_locations.append(accused_location)
+    else:
+        accused_name = accused_str.split(',')[0].strip().split(' of ')[0].strip()
+        try:
+            accused_age = accused_str.split(',')[1].strip()
+        except IndexError:
+            accused_age = None
+        # if accused_age isn't a digit, it's probably a location
+        if accused_age and not accused_age.isdigit():
+            accused_age = None
+
+        if ' of ' in accused_name:
+            accused_location = accused_name.split(' of ')[1]
+        elif accused_age:
+            accused_location_index = 2
+            accused_location = None
+        else:
+            accused_location_index = 1
+            accused_location = None
+
+        if not accused_location:
+            try:
+                accused_location = ', '.join([i.strip() for i in accused_str.split(',')[accused_location_index:]])
+                if accused_location[-1] == '.':
+                    accused_location = accused_location[:-1]
+                if accused_location.startswith('of '):
+                    accused_location = accused_location[3:]
+            except IndexError:
+                if accused_location.strip() == '':
+                    accused_location = None
+                else:
+                    print(accused_location)
+                    raise IndexError('accused_location was incorrectly formatted.')
+
+        accused_names = [accused_name]
+        accused_ages = [accused_age]
+        accused_locations = [accused_location]
+
+    return accused_names, accused_ages, accused_locations
 
 
 def scrape_structured_incident_details(article, DBsession):
     """
     Scrape incident details from article.
     """
-    incidents = []
     # get already scraped urls
     alreadyScrapedUrls = DBsession.query(AlreadyScrapedUrls).all()
     alreadyScrapedUrls = [alreadyScrapedUrl.url for alreadyScrapedUrl in alreadyScrapedUrls]
@@ -257,7 +313,9 @@ def scrape_structured_incident_details(article, DBsession):
 
         # clean up accused record
         accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
-        accused_person_id = add_or_get_person(DBsession, accused_name)
+        accused_name = ','.join(accused_name)
+        accused_age = ','.join(accused_age)
+        accused_location = ','.join(accused_location)
 
         # clean up charges, details, and legal actions records
         charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
@@ -291,11 +349,10 @@ def scrape_structured_incident_details(article, DBsession):
             incident_location=incident_location,
             incident_location_lat=incident_lat,
             incident_location_lng=incident_lng,
-            accused_person_id=accused_person_id
         )
 
         # add incident to database if it doesn't already exist
-        if DBsession.query(Incidents).filter_by(accused_person_id=accused_person_id, details=details_str).count() == 0:
+        if DBsession.query(Incidents).filter_by(accused_name=accused_name, details=details_str).count() == 0:
             try:
                 DBsession.add(incident)
                 DBsession.commit()

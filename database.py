@@ -38,7 +38,8 @@ class Persons(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True)
 
-    charges = relationship('Charges', back_populates='person')
+    charges = relationship('Charges', back_populates='persons')
+    incident_persons = relationship('IncidentPerson', back_populates='persons')
 
     def __str__(self):
         return f'{self.name}'
@@ -74,35 +75,39 @@ class Incidents(Base):
     __tablename__ = 'incidents'
 
     article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
+    incident_persons = relationship('IncidentPerson', back_populates='incidents')
 
     id = Column(Integer, autoincrement=True, primary_key=True)
     url = Column(String)
-    incident_reported_date = Column(Date)
-    accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
-    accused_name = Column(String)
 
+    incident_reported_date = Column(Date)
+
+    accused_name = Column(String)
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
+
     charges = Column(String)
     details = Column(String)
     legal_actions = Column(String)
+
     structured_source = Column(Boolean)
+
     incident_date = Column(Date, nullable=True)
+
     incident_location = Column(String, nullable=True)
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
-    accused_person = relationship("Persons", backref="incidents")
     article = relationship("Article")  # This creates a link to the Article model
-    charges_relationship = relationship('Charges', back_populates='incident')
+    charges_relationship = relationship('Charges', back_populates='incidents')
 
     __table_args__ = (
-        UniqueConstraint('url', 'incident_reported_date', 'charges', 'details', name='uix_incident_details'),
+        UniqueConstraint('url', 'incident_reported_date', 'charges', 'accused_name', name='uix_url_incident_reported_date_charges_accused_name'),
         {'schema': 'public'},
     )
 
     def __str__(self):
-        return f'{self.incident_reported_date} - {self.url} - {self.accused_person_id} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
+        return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
 
 
 class IncidentsFromPdf(Base):
@@ -169,8 +174,8 @@ class Charges(Base):
     )
 
     # Define the relationships
-    person = relationship('Persons', back_populates='charges')
-    incident = relationship('Incidents', back_populates='charges_relationship')
+    persons = relationship('Persons', back_populates='charges')
+    incidents = relationship('Incidents', back_populates='charges_relationship')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
@@ -207,6 +212,20 @@ class AlreadyScrapedPdfs(Base):
     pdf_date = Column(String, primary_key=True)
 
 
+class IncidentPerson(Base):
+    __tablename__ = 'incident_persons'
+    __table_args__ = {'schema': 'public'}
+
+    incident_id = Column(Integer, ForeignKey('public.incidents.id'), primary_key=True)
+    person_id = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
+
+    incidents = relationship('Incidents', back_populates='incident_persons')
+    persons = relationship('Persons', back_populates='incident_persons')
+
+    def __str__(self):
+        return f'{self.name}'
+
+
 def create_tables(environment='development'):
     print('environment==', environment)
     DBsession, engine = get_database_session(environment)
@@ -229,8 +248,7 @@ def create_view(environment='test'):
 SELECT 
     i.id,
     i.incident_reported_date::date, 
-    p.name AS accused_name,  -- Using name from persons table
-    p.id AS accused_person_id,  -- Using id from persons table
+    i.accused_name AS accused_name,
     i.accused_age, 
     i.accused_location, 
     i.charges, 
@@ -242,13 +260,11 @@ SELECT
     i.incident_location_lng,
     'url' AS source  -- Static value indicating the source of the data
 FROM incidents i
-JOIN persons p ON i.accused_person_id = p.id  -- Join with persons table
 UNION ALL
 SELECT 
     ip.id,
     ip.incident_reported_date::date, 
-    pp.name AS accused_name,  -- Using name from persons table
-    pp.id AS accused_person_id,  -- Using id from persons table
+    ip.accused_name AS accused_name,
     ip.accused_age, 
     ip.accused_location, 
     ip.charges, 
@@ -260,7 +276,6 @@ SELECT
     ip.incident_location_lng,
     'pdf' AS source  -- Static value indicating the source of the data
 FROM incidents_from_pdf ip
-JOIN persons pp ON ip.accused_person_id = pp.id;  -- Join with persons table
 """)
     DBsession, engine = get_database_session(environment=environment)
     with engine.connect() as connection:
@@ -294,6 +309,7 @@ def create_view_for_already_scraped_pdfs(environment='test'):
     with engine.connect() as connection:
         connection.execute(create_view_sql)
     DBsession.close()
+
 
 def remove_non_standard_characters(string):
     # Normalize unicode characters
@@ -332,7 +348,7 @@ def clean_strings_in_table(environment):
 if __name__ == "__main__":
     create_tables(environment='prod')
     create_view(environment='prod')
-    #create_view_for_already_scraped_urls(environment='prod')
+    # create_view_for_already_scraped_urls(environment='prod')
     # clean_strings_in_table(
     # environment = 'prod'
     # )

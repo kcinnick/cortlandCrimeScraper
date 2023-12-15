@@ -1,8 +1,8 @@
-"""Add foreign keys to charges table
+"""Refactor incidents and persons relationship
 
-Revision ID: 85e9ecd30287
-Revises: 6f28ffbab5e3
-Create Date: 2023-12-11 16:56:19.909850
+Revision ID: a6afb871b1b7
+Revises: 85e9ecd30287
+Create Date: 2023-12-13 23:55:01.785432
 
 """
 from typing import Sequence, Union
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '85e9ecd30287'
-down_revision: Union[str, None] = '6f28ffbab5e3'
+revision: str = 'a6afb871b1b7'
+down_revision: Union[str, None] = '85e9ecd30287'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -24,16 +24,14 @@ def upgrade() -> None:
     op.drop_constraint('PersonAddress_PersonID_fkey', 'PersonAddress', type_='foreignkey')
     op.create_foreign_key(None, 'PersonAddress', 'persons', ['PersonID'], ['id'], source_schema='public', referent_schema='public')
     op.create_foreign_key(None, 'PersonAddress', 'addresses', ['AddressID'], ['id'], source_schema='public', referent_schema='public')
-    #op.add_column('charges', sa.Column('person_id', sa.Integer(), nullable=True))
-    #op.create_unique_constraint('unique_charge_combination', 'charges', ['charge_description', 'charge_class', 'degree'], schema='public')
     op.drop_constraint('charges_incident_id_fkey', 'charges', type_='foreignkey')
-    op.create_foreign_key(None, 'charges', 'persons', ['person_id'], ['id'], source_schema='public', referent_schema='public')
+    op.drop_constraint('charges_person_id_fkey1', 'charges', type_='foreignkey')
     op.create_foreign_key(None, 'charges', 'incidents', ['incident_id'], ['id'], source_schema='public', referent_schema='public')
-    op.create_unique_constraint('uix_incident_details', 'incidents', ['url', 'incident_reported_date', 'charges', 'details'], schema='public')
+    op.create_foreign_key(None, 'charges', 'persons', ['person_id'], ['id'], source_schema='public', referent_schema='public')
     op.drop_constraint('incidents_article_id_fkey', 'incidents', type_='foreignkey')
     op.drop_constraint('incidents_accused_person_id_fkey', 'incidents', type_='foreignkey')
-    op.create_foreign_key(None, 'incidents', 'persons', ['accused_person_id'], ['id'], source_schema='public', referent_schema='public')
     op.create_foreign_key(None, 'incidents', 'article', ['article_id'], ['id'], source_schema='public', referent_schema='public')
+    op.drop_column('incidents', 'accused_person_id')
     op.drop_constraint('incidents_from_pdf_accused_person_id_fkey', 'incidents_from_pdf', type_='foreignkey')
     op.create_foreign_key(None, 'incidents_from_pdf', 'persons', ['accused_person_id'], ['id'], source_schema='public', referent_schema='public')
     op.drop_constraint('incidents_with_errors_article_id_fkey', 'incidents_with_errors', type_='foreignkey')
@@ -47,16 +45,14 @@ def downgrade() -> None:
     op.create_foreign_key('incidents_with_errors_article_id_fkey', 'incidents_with_errors', 'article', ['article_id'], ['id'])
     op.drop_constraint(None, 'incidents_from_pdf', schema='public', type_='foreignkey')
     op.create_foreign_key('incidents_from_pdf_accused_person_id_fkey', 'incidents_from_pdf', 'persons', ['accused_person_id'], ['id'])
-    op.drop_constraint(None, 'incidents', schema='public', type_='foreignkey')
+    op.add_column('incidents', sa.Column('accused_person_id', sa.INTEGER(), autoincrement=False, nullable=True))
     op.drop_constraint(None, 'incidents', schema='public', type_='foreignkey')
     op.create_foreign_key('incidents_accused_person_id_fkey', 'incidents', 'persons', ['accused_person_id'], ['id'])
     op.create_foreign_key('incidents_article_id_fkey', 'incidents', 'article', ['article_id'], ['id'])
-    op.drop_constraint('uix_incident_details', 'incidents', schema='public', type_='unique')
     op.drop_constraint(None, 'charges', schema='public', type_='foreignkey')
     op.drop_constraint(None, 'charges', schema='public', type_='foreignkey')
+    op.create_foreign_key('charges_person_id_fkey1', 'charges', 'persons', ['person_id'], ['id'])
     op.create_foreign_key('charges_incident_id_fkey', 'charges', 'incidents', ['incident_id'], ['id'])
-    op.drop_constraint('unique_charge_combination', 'charges', schema='public', type_='unique')
-    op.drop_column('charges', 'person_id')
     op.drop_constraint(None, 'PersonAddress', schema='public', type_='foreignkey')
     op.drop_constraint(None, 'PersonAddress', schema='public', type_='foreignkey')
     op.create_foreign_key('PersonAddress_PersonID_fkey', 'PersonAddress', 'persons', ['PersonID'], ['id'])
