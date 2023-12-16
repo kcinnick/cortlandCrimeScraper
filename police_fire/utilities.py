@@ -86,6 +86,8 @@ def check_if_details_references_an_actual_date(details_str, article_published_da
     """if the details contain a date, return the date that matched + the year the article was published"""
     query = f"What was the date of the incident: {details_str}? Return only the date as YYYY-MM-DD. Use the year in the article published date as the year: {article_published_date}"
     response = ai(query).split()[-1]
+    if response.endswith('.'):
+        response = response[:-1]
     # if the format of response is not like YYYY-MM-DD, return None
     if len(response) != 10:
         return None
