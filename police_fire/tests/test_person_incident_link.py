@@ -36,7 +36,7 @@ def test_person_incident_link(setup_database):
     DBsession.commit()
 
     fake_incident = Incidents(
-        accused_person_id=fake_person.id,
+        accused_name=fake_person.name,
         incident_reported_date='2020-01-01',
         incident_date='2020-01-01',
         accused_age=99,
@@ -49,7 +49,7 @@ def test_person_incident_link(setup_database):
     )
 
     second_fake_incident = Incidents(
-        accused_person_id=fake_person.id,
+        accused_name=fake_person.name,
         incident_reported_date='2020-01-02',
         incident_date='2020-01-02',
         accused_age=100,
@@ -67,4 +67,4 @@ def test_person_incident_link(setup_database):
 
     # test incident was properly linked to person, and vice versa
 
-    assert len(fake_person.incidents) == 2
+    assert len(fake_person.incident_persons) == 2

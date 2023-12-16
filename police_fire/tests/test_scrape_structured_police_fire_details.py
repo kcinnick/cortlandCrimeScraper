@@ -69,7 +69,7 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table(setup
     scraped_incident = incidents[0]
 
     assert scraped_incident.url == 'https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?'
-    assert scraped_incident.accused_person_id == add_or_get_person(DBsession, 'Julie M. Conners')
+    assert scraped_incident.accused_name == 'Julie M. Conners'
     assert scraped_incident.accused_age == '34'
     assert scraped_incident.accused_location == 'Cold Brook Road, Homer'
     assert scraped_incident.charges == 'Driving while intoxicated, a misdemeanor; parked on a highway, a violation'

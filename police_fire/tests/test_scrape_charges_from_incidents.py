@@ -43,7 +43,7 @@ def test_assert_all_charges_are_categorized(setup_database):
     DBsession.commit()
 
     fake_incident = Incidents(
-        accused_person_id=fake_person.id,
+        accused_name=fake_person.name,
         incident_reported_date='2020-05-21',
         incident_date='2020-05-21',
         accused_age=40,
@@ -76,6 +76,6 @@ def test_assert_all_charges_are_categorized(setup_database):
     categorized_charges = categorize_charges(all_combined_incidents[0])
     assert len(categorized_charges['felonies']) == 0
 
-    add_charges_to_charges_table(categorized_charges)
+    add_charges_to_charges_table(all_combined_incidents[0], categorized_charges)
 
 
