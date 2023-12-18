@@ -1,21 +1,14 @@
-import ast
+import json
 import os
 
+from openai import OpenAI
 from pydantic import BaseModel, Field
-from simpleaichat import AIChat
 from sqlalchemy.exc import IntegrityError
 from tqdm import tqdm
 
-from database import Article, Incidents, get_database_session, IncidentsWithErrors, Persons
-from police_fire.utilities import add_or_get_person
+from database import Article, Incidents, get_database_session
 
-ai = AIChat(
-    console=False,
-    save_messages=False,  # with schema I/O, messages are never saved
-    model="gpt-4",
-    params={"temperature": 0.0},
-    api_key=os.getenv('OPENAI_API_KEY'),
-)
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
 class get_incident_metadata(BaseModel):
@@ -33,55 +26,39 @@ class get_incident_metadata(BaseModel):
 # returns a dict, with keys ordered as in the schema
 
 def scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published, DBsession):
-    #print('Article content: ', article.content)
-    query = "List all of the incident details provided in the following article that do not start with Accused:, in the original language of the article.  Use an Python style array of Python-style dictionaries with the keys \'accused_name\', \'accused_age\', \'accused_location\', \'charges\', \'details\', \'legal_actions\' if there is more than one incident specified. All values need to be strings. If the article is not about a crime, the output should be N/A." + article_content
-    response = ai(query)
-    print(article_url)
-    if response == 'N/A':
-        print('No incident details found.  Not adding to database.')
-        print(article_url)
-        return
-    try:
-        parsed_response = ast.literal_eval(response)
-    except TypeError as e:
-        incidentWithError = IncidentsWithErrors(
-            url=article_url
-        )
-        DBsession.add(incidentWithError)
-        DBsession.commit()
-        return
-    except SyntaxError as e:
-        incidentWithError = IncidentsWithErrors(
-            url=article_url
-        )
-        DBsession.add(incidentWithError)
-        DBsession.commit()
-        return
+    # print('Article content: ', article.content)
 
-    for response in tqdm(parsed_response, desc='Parsing incident details'):
-        charges = dict(response).get('charges')
-        if charges:
-            if type(response['charges']) == list:
-                response['charges'] = '; '.join(response['charges'])
+    completion = client.chat.completions.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {'role': 'system',
+             'content': 'You provide information on incidents that occurred in the following article: ' + article_content},
+            {'role': 'system',
+             'content': 'There may be multiple incidents listed in a single article.  When this is the case, you must use a list of JSON responses.'},
+            {'role': 'system',
+             'content': 'All output must be provided in JSON format, with the following keys: accused_name, accused_age, accused_location, charges, details, legal_actions.  All values must be strings.  If the article is not about a crime, the output should be N/A.'},
+            {'role': 'system',
+             'content': "If the incident begins with 'Accused:', you must omit that incident from the output."},
+        ],
+        temperature=0
+    )
 
-        accused_name = dict(response).get('accused_name')
-        accused_location = dict(response).get('accused_location')
+    response = completion.choices[0].message.content.strip()
+    jsonified_response = json.loads(response)
+
+    for incident in jsonified_response:
         incident = Incidents(
             article_id=article_id,
             url=article_url,
             incident_reported_date=article_date_published,
-            accused_name=accused_name,
-            accused_age=response['accused_age'],
-            accused_location=accused_location,
-            charges=charges,
-            details=response['details'],
-            legal_actions=response['legal_actions'],
+            accused_name=incident['accused_name'],
+            accused_age=incident['accused_age'],
+            accused_location=incident['accused_location'],
+            charges=incident['charges'],
+            details=incident['details'],
+            legal_actions=incident['legal_actions'],
             structured_source=False
         )
-
-        # look up potentially-duplicated incidents first.
-        # do not add this incident to the database if it's a duplicate.
-
         incidents = DBsession.query(Incidents).filter(
             Incidents.url == article_url,
             Incidents.accused_name == incident.accused_name,
@@ -133,7 +110,8 @@ def main():
     for article in tqdm(police_fire_articles):
         article_id, article_url, article_content, article_date_published = article.id, article.url, article.content, article.date_published
         index += 1
-        scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published, DBsession)
+        scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published,
+                                             DBsession)
 
     DBsession.close()
 
