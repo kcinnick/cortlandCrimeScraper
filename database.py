@@ -31,20 +31,6 @@ def get_database_session(environment='development'):
     return db_session, engine
 
 
-class Persons(Base):
-    __tablename__ = 'persons'
-    __table_args__ = {'schema': 'public'}
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True)
-
-    charges = relationship('Charges', back_populates='persons')
-    incident_persons = relationship('IncidentPerson', back_populates='persons')
-
-    def __str__(self):
-        return f'{self.name}'
-
-
 class Article(Base):
     __tablename__ = 'article'
     __table_args__ = {'schema': 'public'}
@@ -74,7 +60,7 @@ class IncidentsWithErrors(Base):
 class Incidents(Base):
     __tablename__ = 'incidents'
 
-    article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
+    article_id = Column(Integer, ForeignKey('public.article.id'))
     incident_persons = relationship('IncidentPerson', back_populates='incidents')
 
     id = Column(Integer, autoincrement=True, primary_key=True)
@@ -99,7 +85,7 @@ class Incidents(Base):
     incident_location_lng = Column(String, nullable=True)
 
     article = relationship("Article")  # This creates a link to the Article model
-    charges_relationship = relationship('Charges', back_populates='incidents')
+    charges_relationship = relationship('NonstandardizedCharges', back_populates='incidents')
 
     __table_args__ = (
         UniqueConstraint('url', 'incident_reported_date', 'charges', 'accused_name', name='uix_url_incident_reported_date_charges_accused_name'),
@@ -128,7 +114,7 @@ class IncidentsFromPdf(Base):
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
-    accused_person = relationship("Persons", backref="incidents_from_pdf")
+    charges_relationship = relationship('NonstandardizedCharges', back_populates='incidents_from_pdf')
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
@@ -166,24 +152,22 @@ class Addresses(Base):
         return f'{self.address}'
 
 
-class Charges(Base):
-    __tablename__ = 'charges'
+class NonstandardizedCharges(Base):
+    __tablename__ = 'nonstandardized_charges'
     __table_args__ = (
         UniqueConstraint('charge_description', 'charge_class', 'degree', name='unique_charge_combination'),
         {'schema': 'public'},
     )
-
-    # Define the relationships
-    persons = relationship('Persons', back_populates='charges')
-    incidents = relationship('Incidents', back_populates='charges_relationship')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
     charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
     degree = Column(String, nullable=True)
 
-    person_id = Column(Integer, ForeignKey('public.persons.id'))
     incident_id = Column(Integer, ForeignKey('public.incidents.id'))
+
+
+    incidents = relationship('Incidents', back_populates='charges_relationship')
 
     def __str__(self):
         return f'{self.charge_description}, {self.charge_class}, {self.degree}'

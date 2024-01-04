@@ -1,6 +1,6 @@
 import re
 
-from database import CombinedIncidents, get_database_session, Charges
+from database import CombinedIncidents, get_database_session, NonstandardizedCharges
 
 DBsession, engine = get_database_session(environment='prod')
 columns = [
@@ -149,7 +149,7 @@ def process_charge(charge_description):
 
 
 def main():
-    for incident in all_combined_incidents:
+    for incident in all_combined_incidents[:10]:
         print(incident)
         if ',' in incident.accused_name:
             print('Accused name contains more than one name. Incident should be scraped manually. Skipping.')
@@ -208,16 +208,16 @@ def add_or_get_charge(session, charge_str, charge_type, incident_id):
     print('charge_description: ', charge_description)
     print('charge_degree: ', charge_degree)
 
-    charge = session.query(Charges).filter(
-        Charges.charge_description == charge_str,
-        Charges.charge_class == charge_type,
-        Charges.degree == charge_degree,
+    charge = session.query(NonstandardizedCharges).filter(
+        NonstandardizedCharges.charge_description == charge_str,
+        NonstandardizedCharges.charge_class == charge_type,
+        NonstandardizedCharges.degree == charge_degree,
         incident_id == incident_id
     ).first()
     if charge:
         return charge.id
     else:
-        charge = Charges(
+        charge = NonstandardizedCharges(
             charge_description=charge_str,
             charge_class=charge_type,
             degree=charge_degree,

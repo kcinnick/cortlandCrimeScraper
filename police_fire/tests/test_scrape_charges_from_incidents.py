@@ -3,12 +3,10 @@ import os
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy import Column, Integer, String, Date, Boolean, text
 
+from database import Base, Persons, Incidents
 from police_fire.scrape_charges_from_incidents import categorize_charges, add_charges_to_charges_table
-from database import Base, Persons, Incidents, CombinedIncidents, create_view
 
-from police_fire.scrape_charges_from_incidents import add_or_get_charge
 database_username = os.getenv('DATABASE_USERNAME')
 database_password = os.getenv('DATABASE_PASSWORD')
 
