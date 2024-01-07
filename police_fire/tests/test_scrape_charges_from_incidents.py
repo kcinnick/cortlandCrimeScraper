@@ -6,6 +6,7 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 from database import Base, Incident
 from police_fire.scrape_charges_from_incidents import categorize_charges, add_charges_to_charges_table
+from police_fire.utilities import delete_table_contents
 
 database_username = os.getenv('DATABASE_USERNAME')
 database_password = os.getenv('DATABASE_PASSWORD')
@@ -44,5 +45,6 @@ def test_assert_all_charges_are_categorized():
     categorized_charges = categorize_charges(incident)
     assert categorized_charges['felonies'] == []
     assert len(categorized_charges['misdemeanors']) == 2
+    delete_table_contents(db_session)
 
 
