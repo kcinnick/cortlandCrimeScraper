@@ -33,6 +33,7 @@ def setup_database():
 
 def test_duplicate_structured_incident_does_not_get_added(setup_database):
     DBsession = setup_database
+    DBsession.query(Incident).delete()
     incidents = DBsession.query(Incident).all()
     assert len(incidents) == 0
 
@@ -56,6 +57,7 @@ def test_duplicate_structured_incident_does_not_get_added(setup_database):
 
 def test_multiple_unstructured_incidents_get_added(setup_database):
     DBsession = setup_database
+    DBsession.query(Incident).delete()
     incidents = DBsession.query(Incident).all()
     assert len(incidents) == 0
 
@@ -81,6 +83,7 @@ def test_multiple_unstructured_incidents_get_added(setup_database):
 
 def test_add_unstructured_incident_with_multiple_people(setup_database):
     DBsession = setup_database
+    DBsession.query(Incident).delete()
     article_url = "https://www.cortlandstandard.com/stories/two-charged-in-drug-possession-case,65066?"
     logged_in_session = login()
     scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)

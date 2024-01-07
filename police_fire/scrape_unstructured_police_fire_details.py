@@ -47,9 +47,9 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
     jsonified_response = json.loads(response)
 
     for incident in jsonified_response:
+        print('incident: ', incident)
         incident = Incident(
-            article_id=article_id,
-            url=article_url,
+            source=article_url,
             incident_reported_date=article_date_published,
             accused_name=incident['accused_name'],
             accused_age=incident['accused_age'],
@@ -57,10 +57,9 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             charges=incident['charges'],
             details=incident['details'],
             legal_actions=incident['legal_actions'],
-            structured_source=False
         )
         incidents = DBsession.query(Incident).filter(
-            Incident.url == article_url,
+            Incident.source == article_url,
             Incident.accused_name == incident.accused_name,
             Incident.accused_age == incident.accused_age,
             Incident.accused_location == incident.accused_location,

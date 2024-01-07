@@ -13,11 +13,16 @@ def get_database_session(environment='development'):
     print('environment==', environment)
     database_username = os.getenv('DATABASE_USERNAME')
     database_password = os.getenv('DATABASE_PASSWORD')
+    print("database_username: ", database_username)
+    print("database_password: ", database_password)
+
 
     # SQLAlchemy connection string for PostgreSQL
     if environment == 'test':
         DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test'
     elif environment == 'development':
+        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_dev'
+    elif environment == 'dev':
         DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_dev'
     else:
         DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard'
@@ -27,20 +32,6 @@ def get_database_session(environment='development'):
     db_session = Session()
 
     return db_session, engine
-
-
-# class Persons(Base):
-#     __tablename__ = 'persons'
-#     __table_args__ = {'schema': 'public'}
-#
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     name = Column(String, unique=True)
-#
-#     charges = relationship('Charges', back_populates='persons')
-#     incident_persons = relationship('IncidentPerson', back_populates='persons')
-#
-#     def __str__(self):
-#         return f'{self.name}'
 
 
 class Article(Base):
@@ -140,6 +131,19 @@ class Charges(Base):
 
     def __str__(self):
         return f'{self.charge_description}, {self.charge_class}, {self.degree}'
+
+# class Persons(Base):
+#     __tablename__ = 'persons'
+#     __table_args__ = {'schema': 'public'}
+#
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     name = Column(String, unique=True)
+#
+#     charges = relationship('Charges', back_populates='persons')
+#     incident_persons = relationship('IncidentPerson', back_populates='persons')
+#
+#     def __str__(self):
+#         return f'{self.name}'
 
 
 # class PersonAddress(Base):

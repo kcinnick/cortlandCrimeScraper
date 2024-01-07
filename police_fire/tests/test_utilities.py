@@ -60,6 +60,7 @@ def test_add_incident_with_error_that_does_not_already_exist(setup_database):
 
 def test_do_not_add_incident_with_error_if_already_exists(setup_database):
     DBsession = setup_database
+    delete_table_contents(DBsession)
 
     article = Article(
         html_content="""
