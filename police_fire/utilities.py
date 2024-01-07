@@ -5,12 +5,12 @@ import re
 from simpleaichat import AIChat
 from tqdm import tqdm
 
-from database import IncidentsWithErrors, Incidents, Article, Persons, get_database_session, IncidentsFromPdf
+from database import IncidentsWithErrors, Incident, Article, get_database_session
 
 
 def delete_table_contents(DBsession):
     DBsession.query(IncidentsWithErrors).delete()
-    DBsession.query(Incidents).delete()
+    DBsession.query(Incident).delete()
     DBsession.query(Article).delete()
     DBsession.commit()
 
@@ -102,13 +102,13 @@ def update_incident_date_if_necessary(DBsession, incident_date_response, details
     elif not incident_date_response[0].isdigit():
         print(f'Incident date found was not date-formatted: {incident_date_response}.  Not updating database.')
         return
-    existing_incident = DBsession.query(Incidents).filter_by(details=details_str).first()
+    existing_incident = DBsession.query(Incident).filter_by(details=details_str).first()
     if existing_incident:
         print('incident date response', incident_date_response)
         existing_incident.incident_date = incident_date_response
         DBsession.add(existing_incident)
         DBsession.commit()
-        print('Incident date updated for ' + existing_incident.url)
+        print('Incident date updated for ' + existing_incident.source)
 
     return
 
@@ -127,16 +127,7 @@ def link_persons_to_incident(DBsession):
     index = 0
     persons = DBsession.query(Persons).all()
     for person in tqdm(persons):
-        incidents = DBsession.query(Incidents).filter_by(accused_name=person.name).all()
-        for incident in incidents:
-            incident.accused_person_id = person.id
-            DBsession.add(incident)
-            DBsession.commit()
-            print(f"Person ID: {person.id} linked to Incident ID: {incident.id}")
-            index += 1
-
-    for person in tqdm(persons):
-        incidents = DBsession.query(IncidentsFromPdf).filter_by(accused_name=person.name).all()
+        incidents = DBsession.query(Incident).filter_by(accused_name=person.name).all()
         for incident in incidents:
             incident.accused_person_id = person.id
             DBsession.add(incident)

@@ -16,12 +16,12 @@
 - **Fields**: Includes title, author, publish date, URL, and content.
 - **Role**: Acts as a foundational table from which other, more specific data tables are populated.
 
-### Incidents Table
+### Incident Table
 - **Derived From**: Article table data.
 - **Function**: Focuses on specific incidents reported in Police/Fire categorized articles, extracting key details for deeper analysis.
 - **Relation to Article Table**: Each incident is linked to an article to maintain traceability and context.
 
 ### TODO - Charges Table
-- **Derived From**: Incidents table data.
+- **Derived From**: Incident table data.
 - **Purpose**: Provides a granular view of the charges associated with each incident, supporting detailed legal and statistical analyses.
-- **Relation to Incidents Table**: Each entry in the charges table corresponds to a specific incident, allowing for a clear understanding of the legal aspects associated with each case.
+- **Relation to Incident Table**: Each entry in the charges table corresponds to a specific incident, allowing for a clear understanding of the legal aspects associated with each case.

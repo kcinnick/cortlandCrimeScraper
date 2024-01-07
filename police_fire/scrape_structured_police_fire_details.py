@@ -2,7 +2,7 @@ import regex as re
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import get_database_session, Article, Incidents, AlreadyScrapedUrls
+from database import get_database_session, Article, Incident, AlreadyScrapedUrls
 from police_fire.maps import get_lat_lng_of_addresses
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
@@ -97,16 +97,14 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         incident_date = check_if_details_references_a_relative_date(details_str, article.date_published)
         incident_location = get_incident_location_from_details(details_str)
         incident_lat, incident_lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
-        incident = Incidents(
-            article_id=article.id,
-            url=article.url,
+        incident = Incident(
+            source=article.url,
             incident_reported_date=article.date_published,
             accused_age=accused_age,
             accused_location=accused_location,
             charges=charges_str,
             details=details_str,
             legal_actions=legal_actions_str,
-            structured_source=True,
             incident_date=incident_date,
             incident_location=incident_location,
             incident_location_lat=incident_lat,
@@ -115,7 +113,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         )
 
         # add incident to database if it doesn't already exist
-        if DBsession.query(Incidents).filter_by(details=details_str, accused_name=accused_name).count() == 0:
+        if DBsession.query(Incident).filter_by(details=details_str, accused_name=accused_name).count() == 0:
             DBsession.add(incident)
             DBsession.commit()
         else:
@@ -334,9 +332,8 @@ def scrape_structured_incident_details(article, DBsession):
         else:
             incident_lat, incident_lng = None, None
 
-        incident = Incidents(
-            article_id=article.id,
-            url=article.url,
+        incident = Incident(
+            source=article.url,
             incident_reported_date=article.date_published,
             accused_age=accused_age,
             accused_name=accused_name,
@@ -344,7 +341,6 @@ def scrape_structured_incident_details(article, DBsession):
             charges=charges_str,
             details=details_str,
             legal_actions=legal_actions_str,
-            structured_source=True,
             incident_date=incident_date_response,
             incident_location=incident_location,
             incident_location_lat=incident_lat,
@@ -352,7 +348,7 @@ def scrape_structured_incident_details(article, DBsession):
         )
 
         # add incident to database if it doesn't already exist
-        if DBsession.query(Incidents).filter_by(accused_name=accused_name, details=details_str).count() == 0:
+        if DBsession.query(Incident).filter_by(accused_name=accused_name, details=details_str).count() == 0:
             try:
                 DBsession.add(incident)
                 DBsession.commit()
@@ -366,13 +362,13 @@ def scrape_structured_incident_details(article, DBsession):
             incident_location = get_incident_location_from_details(details_str)
             if incident_location:
                 lat, lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
-                existing_incident = DBsession.query(Incidents).filter_by(details=details_str).first()
+                existing_incident = DBsession.query(Incident).filter_by(details=details_str).first()
                 existing_incident.incident_location = incident_location
                 existing_incident.incident_location_lat = lat
                 existing_incident.incident_location_lng = lng
                 DBsession.add(existing_incident)
                 DBsession.commit()
-                print('Incident location updated for ' + existing_incident.url)
+                print('Incident location updated for ' + existing_incident.source)
 
     return
 

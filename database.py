@@ -1,11 +1,9 @@
 import os
 
 import unicodedata
-from sqlalchemy import create_engine, ForeignKey, MetaData
+from sqlalchemy import Column, Integer, String, Date, text, UniqueConstraint
+from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
-from sqlalchemy.schema import UniqueConstraint
-
-from sqlalchemy import Column, Integer, String, Date, Boolean, text
 from tqdm import tqdm
 
 Base = declarative_base()
@@ -31,18 +29,18 @@ def get_database_session(environment='development'):
     return db_session, engine
 
 
-class Persons(Base):
-    __tablename__ = 'persons'
-    __table_args__ = {'schema': 'public'}
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True)
-
-    charges = relationship('Charges', back_populates='persons')
-    incident_persons = relationship('IncidentPerson', back_populates='persons')
-
-    def __str__(self):
-        return f'{self.name}'
+# class Persons(Base):
+#     __tablename__ = 'persons'
+#     __table_args__ = {'schema': 'public'}
+#
+#     id = Column(Integer, primary_key=True, autoincrement=True)
+#     name = Column(String, unique=True)
+#
+#     charges = relationship('Charges', back_populates='persons')
+#     incident_persons = relationship('IncidentPerson', back_populates='persons')
+#
+#     def __str__(self):
+#         return f'{self.name}'
 
 
 class Article(Base):
@@ -64,88 +62,43 @@ class IncidentsWithErrors(Base):
     __tablename__ = 'incidents_with_errors'
     __table_args__ = {'schema': 'public'}
 
-    article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
+    article_id = Column(Integer, ForeignKey('public.article.id'))
     article = relationship("Article")  # This creates a link to the Article model
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     url = Column(String, unique=True)
 
 
-class Incidents(Base):
-    __tablename__ = 'incidents'
+from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy.ext.declarative import declarative_base
 
-    article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
-    incident_persons = relationship('IncidentPerson', back_populates='incidents')
+Base = declarative_base()
 
-    id = Column(Integer, autoincrement=True, primary_key=True)
-    url = Column(String)
 
+class Incident(Base):
+    __tablename__ = 'incident'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
     incident_reported_date = Column(Date)
-
     accused_name = Column(String)
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
-
     charges = Column(String)
     details = Column(String)
     legal_actions = Column(String)
-
-    structured_source = Column(Boolean)
-
-    incident_date = Column(Date, nullable=True)
-
-    incident_location = Column(String, nullable=True)
-    incident_location_lat = Column(String, nullable=True)
-    incident_location_lng = Column(String, nullable=True)
-
-    article = relationship("Article")  # This creates a link to the Article model
-    charges_relationship = relationship('Charges', back_populates='incidents')
-
-    __table_args__ = (
-        UniqueConstraint('url', 'incident_reported_date', 'charges', 'accused_name', name='uix_url_incident_reported_date_charges_accused_name'),
-        {'schema': 'public'},
-    )
-
-    def __str__(self):
-        return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
-
-
-class IncidentsFromPdf(Base):
-    __tablename__ = 'incidents_from_pdf'
-    __table_args__ = {'schema': 'public'}
-
-    id = Column(Integer, autoincrement=True, primary_key=True)
-    incident_reported_date = Column(Date, primary_key=True)
-    accused_name = Column(String, primary_key=True)
-    accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
-    accused_age = Column(String, nullable=True)
-    accused_location = Column(String)
-    charges = Column(String, primary_key=True)
-    details = Column(String, primary_key=True)
-    legal_actions = Column(String)
     incident_date = Column(Date, nullable=True)
     incident_location = Column(String, nullable=True)
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
-    accused_person = relationship("Persons", backref="incidents_from_pdf")
+    # Foreign Key to Source table
+    source = Column(String)
+
+    charges_relationship = relationship('Charges', back_populates='incident')
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
-
-
-class CombinedIncidents(Base):
-    __tablename__ = 'combined_incidents'  # Name of the view
-    id = Column(Integer, primary_key=True)
-    incident_reported_date = Column(Date)
-    incident_date = Column(Date)
-    accused_name = Column(String)
-    accused_age = Column(Integer)
-    accused_location = Column(String)
-    charges = Column(String)
-    details = Column(String)
-    legal_actions = Column(String)
-    incident_location = Column(String, nullable=True)
 
 
 class Addresses(Base):
@@ -174,28 +127,28 @@ class Charges(Base):
     )
 
     # Define the relationships
-    persons = relationship('Persons', back_populates='charges')
-    incidents = relationship('Incidents', back_populates='charges_relationship')
+    # persons = relationship('Persons', back_populates='charges')
+    incident = relationship('Incident', back_populates='charges_relationship')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
     charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
     degree = Column(String, nullable=True)
 
-    person_id = Column(Integer, ForeignKey('public.persons.id'))
-    incident_id = Column(Integer, ForeignKey('public.incidents.id'))
+    # person_id = Column(Integer, ForeignKey('public.persons.id'))
+    incident_id = Column(Integer, ForeignKey('public.incident.id'))
 
     def __str__(self):
         return f'{self.charge_description}, {self.charge_class}, {self.degree}'
 
 
-class PersonAddress(Base):
-    __tablename__ = 'PersonAddress'
-    __table_args__ = {'schema': 'public'}
-
-    PersonID = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
-    AddressID = Column(Integer, ForeignKey('public.addresses.id'), primary_key=True)
-    AsOfDate = Column(Date)
+# class PersonAddress(Base):
+#     __tablename__ = 'PersonAddress'
+#     __table_args__ = {'schema': 'public'}
+#
+#     PersonID = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
+#     AddressID = Column(Integer, ForeignKey('public.addresses.id'), primary_key=True)
+#     AsOfDate = Column(Date)
 
 
 class AlreadyScrapedUrls(Base):
@@ -212,18 +165,18 @@ class AlreadyScrapedPdfs(Base):
     pdf_date = Column(String, primary_key=True)
 
 
-class IncidentPerson(Base):
-    __tablename__ = 'incident_persons'
-    __table_args__ = {'schema': 'public'}
-
-    incident_id = Column(Integer, ForeignKey('public.incidents.id'), primary_key=True)
-    person_id = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
-
-    incidents = relationship('Incidents', back_populates='incident_persons')
-    persons = relationship('Persons', back_populates='incident_persons')
-
-    def __str__(self):
-        return f'{self.name}'
+# class IncidentPerson(Base):
+#     __tablename__ = 'incident_persons'
+#     __table_args__ = {'schema': 'public'}
+#
+#     incident_id = Column(Integer, ForeignKey('public.incidents.id'), primary_key=True)
+#     person_id = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
+#
+#     incidents = relationship('Incidents', back_populates='incident_persons')
+#     persons = relationship('Persons', back_populates='incident_persons')
+#
+#     def __str__(self):
+#         return f'{self.name}'
 
 
 def create_tables(environment='development'):
@@ -324,7 +277,7 @@ def remove_non_standard_characters(string):
 def clean_strings_in_table(environment):
     DBsession, engine = get_database_session(environment)
     # get the Incidents table
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
     for incident in tqdm(incidents):
         incident.accused_location = remove_non_standard_characters(incident.accused_location)
         incident.charges = remove_non_standard_characters(incident.charges)
@@ -333,21 +286,13 @@ def clean_strings_in_table(environment):
         incident.incident_location = remove_non_standard_characters(incident.incident_location)
         DBsession.commit()
 
-    incidents_from_pdf = DBsession.query(IncidentsFromPdf).all()
-    for incident in tqdm(incidents_from_pdf):
-        incident.accused_location = remove_non_standard_characters(incident.accused_location)
-        incident.charges = remove_non_standard_characters(incident.charges)
-        incident.details = remove_non_standard_characters(incident.details)
-        incident.legal_actions = remove_non_standard_characters(incident.legal_actions)
-        incident.incident_location = remove_non_standard_characters(incident.incident_location)
-        DBsession.commit()
 
     return
 
 
 if __name__ == "__main__":
-    create_tables(environment='prod')
-    create_view(environment='prod')
+    create_tables(environment='development')
+    # create_view(environment='development')
     # create_view_for_already_scraped_urls(environment='prod')
     # clean_strings_in_table(
     # environment = 'prod'

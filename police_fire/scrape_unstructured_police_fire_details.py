@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from tqdm import tqdm
 
-from database import Article, Incidents, get_database_session
+from database import Article, Incident, get_database_session
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -47,7 +47,7 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
     jsonified_response = json.loads(response)
 
     for incident in jsonified_response:
-        incident = Incidents(
+        incident = Incident(
             article_id=article_id,
             url=article_url,
             incident_reported_date=article_date_published,
@@ -59,12 +59,12 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             legal_actions=incident['legal_actions'],
             structured_source=False
         )
-        incidents = DBsession.query(Incidents).filter(
-            Incidents.url == article_url,
-            Incidents.accused_name == incident.accused_name,
-            Incidents.accused_age == incident.accused_age,
-            Incidents.accused_location == incident.accused_location,
-            Incidents.charges == incident.charges
+        incidents = DBsession.query(Incident).filter(
+            Incident.url == article_url,
+            Incident.accused_name == incident.accused_name,
+            Incident.accused_age == incident.accused_age,
+            Incident.accused_location == incident.accused_location,
+            Incident.charges == incident.charges
         ).all()
 
         if len(incidents) > 0:

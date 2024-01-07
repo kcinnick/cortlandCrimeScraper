@@ -1,12 +1,10 @@
 import os
-from pprint import pprint
 from time import sleep
 
 import requests
-from sqlalchemy import or_
 from tqdm import tqdm
 
-from database import get_database_session, Incidents, IncidentsFromPdf
+from database import get_database_session, Incident
 from police_fire.utilities import get_incident_location_from_details
 
 
@@ -44,7 +42,7 @@ def main():
     with open('get_lat_lng_of_address_errors.txt', 'w') as f:
         f.write('address\n')
     DBsession, engine = get_database_session(environment='prod')
-    incidents = DBsession.query(Incidents).filter(Incidents.incident_location_lat == None,).all()
+    incidents = DBsession.query(Incident).filter(Incident.incident_location_lat == None,).all()
     for incident in tqdm(incidents):
         incident_location = get_incident_location(DBsession, incident)
         if incident_location.strip() == 'N/A':

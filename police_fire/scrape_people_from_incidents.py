@@ -1,5 +1,5 @@
 from sqlalchemy.exc import IntegrityError
-from database import get_database_session, Incidents, Persons, IncidentsFromPdf
+from database import get_database_session, Incident
 
 
 # get all addresses in Incidents table
@@ -9,22 +9,7 @@ from database import get_database_session, Incidents, Persons, IncidentsFromPdf
 
 def main():
     db_session, engine = get_database_session(environment='prod')
-    incidents = db_session.query(Incidents).all()
-    for incident in incidents:
-        people = incident.accused_name.split(',')
-        people = [person.strip() for person in people]
-        for person in people:
-            person = Persons(
-                name=person,
-            )
-            try:
-                db_session.add(person)
-                db_session.commit()
-            except IntegrityError:
-                print('Person already exists in database.')
-                db_session.rollback()
-    # repeat the process for IncidentsFromPdf
-    incidents = db_session.query(IncidentsFromPdf).all()
+    incidents = db_session.query(Incident).all()
     for incident in incidents:
         people = incident.accused_name.split(',')
         people = [person.strip() for person in people]
