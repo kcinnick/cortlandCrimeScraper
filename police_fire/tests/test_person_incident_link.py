@@ -1,6 +1,6 @@
 import os
 
-from database import get_database_session, Persons, Incidents
+from database import get_database_session, Persons, Incident
 
 import pytest
 from sqlalchemy import create_engine
@@ -35,7 +35,7 @@ def test_person_incident_link(setup_database):
     DBsession.add(fake_person)
     DBsession.commit()
 
-    fake_incident = Incidents(
+    fake_incident = Incident(
         accused_name=fake_person.name,
         incident_reported_date='2020-01-01',
         incident_date='2020-01-01',
@@ -48,7 +48,7 @@ def test_person_incident_link(setup_database):
         url='https://www.fakeurl.com',
     )
 
-    second_fake_incident = Incidents(
+    second_fake_incident = Incident(
         accused_name=fake_person.name,
         incident_reported_date='2020-01-02',
         incident_date='2020-01-02',

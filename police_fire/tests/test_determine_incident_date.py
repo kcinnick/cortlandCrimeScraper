@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from database import Incidents, Base, Persons
+from database import Incident, Base, Persons
 from police_fire.scrape_structured_police_fire_details import check_if_details_references_a_relative_date
 from police_fire.utilities import add_or_get_person
 
