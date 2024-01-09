@@ -1,15 +1,20 @@
 # contains helper functions that are useful for both structured and unstructured data.
+import json
 import os
 import re
 
+import sqlalchemy
+from openai import OpenAI
 from simpleaichat import AIChat
 from tqdm import tqdm
 
 from database import IncidentsWithErrors, Incident, Article, get_database_session
 
 
-def delete_table_contents(DBsession):
-    DBsession.query(IncidentsWithErrors).delete()
+def delete_table_contents(DBsession, engine):
+    if sqlalchemy.inspect(engine).has_table("incidents_with_errors"):
+        DBsession.query(IncidentsWithErrors).delete()
+
     DBsession.query(Incident).delete()
     DBsession.query(Article).delete()
     DBsession.commit()
@@ -49,10 +54,12 @@ def clean_up_charges_details_and_legal_actions_records(charges_str, details_str,
 ai = AIChat(
     console=False,
     save_messages=False,  # with schema I/O, messages are never saved
-    model="gpt-4",
+    model="gpt-3.5-turbo",
     params={"temperature": 0.0},
     api_key=os.getenv('OPENAI_API_KEY'),
 )
+
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
 def search_for_day_of_week_in_details(details_str):
@@ -66,8 +73,18 @@ def search_for_day_of_week_in_details(details_str):
 def get_last_date_of_day_of_week_before_date(day_of_week, date):
     # find the last time that day of the week occurred before the date
     query = "What was the last time that " + day_of_week + " occurred before " + str(
-        date) + "? Return only the date. If none, return N/A."
-    response = ai(query)
+        date) + "? Return ONLY the date, as a string formatted YYYY-MM-DD. If none, return N/A."
+
+    completion = client.chat.completions.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {'role': 'system',
+             'content': query},
+        ],
+        temperature=0
+    )
+    response = completion.choices[0].message.content.strip()
+
     return response
 
 
@@ -115,7 +132,7 @@ def update_incident_date_if_necessary(DBsession, incident_date_response, details
 
 def get_incident_location_from_details(details_str):
     """if the details contain a location, return the location that matched"""
-    query = "What was the location of the incident: " + details_str + "? Return only the address, city and state where available. If none, return N/A."
+    query = "What was the location of the incident: " + details_str + "? Return only the address, city and state (full name, not abbreviation) where available. If none, return N/A."
     response = ai(query)
     response = response.replace('The location of the incident was ', '')
     response = response.replace('The location of the incident is ', '')

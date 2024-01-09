@@ -32,7 +32,7 @@ def setup_database():
 
 def test_add_incident_with_error_that_does_not_already_exist(setup_database):
     DBsession = setup_database
-    delete_table_contents(DBsession)
+    delete_table_contents(DBsession, engine=DBsession.bind)
     article = Article(
         html_content="""
         <div class="body main-body clearfix">
@@ -60,7 +60,7 @@ def test_add_incident_with_error_that_does_not_already_exist(setup_database):
 
 def test_do_not_add_incident_with_error_if_already_exists(setup_database):
     DBsession = setup_database
-    delete_table_contents(DBsession)
+    delete_table_contents(DBsession, engine=DBsession.bind)
 
     article = Article(
         html_content="""
@@ -95,5 +95,5 @@ def test_do_not_add_incident_with_error_if_already_exists(setup_database):
 def test_get_incident_location():
     details_str = "Cortland police detained Axelrod about 2:05 a.m. today when they saw him urinating in the parking lot of 110 Main St., the Cortland Standard. Police said he ran from them and when he was apprehended he gave them a fictitious license."
     incident_location = get_incident_location_from_details(details_str)
-    assert incident_location == '110 Main St., Cortland'
+    assert incident_location == '110 Main St., Cortland, New York'
     return
