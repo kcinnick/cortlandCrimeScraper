@@ -45,6 +45,4 @@ def test_assert_all_charges_are_categorized():
     categorized_charges = categorize_charges(incident)
     assert categorized_charges['felonies'] == []
     assert len(categorized_charges['misdemeanors']) == 2
-    delete_table_contents(db_session)
-
 
