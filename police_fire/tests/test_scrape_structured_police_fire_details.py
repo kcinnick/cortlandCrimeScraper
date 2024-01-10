@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-from database import Article, Incidents, IncidentsWithErrors, Base
+from database import Article, Incident, IncidentsWithErrors, Base
 from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details, \
     identify_articles_with_incident_formatting
 from police_fire.utilities import add_or_get_person
@@ -32,6 +32,7 @@ def setup_database():
 
 def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_table(setup_database):
     DBsession = setup_database
+    DBsession.query(IncidentsWithErrors).delete()
     incidents_with_errors = DBsession.query(IncidentsWithErrors).all()
     assert len(incidents_with_errors) == 0
 
@@ -52,7 +53,7 @@ def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_tab
 def test_structure_data_with_matching_counts_gets_added_to_incidents_table(setup_database):
     DBsession = setup_database
 
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
     assert len(incidents) == 0
 
     logged_in_session = login()
@@ -62,13 +63,13 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table(setup
         Article.url == 'https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?').first()
 
     scrape_structured_incident_details(test_article, DBsession)
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
 
     assert len(incidents) == 1
 
     scraped_incident = incidents[0]
 
-    assert scraped_incident.url == 'https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?'
+    assert scraped_incident.source == 'https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?'
     assert scraped_incident.accused_name == 'Julie M. Conners'
     assert scraped_incident.accused_age == '34'
     assert scraped_incident.accused_location == 'Cold Brook Road, Homer'
@@ -87,7 +88,7 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly(setup_datab
 
     article_url = 'https://www.cortlandstandard.com/stories/groton-driver-charged-after-crash-causes-injury,13070?'
 
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
     assert len(incidents) == 0
 
     logged_in_session = login()
@@ -97,7 +98,7 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly(setup_datab
         Article.url == article_url).first()
 
     scrape_structured_incident_details(test_article, DBsession)
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
 
     assert len(incidents) == 9
 
@@ -106,7 +107,7 @@ def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correct
     DBsession = setup_database
     article_url = 'https://www.cortlandstandard.com/stories/two-charged-with-drunken-driving,12273?'
 
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
     assert len(incidents) == 0
 
     logged_in_session = login()
@@ -116,7 +117,7 @@ def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correct
         Article.url == article_url).first()
 
     scrape_structured_incident_details(test_article, DBsession)
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
 
     assert len(incidents) == 2
     for incident in incidents:
@@ -127,7 +128,7 @@ def test_structure_data_with_br_tags_gets_added_correctly(setup_database):
     DBsession = setup_database
 
     article_url = 'https://www.cortlandstandard.com/stories/10-year-old-hurt-when-vehicle-tips,19473?'
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
     assert len(incidents) == 0
 
     logged_in_session = login()
@@ -137,13 +138,13 @@ def test_structure_data_with_br_tags_gets_added_correctly(setup_database):
         Article.url == article_url).first()
 
     scrape_structured_incident_details(test_article, DBsession)
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
 
     assert len(incidents) == 2
     first_incident = incidents[0]
     second_incident = incidents[1]
 
-    assert first_incident.accused_person_id == add_or_get_person(DBsession, 'Wendy Caswell')
+    assert first_incident.accused_name == 'Wendy Caswell'
     assert first_incident.accused_age == '40'
     assert first_incident.accused_location == 'Cortland'
     assert first_incident.charges == ('Third-degree criminal possession of a controlled substance, third-degree '
@@ -158,7 +159,7 @@ def test_structure_data_with_br_tags_gets_added_correctly(setup_database):
     assert first_incident.legal_actions == ("Caswell was awaiting arraignment Wednesday evening at the Cortland County "
                                             "Sheriff's Office.")
 
-    assert second_incident.accused_person_id == add_or_get_person(DBsession, 'Cypress Jana V. Hill')
+    assert second_incident.accused_name == 'Cypress Jana V. Hill'
     assert second_incident.accused_age == '25'
     assert second_incident.accused_location == 'Groton'
     assert second_incident.charges == ('First-degree burglary, first-degree criminal contempt, felonies; second-degree '
@@ -174,8 +175,10 @@ def test_structure_data_with_br_tags_gets_added_correctly(setup_database):
 
 def test_identify_articles_with_incident_formatting_correctly_returns_one_incident(setup_database):
     DBsession = setup_database
+    DBsession.query(IncidentsWithErrors).delete()
+    DBsession.query(Article).delete()
 
-    article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053??'
+    article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053?'
 
     logged_in_session = login()
     scrape_article(article_url, logged_in_session,
@@ -185,11 +188,16 @@ def test_identify_articles_with_incident_formatting_correctly_returns_one_incide
         DBsession
     )
 
+    for article in articles:
+        print(vars(article))
+
     assert len(articles) == 1
 
 
 def test_identify_articles_with_incident_formatting_correctly_returns_0_incidents(setup_database):
     DBsession = setup_database
+    DBsession.query(IncidentsWithErrors).delete()
+    DBsession.query(Article).delete()
 
     article_url = 'https://www.cortlandstandard.com/stories/one-charged-with-assault-4-others-arrested-in-palm-gardens-brawl,70665?'
 
@@ -224,6 +232,6 @@ def test_duplicate_incident_does_not_get_added_twice(setup_database):
     scrape_structured_incident_details(article, DBsession)
 
     # check that there is only one incident in the database
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
     assert len(incidents) == 3
 

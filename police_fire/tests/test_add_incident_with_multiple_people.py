@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
-from database import Base, Incidents
+from database import Base, Incident
 from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details
 from scrape_articles_by_section import scrape_article
 
@@ -39,7 +39,7 @@ def test_add_structured_incident_with_multiple_people(setup_database):
     article_object = DBsession.query(Article).filter(Article.url == article_url).first()
     scrape_structured_incident_details(article_object, DBsession)
 
-    incidents = DBsession.query(Incidents).all()
+    incidents = DBsession.query(Incident).all()
 
     last_incident = incidents[-1]
     assert last_incident.accused_name == 'Samuel J. Swan,Adrianne L. Wagoner'

@@ -26,7 +26,7 @@ DBsession, engine = get_database_session(environment='prod')
 ai = AIChat(
     console=False,
     save_messages=False,  # with schema I/O, messages are never saved
-    model="gpt-4",
+    model="gpt-3.5-turbo",
     params={"temperature": 0.0},
     api_key=os.getenv('OPENAI_API_KEY'),
 )

@@ -1,7 +1,7 @@
 from sqlalchemy import func
 from tqdm import tqdm
 
-from database import get_database_session, Incidents, IncidentsFromPdf
+from database import get_database_session, Incident
 
 
 def remove_trailing_periods(string):
@@ -39,8 +39,8 @@ def finish_or_replace_locations(incident):
 
 def main(environment='prod'):
     dbSession, engine = get_database_session(environment=environment)
-    all_incident_records = dbSession.query(IncidentsFromPdf).all()
-    all_incident_records.extend(dbSession.query(Incidents).all())
+    all_incident_records = []
+    all_incident_records.extend(dbSession.query(Incident).all())
     for incident in tqdm(all_incident_records):
         incident.accused_location = remove_trailing_periods(incident.accused_location)
         incident.incident_location = remove_trailing_periods(incident.incident_location)

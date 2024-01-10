@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from tqdm import tqdm
 
-from database import Article, Incidents, get_database_session
+from database import Article, Incident, get_database_session
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -34,11 +34,15 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             {'role': 'system',
              'content': 'You provide information on incidents that occurred in the following article: ' + article_content},
             {'role': 'system',
-             'content': 'There may be multiple incidents listed in a single article.  When this is the case, you must use a list of JSON responses.'},
+             'content': 'There may be multiple incidents listed in a single article.  When this is the case, you must use a list of JSON responses. Multiple names, ages, and addresses may be listed in a single incident.'},
             {'role': 'system',
-             'content': 'All output must be provided in JSON format, with the following keys: accused_name, accused_age, accused_location, charges, details, legal_actions.  All values must be strings.  If the article is not about a crime, the output should be N/A.'},
+             'content': 'All output must be provided as an array of objects in dictionary or hashmap format, with the following keys: accused_name, accused_age, accused_location, charges, details, legal_actions.  All values must be strings.  If the article is not about a crime, the output should be N/A.'},
             {'role': 'system',
-             'content': "If the incident begins with 'Accused:', you must omit that incident from the output."},
+             'content': 'The JSON output should be an array of objects, with each object representing a single incident.  If there is only one incident, the array should contain only one object. Do not include a dictionary or hashmap as the root object.'},
+            {'role': 'system',
+             'content': "Do not include any incidents that contain Accused: or contain Charges:"},
+            {'role': 'system',
+             'content': "The accused location should include any street, road, avenue, or other location information along with the city or town.  If the accused location is not given, the value should be N/A."},
         ],
         temperature=0
     )
@@ -47,9 +51,9 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
     jsonified_response = json.loads(response)
 
     for incident in jsonified_response:
-        incident = Incidents(
-            article_id=article_id,
-            url=article_url,
+        print('incident: ', incident)
+        incident = Incident(
+            source=article_url,
             incident_reported_date=article_date_published,
             accused_name=incident['accused_name'],
             accused_age=incident['accused_age'],
@@ -57,14 +61,13 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             charges=incident['charges'],
             details=incident['details'],
             legal_actions=incident['legal_actions'],
-            structured_source=False
         )
-        incidents = DBsession.query(Incidents).filter(
-            Incidents.url == article_url,
-            Incidents.accused_name == incident.accused_name,
-            Incidents.accused_age == incident.accused_age,
-            Incidents.accused_location == incident.accused_location,
-            Incidents.charges == incident.charges
+        incidents = DBsession.query(Incident).filter(
+            Incident.source == article_url,
+            Incident.accused_name == incident.accused_name,
+            Incident.accused_age == incident.accused_age,
+            Incident.accused_location == incident.accused_location,
+            Incident.charges == incident.charges
         ).all()
 
         if len(incidents) > 0:

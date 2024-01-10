@@ -1,22 +1,22 @@
 import re
 
-from database import CombinedIncidents, get_database_session, Charges
+from database import get_database_session, Charges, Incident
 
-DBsession, engine = get_database_session(environment='prod')
+DBsession, engine = get_database_session(environment='dev')
 columns = [
-    CombinedIncidents.id,
-    CombinedIncidents.incident_reported_date,
-    CombinedIncidents.accused_name,
-    CombinedIncidents.accused_age,
-    CombinedIncidents.accused_location,
-    CombinedIncidents.charges,
-    CombinedIncidents.details,
-    CombinedIncidents.legal_actions,
-    CombinedIncidents.incident_date,
-    CombinedIncidents.incident_location,
+    Incident.id,
+    Incident.incident_reported_date,
+    Incident.accused_name,
+    Incident.accused_age,
+    Incident.accused_location,
+    Incident.charges,
+    Incident.details,
+    Incident.legal_actions,
+    Incident.incident_date,
+    Incident.incident_location,
 ]
 
-all_combined_incidents = DBsession.query(*columns).all()
+all_incidents = DBsession.query(*columns).all()
 
 
 def categorize_charges(incident):
@@ -177,10 +177,10 @@ def add_charges_to_charges_table(incident, categorized_charges):
                     if ';' in split_charge:
                         split_charge = split_charge.split(';')
                         for s in split_charge:
-                            #print('179 ', s)
-                            #continue
-                            #print('------')
-                            #print('incident id: ', incident.id)
+                            print('179 ', s)
+                            continue
+                            print('------')
+                            print('incident id: ', incident.id)
                             add_or_get_charge(
                                 session=DBsession,
                                 charge_str=s,
@@ -188,9 +188,7 @@ def add_charges_to_charges_table(incident, categorized_charges):
                                 incident_id=incident.id,
                             )
                     else:
-                        #print('190 ', split_charge)
-
-                        #continue
+                        print('190 ', split_charge)
                         add_or_get_charge(
                             session=DBsession,
                             charge_str=split_charge,

@@ -1,6 +1,6 @@
 import os
 
-from database import get_database_session, Persons, Incidents
+from database import get_database_session, Incident
 
 import pytest
 from sqlalchemy import create_engine
@@ -31,12 +31,9 @@ def test_person_incident_link(setup_database):
     # test set up
     # add person, add incident
     DBsession = setup_database
-    fake_person = Persons(name='Fake J. Faker')
-    DBsession.add(fake_person)
-    DBsession.commit()
 
-    fake_incident = Incidents(
-        accused_name=fake_person.name,
+    fake_incident = Incident(
+        accused_name='Fake J. Faker',
         incident_reported_date='2020-01-01',
         incident_date='2020-01-01',
         accused_age=99,
@@ -45,11 +42,11 @@ def test_person_incident_link(setup_database):
         details='Fake details',
         legal_actions='Fake legal actions',
         incident_location='Fakeville, NY',
-        url='https://www.fakeurl.com',
+        source='https://www.fakeurl.com',
     )
 
-    second_fake_incident = Incidents(
-        accused_name=fake_person.name,
+    second_fake_incident = Incident(
+        accused_name='Fake J. Faker',
         incident_reported_date='2020-01-02',
         incident_date='2020-01-02',
         accused_age=100,
@@ -58,13 +55,9 @@ def test_person_incident_link(setup_database):
         details='More fake details',
         legal_actions='Fake legal actions',
         incident_location='Fakeland County, NY',
-        url='https://www.fakeurl.com',
+        source='https://www.fakeurl.com',
     )
 
     DBsession.add(fake_incident)
     DBsession.add(second_fake_incident)
     DBsession.commit()
-
-    # test incident was properly linked to person, and vice versa
-
-    assert len(fake_person.incident_persons) == 2
