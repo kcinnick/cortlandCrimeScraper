@@ -1,7 +1,7 @@
 import os
 
 import unicodedata
-from sqlalchemy import Column, Integer, String, Date, text, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, text, UniqueConstraint, Boolean
 from sqlalchemy import create_engine, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, declarative_base
 from tqdm import tqdm
@@ -91,6 +91,68 @@ class Incident(Base):
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
 
+
+class Incidents(Base):
+    __tablename__ = 'incidents'
+
+    article_id = Column(Integer, ForeignKey('public.article.id'))  # Assuming 'public' schema and 'article' table
+    # incident_persons = relationship('IncidentPerson', back_populates='incidents')
+
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    url = Column(String)
+
+    incident_reported_date = Column(Date)
+
+    accused_name = Column(String)
+    accused_age = Column(String, nullable=True)
+    accused_location = Column(String)
+
+    charges = Column(String)
+    details = Column(String)
+    legal_actions = Column(String)
+
+    structured_source = Column(Boolean)
+
+    incident_date = Column(Date, nullable=True)
+
+    incident_location = Column(String, nullable=True)
+    incident_location_lat = Column(String, nullable=True)
+    incident_location_lng = Column(String, nullable=True)
+
+    #article = relationship("Article")  # This creates a link to the Article model
+    #charges_relationship = relationship('Charges', back_populates='incidents')
+
+    __table_args__ = (
+        UniqueConstraint('url', 'incident_reported_date', 'charges', 'accused_name', name='uix_url_incident_reported_date_charges_accused_name'),
+        {'schema': 'public'},
+    )
+
+    def __str__(self):
+        return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
+
+
+class IncidentsFromPdf(Base):
+    __tablename__ = 'incidents_from_pdf'
+    __table_args__ = {'schema': 'public'}
+
+    id = Column(Integer, autoincrement=True, primary_key=True)
+    incident_reported_date = Column(Date, primary_key=True)
+    accused_name = Column(String, primary_key=True)
+    accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
+    accused_age = Column(String, nullable=True)
+    accused_location = Column(String)
+    charges = Column(String, primary_key=True)
+    details = Column(String, primary_key=True)
+    legal_actions = Column(String)
+    incident_date = Column(Date, nullable=True)
+    incident_location = Column(String, nullable=True)
+    incident_location_lat = Column(String, nullable=True)
+    incident_location_lng = Column(String, nullable=True)
+
+    #accused_person = relationship("Persons", backref="incidents_from_pdf")
+
+    def __str__(self):
+        return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
 
 class Addresses(Base):
     __tablename__ = 'addresses'
