@@ -313,7 +313,7 @@ def scrape_structured_incident_details(article, DBsession):
         accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
         accused_name = ','.join(accused_name)
         accused_age = ','.join(accused_age)
-        accused_location = ','.join(accused_location)
+        accused_location = ','.join([i for i in accused_location if i])
 
         # clean up charges, details, and legal actions records
         charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
