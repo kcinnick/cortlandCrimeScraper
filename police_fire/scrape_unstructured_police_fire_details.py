@@ -11,7 +11,7 @@ from database import Article, Incident, get_database_session
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
-class get_incident_metadata(BaseModel):
+class incident_metadata_schema(BaseModel):
     """Event information"""
 
     article_url: str = Field(description="URL of the article")
@@ -23,18 +23,16 @@ class get_incident_metadata(BaseModel):
     legal_actions: str = Field(description="Legal actions taken against the accused.")
 
 
-# returns a dict, with keys ordered as in the schema
-
-def scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published, DBsession):
+def scrape_unstructured_incident_details(article_id, source, article_content, article_date_published, DBsession):
     # print('Article content: ', article.content)
 
     completion = client.chat.completions.create(
-        model='gpt-3.5-turbo',
+        model='gpt-3.5-turbo-1106',
         messages=[
             {'role': 'system',
              'content': 'You provide information on incidents that occurred in the following article: ' + article_content},
             {'role': 'system',
-             'content': 'There may be multiple incidents listed in a single article.  When this is the case, you must use a list of JSON responses. Multiple names, ages, and addresses may be listed in a single incident.'},
+             'content': 'There may be multiple incidents listed in a single article.  When this is the case, you must use a list of JSON responses. Multiple names, ages, and addresses may be listed in a single incident. The key for the list of incidents should always be incidents.'},
             {'role': 'system',
              'content': 'All output must be provided as an array of objects in dictionary or hashmap format, with the following keys: accused_name, accused_age, accused_location, charges, details, legal_actions.  All values must be strings.  If the article is not about a crime, the output should be N/A.'},
             {'role': 'system',
@@ -44,16 +42,23 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             {'role': 'system',
              'content': "The accused location should include any street, road, avenue, or other location information along with the city or town.  If the accused location is not given, the value should be N/A."},
         ],
+        response_format={'type': 'json_object'},
         temperature=0
     )
 
     response = completion.choices[0].message.content.strip()
     jsonified_response = json.loads(response)
+    if list(jsonified_response.keys()) == ['incidents']:
+        pass
+    else:
+        jsonified_response = {'incidents': [jsonified_response]}
 
-    for incident in jsonified_response:
+    print('jsonified_response: ', jsonified_response)
+
+    for incident in jsonified_response['incidents']:
         print('incident: ', incident)
         incident = Incident(
-            source=article_url,
+            source=source,
             incident_reported_date=article_date_published,
             accused_name=incident['accused_name'],
             accused_age=incident['accused_age'],
@@ -63,11 +68,8 @@ def scrape_unstructured_incident_details(article_id, article_url, article_conten
             legal_actions=incident['legal_actions'],
         )
         incidents = DBsession.query(Incident).filter(
-            Incident.source == article_url,
+            Incident.incident_reported_date == incident.incident_reported_date,
             Incident.accused_name == incident.accused_name,
-            Incident.accused_age == incident.accused_age,
-            Incident.accused_location == incident.accused_location,
-            Incident.charges == incident.charges
         ).all()
 
         if len(incidents) > 0:

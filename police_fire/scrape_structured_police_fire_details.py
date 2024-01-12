@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 
 from database import get_database_session, Article, Incident, AlreadyScrapedUrls
 from police_fire.maps import get_lat_lng_of_addresses
+from police_fire.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
     update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details
@@ -279,7 +280,7 @@ def scrape_structured_incident_details(article, DBsession):
         return
 
     if len(accused) != len(charges) or len(accused) != len(details) or len(accused) != len(legal_actions):
-        add_incident_with_error_if_not_already_exists(article, DBsession)
+        scrape_unstructured_incident_details(article.id, article.source, article.content, article.date_published, DBsession)
         return
 
     for index, accused in enumerate(accused):
@@ -313,7 +314,7 @@ def scrape_structured_incident_details(article, DBsession):
         accused_name, accused_age, accused_location = clean_up_accused_record(article, accused_str, DBsession)
         accused_name = ','.join(accused_name)
         accused_age = ','.join(accused_age)
-        accused_location = ','.join(accused_location)
+        accused_location = ','.join([i for i in accused_location if i])
 
         # clean up charges, details, and legal actions records
         charges_str, details_str, legal_actions_str = clean_up_charges_details_and_legal_actions_records(
