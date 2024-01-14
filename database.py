@@ -86,7 +86,7 @@ class Incident(Base):
     # Foreign Key to Source table
     source = Column(String)
 
-    charges_relationship = relationship('Charges', back_populates='incident')
+    #charges_relationship = relationship('Charges', back_populates='incident')
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
@@ -181,7 +181,7 @@ class Charges(Base):
 
     # Define the relationships
     # persons = relationship('Persons', back_populates='charges')
-    incident = relationship('Incident', back_populates='charges_relationship')
+    #incident = relationship('Incident', back_populates='charges_relationship')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
