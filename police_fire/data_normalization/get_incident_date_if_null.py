@@ -1,13 +1,11 @@
-from database import Incidents, IncidentsFromPdf, get_database_session
+from database import Incident, get_database_session
 from police_fire.utilities import search_for_day_of_week_in_details, get_last_date_of_day_of_week_before_date, \
     check_if_details_references_a_relative_date, check_if_details_references_an_actual_date, \
     update_incident_date_if_necessary
 
 
 def get_incidents_with_null_dates(DBsession):
-    incidents = DBsession.query(Incidents).filter_by(incident_date=None).all()
-    incidents_from_pdf = DBsession.query(IncidentsFromPdf).filter_by(incident_date=None).all()
-    incidents.extend(incidents_from_pdf)
+    incidents = DBsession.query(Incident).filter_by(incident_date=None).all()
     return incidents
 
 

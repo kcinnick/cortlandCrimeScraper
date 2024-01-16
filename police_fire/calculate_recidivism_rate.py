@@ -2,13 +2,13 @@ import pandas as pd
 import sqlalchemy
 from sqlalchemy import column, text
 
-from database import get_database_session, CombinedIncidents
+from database import get_database_session, Incident
 
 
 dbSession, engine = get_database_session(environment='prod')
 
 # get persons incidents by querying the combined_incidents view
-sql = text("SELECT accused_name, incident_date, source FROM public.combined_incidents")
+sql = text("SELECT accused_name, incident_date, source FROM public.incident")
 result = dbSession.execute(sql)
 persons_incidents = result.fetchall()
 
@@ -22,7 +22,7 @@ df['incident_date'] = pd.to_datetime(df['incident_date'])
 repeat_offenders = df[df.duplicated(subset=['accused_name'], keep=False)]
 print(f'Number of repeat offenders: {len(repeat_offenders)}')
 #pd.set_option('display.max_rows', None)
-
+repeat_offenders.to_html('repeat_offenders.html')
 # Calculate recidivism rate
 recidivism_rate = len(repeat_offenders['accused_name'].unique()) / len(df['accused_name'].unique())
 
