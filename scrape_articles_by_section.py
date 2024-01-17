@@ -194,7 +194,7 @@ def main():
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',
         '', '', [], session=logged_in_session,
-        max_pages=2
+        max_pages=1
     )
     print(str(len(article_urls)) + ' articles found.')
     already_scraped_urls = [article.url for article in DBsession.query(AlreadyScrapedUrls).all()]
