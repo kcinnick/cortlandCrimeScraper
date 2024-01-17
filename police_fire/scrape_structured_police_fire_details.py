@@ -20,6 +20,9 @@ def identify_articles_with_incident_formatting(db_session):
         if 'Accused' in article.html_content and 'Charges' in article.html_content and 'Details' in article.html_content:
             articles_with_incidents.append(article)
 
+    # order by article id, descending
+    articles_with_incidents = sorted(articles_with_incidents, key=lambda x: x.id, reverse=False)
+
     return articles_with_incidents
 
 
@@ -349,7 +352,7 @@ def scrape_structured_incident_details(article, DBsession):
         )
 
         # add incident to database if it doesn't already exist
-        if DBsession.query(Incident).filter_by(accused_name=accused_name, details=details_str).count() == 0:
+        if DBsession.query(Incident).filter_by(accused_name=accused_name, incident_reported_date=article.date_published).count() == 0:
             try:
                 DBsession.add(incident)
                 DBsession.commit()

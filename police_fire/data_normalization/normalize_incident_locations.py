@@ -17,6 +17,10 @@ def finish_or_replace_locations(incident):
         incident.incident_location = incident.incident_location = 'N/A'
     elif ' AI ' in incident.incident_location:
         incident.incident_location = incident.incident_location = 'N/A'
+    elif 'The incident took place at ' in incident.incident_location:
+        incident.incident_location = incident.incident_location.replace('The incident took place at ', '')
+    elif "I'm sorry" in incident.incident_location:
+        incident.incident_location = incident.incident_location = 'N/A'
     if incident.incident_location.endswith('Homer'):
         incident.incident_location = incident.incident_location.replace('Homer', 'Homer, New York')
     elif incident.incident_location.endswith('Cortland'):
