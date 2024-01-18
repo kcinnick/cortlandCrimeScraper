@@ -1,11 +1,9 @@
 # contains helper functions that are useful for both structured and unstructured data.
-import json
 import os
 import re
 
 import sqlalchemy
 from openai import OpenAI
-from simpleaichat import AIChat
 from tqdm import tqdm
 
 from database import IncidentsWithErrors, Incident, Article, get_database_session
@@ -51,14 +49,6 @@ def clean_up_charges_details_and_legal_actions_records(charges_str, details_str,
     return charges_str, details_str, legal_actions_str
 
 
-ai = AIChat(
-    console=False,
-    save_messages=False,  # with schema I/O, messages are never saved
-    model="gpt-3.5-turbo",
-    params={"temperature": 0.0},
-    api_key=os.getenv('OPENAI_API_KEY'),
-)
-
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
@@ -70,11 +60,7 @@ def search_for_day_of_week_in_details(details_str):
             return day
 
 
-def get_last_date_of_day_of_week_before_date(day_of_week, date):
-    # find the last time that day of the week occurred before the date
-    query = "What was the last time that " + day_of_week + " occurred before " + str(
-        date) + "? Return ONLY the date, as a string formatted YYYY-MM-DD. If none, return N/A."
-
+def get_response_for_query(query):
     completion = client.chat.completions.create(
         model='gpt-3.5-turbo',
         messages=[
@@ -84,6 +70,16 @@ def get_last_date_of_day_of_week_before_date(day_of_week, date):
         temperature=0
     )
     response = completion.choices[0].message.content.strip()
+
+    return response
+
+
+def get_last_date_of_day_of_week_before_date(day_of_week, date):
+    # find the last time that day of the week occurred before the date
+    query = "What was the most recent date that " + day_of_week + " occurred before " + str(
+        date) + "? Return ONLY the date, as a string formatted YYYY-MM-DD. If none, return N/A."
+
+    response = get_response_for_query(query)
 
     return response
 
@@ -102,7 +98,7 @@ def check_if_details_references_a_relative_date(details_str, incident_reported_d
 def check_if_details_references_an_actual_date(details_str, article_published_date):
     """if the details contain a date, return the date that matched + the year the article was published"""
     query = f"What was the date of the incident: {details_str}? Return only the date as YYYY-MM-DD. Use the year in the article published date as the year: {article_published_date}"
-    response = ai(query).split()[-1]
+    response = get_response_for_query(query).split()[-1]
     if response.endswith('.'):
         response = response[:-1]
     # if the format of response is not like YYYY-MM-DD, return None
@@ -133,10 +129,14 @@ def update_incident_date_if_necessary(DBsession, incident_date_response, details
 def get_incident_location_from_details(details_str):
     """if the details contain a location, return the location that matched"""
     query = "What was the location of the incident: " + details_str + "? Return only the address, city and state (full name, not abbreviation) where available. If none, return N/A."
-    response = ai(query)
+    response = get_response_for_query(query)
     response = response.replace('The location of the incident was ', '')
     response = response.replace('The location of the incident is ', '')
     response = response.replace(' in ', ', ')
+
+    if ' sorry' in response:
+        return 'N/A'
+
     return response
 
 
