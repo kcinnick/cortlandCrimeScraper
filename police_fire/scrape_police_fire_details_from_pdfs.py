@@ -1,35 +1,24 @@
 import ast
 import glob
 import os
-from pprint import pprint
 from time import sleep
 
 import PyPDF2.errors
+import openai
+import pytesseract
+from PyPDF2 import PdfReader, PdfWriter
 from openai import OpenAI
 from pdf2image import convert_from_path
-from simpleaichat import AIChat
 from tqdm import tqdm
 
-from database import IncidentsFromPdf, get_database_session, Persons
-
-from PyPDF2 import PdfFileWriter, PdfReader, PdfWriter
-import pytesseract
-
+from database import get_database_session, Incident
 from police_fire.maps.get_lat_lng_of_addresses import get_lat_lng_of_address
 from police_fire.utilities import check_if_details_references_a_relative_date, \
     check_if_details_references_an_actual_date, get_incident_location_from_details \
-    , add_or_get_person
+    , get_response_for_query
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 DBsession, engine = get_database_session(environment='prod')
-
-ai = AIChat(
-    console=False,
-    save_messages=False,  # with schema I/O, messages are never saved
-    model="gpt-3.5-turbo",
-    params={"temperature": 0.0},
-    api_key=os.getenv('OPENAI_API_KEY'),
-)
 
 month_str_to_int = {
     'jan': '01',
@@ -48,7 +37,7 @@ month_str_to_int = {
 
 
 def get_pdf_path(year, month, day):
-    pdf_glob_path = rf'C:\Users\Nick\PycharmProjects\cortlandStandardScraper\pdfs\{year}\{month}\{day}\*'
+    pdf_glob_path = rf'C:\Users\Nick\PycharmProjects\cortlandStandardScraper\pdfs\{year}\{month_str_to_int[month]}\{day}\*'
     try:
         path_results = glob.glob(pdf_glob_path)
         pdf_path = [path_result for path_result in path_results if path_result.endswith('.pdf')][0]
@@ -60,7 +49,7 @@ def get_pdf_path(year, month, day):
 
 
 def convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path):
-    #print('newspaper_page_number:', newspaper_page_number)
+    # print('newspaper_page_number:', newspaper_page_number)
     output = PdfWriter()
     try:
         page_object = input_pdf.pages[newspaper_page_number]
@@ -79,13 +68,13 @@ def convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path)
                                   poppler_path=r'C:\Users\Nick\Downloads\Release-23.11.0-0\poppler-23.11.0\Library\bin')
     page_data = page_data[0]
 
-    #print('newspaper_page_number:', newspaper_page_number)
+    # print('newspaper_page_number:', newspaper_page_number)
     txt = pytesseract.pytesseract.image_to_string(page_data).encode("utf-8")
     return txt
 
 
 def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
-    #print(pdf_path)
+    print(pdf_path)
     pages_path = '\\'.join(pdf_path.split('\\')[:-1]) + '\\pages'
     if not os.path.exists(pages_path):
         os.mkdir(pages_path)
@@ -102,41 +91,76 @@ def scrape_police_fire_data_from_pdf(pdf_path, year_month_day_str):
         # but sometimes they're on the 2nd page.
         txt = convert_newspaper_page_to_text(input_pdf, newspaper_page_number, pages_path)
         txt = str(txt)
-        with open(pages_path + '\\' + f'police_fire_page_{str(newspaper_page_number)}.txt', 'w') as f:
-            f.write(txt)
-        raw_incidents = ['Accused:' + i for i in txt.split('Accused:')][1:]
+        # cut off everything before the first instance of 'Polic'
+        txt = txt[txt.find('Polic'):]
+
+        # check if pages_path already exists before writing a new one
+        file_path = pages_path + '\\' + f'police_fire_page_{str(newspaper_page_number)}.txt'
+
+        if os.path.exists(file_path):
+            txt = open(file_path, 'r').read()
+        else:
+            with open(file_path, 'w') as f:
+                f.write(txt)
+
         query = ("List all of the incident details provided in the following string, in the original language"
                  " of the article.  Use a Python-style dictionaries with the keys \'accused_name\', \'accused_age\',"
-                 " \'accused_location\', \'charges\', \'details\', \'legal_actions\'. All values need to be strings. "
-                 "If the article is not about a crime, the output should be N/A.")
+                 " \'accused_location\', \'charges\', \'details\', \'legal_actions\'. All values need to be strings."
+                 "Response must be valid JSON. If there is more than one incident, return a list of dictionaries."
+                 "Incidents are usually demarcated by an Accused: string. When you see that, start a new dictionary "
+                 "and add it to the array."
+                 "If the article is not about a crime, the output should be N/A. Incidents: " + txt)
 
-        for raw_incident in raw_incidents:
-            #print(raw_incident)
-            query_with_incident = query + raw_incident
-            response = ai(query_with_incident)
+        if query.endswith('Incidents: '):
+            print('No police/fire details found.  Not adding to database.')
+            return
+
+        print('query:', query)
+
+        try:
+            response = get_response_for_query(query)
+        except openai.BadRequestError as e:
+            print('BadRequestError: ', e)
+            print('query:', query)
+            continue
+        if response == 'N/A':
+            continue
+        try:
             response_as_dict = ast.literal_eval(response)
-            if type(response_as_dict) is list:
-                for incident in response_as_dict:
-                    if incident == 'N/A':
-                        print('No police/fire details found.  Not adding to database.')
-                        continue
-                    else:
-                        parse_details_for_incident(incident, year_month_day_str)
-            elif type(response_as_dict) is dict:
+        except SyntaxError:
+            print('SyntaxError')
+            print('query:', query)
+            print('response:', response)
+            quit()
+        if type(response_as_dict) is list:
+            for incident in response_as_dict:
+                if incident == 'N/A':
+                    print('No police/fire details found.  Not adding to database.')
+                    continue
+                else:
+                    parse_details_for_incident(incident, year_month_day_str)
+        elif type(response_as_dict) is dict:
+            if list(response_as_dict.keys())[0] == 'incidents':
+                for incident in response_as_dict['incidents']:
+                    parse_details_for_incident(incident, year_month_day_str)
+            elif list(response_as_dict.values())[0] == 'N/A':
+                print('No police/fire details found.  Not adding to database.')
+                continue
+            elif 'accused_name' in response_as_dict.keys():
                 parse_details_for_incident(response_as_dict, year_month_day_str)
-            elif response_as_dict == 'N/A':
+            elif list(response_as_dict.keys())[0] == 'N/A':
                 continue
             else:
-                raise ValueError(f'Unexpected response: {response_as_dict}')
-        # if we've gotten this far, we've successfully scraped the police/fire details from the first page of the PDF
-        # and there's no need to continue the loop to check the 3rd page.
-        break
+                raise ValueError(f'Unexpected response: {str(response_as_dict)}')
+        elif response_as_dict == 'N/A':
+            continue
+        else:
+            raise ValueError(f'Unexpected response: {str(response_as_dict)}')
 
     return
 
 
 def parse_details_for_incident(incident, year_month_day_str):
-    pprint(incident)
     incident_date_response = check_if_details_references_a_relative_date(incident['details'],
                                                                          year_month_day_str)
     incident_location = get_incident_location_from_details(incident['details'])
@@ -144,10 +168,10 @@ def parse_details_for_incident(incident, year_month_day_str):
         # check if details references an actual date
         incident_date_response = check_if_details_references_an_actual_date(incident['details'],
                                                                             year_month_day_str)
-    existing_incident = DBsession.query(IncidentsFromPdf).filter(
-        IncidentsFromPdf.incident_reported_date == year_month_day_str,
-        IncidentsFromPdf.accused_name == incident['accused_name'],
-        IncidentsFromPdf.accused_age == incident['accused_age'],
+    existing_incident = DBsession.query(Incident).filter(
+        Incident.incident_reported_date == year_month_day_str,
+        Incident.accused_name == incident['accused_name'],
+        Incident.accused_age == incident['accused_age'],
     ).all()
     lat, lng = get_lat_lng_of_address(incident_location)
     existing_incident = existing_incident[0] if len(existing_incident) > 0 else None
@@ -155,7 +179,7 @@ def parse_details_for_incident(incident, year_month_day_str):
         print('Existing incident found.  Not adding to database.')
         return
     else:
-        incidentFromPdf = IncidentsFromPdf(
+        incident = Incident(
             incident_reported_date=year_month_day_str,
             accused_name=incident['accused_name'],
             accused_age=incident['accused_age'],
@@ -167,9 +191,9 @@ def parse_details_for_incident(incident, year_month_day_str):
             incident_location=incident_location,
             incident_location_lat=lat,
             incident_location_lng=lng,
-            accused_person_id=add_or_get_person(DBsession, incident['accused_name'])
+            source='pdfs/' + year_month_day_str.replace('-', '/')
         )
-        DBsession.add(incidentFromPdf)
+        DBsession.add(incident)
         DBsession.commit()
         sleep(1)
 
@@ -178,32 +202,32 @@ def parse_details_for_incident(incident, year_month_day_str):
 
 def main():
     years = [
-        #'2017',
-        #'2018',
-        #'2019',
-        #'2020',
+        # '2017',
+        # '2018',
+        # '2019',
+        # '2020',
         '2021',
-        #'2022'
+        # '2022'
     ]
     months = [
-        #'jan',
-        #'feb',
-        'mar',
-        #'apr',
-        #'may',
-        #'jun',
-        #'jul'
+        # 'jan',
+        # 'feb',
+        # 'mar',
+        # 'apr',
+        # 'may',
+        # 'jun',
+        # 'jul'
         #'aug',
         #'sep',
         #'oct',
         #'nov',
-        #'dec',
+        'dec',
     ]
-    day_numbers = [str(day_number) for day_number in range(1, 32)]
+    day_numbers = [str(day_number) for day_number in range(1, 31)]
     for year in tqdm(years, desc='year'):
         for month in tqdm(months, desc='month'):
             for day_number in tqdm(day_numbers, desc='day'):
-                year_month_day_str = f'{year}-{month}-{day_number}'
+                year_month_day_str = f'{year}-{month_str_to_int[month]}-{day_number}'
                 pdf_path = get_pdf_path(year, month, day_number)
                 if not pdf_path:
                     continue
