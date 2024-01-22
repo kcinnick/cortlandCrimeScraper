@@ -64,7 +64,7 @@ def search_for_day_of_week_in_details(details_str):
 
 def get_response_for_query(query):
     completion = client.chat.completions.create(
-        model='gpt-3.5-turbo-1106',
+        model='gpt-4-1106-preview',
         messages=[
             {'role': 'system',
              'content': query},
@@ -73,7 +73,6 @@ def get_response_for_query(query):
         response_format=ResponseFormat(type='json_object')
     )
     response = completion.choices[0].message.content.strip()
-    print(type(response))
     print('response', response)
 
     return response
@@ -130,7 +129,7 @@ def update_incident_date_if_necessary(DBsession, incident_date_response, details
 
 def get_incident_location_from_details(details_str):
     """if the details contain a location, return the location that matched"""
-    query = "What was the location of the incident: " + details_str + "? Return only the address, city and state (full name, not abbreviation) where available in JSON format, with 'location' as the key. If none, return N/A."
+    query = "What was the location of the incident: " + details_str + "? Return only the address, city and state (full name, not abbreviation) where available in JSON format, with 'location' as the only key. If none, return N/A."
     response = get_response_for_query(query)
     response = response.replace('The location of the incident was ', '')
     response = response.replace('The location of the incident is ', '')
@@ -139,6 +138,12 @@ def get_incident_location_from_details(details_str):
 
     if ' sorry' in response['location']:
         return 'N/A'
+
+    if type(response['location']) == dict:
+        address = response['location'].get('address')
+        if address is None:
+            address = response['location'].get('street')
+        response['location'] = f"{address}, {response['location']['city']}, {response['location']['state']}"
 
     return response['location']
 
