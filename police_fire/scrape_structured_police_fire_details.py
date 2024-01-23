@@ -366,7 +366,7 @@ def scrape_structured_incident_details(article, DBsession):
             incident_location = get_incident_location_from_details(details_str)
             if incident_location:
                 lat, lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
-                existing_incident = DBsession.query(Incident).filter_by(details=details_str).first()
+                existing_incident = DBsession.query(Incident).filter_by(accused_name=accused_name, incident_reported_date=article.date_published).first()
                 existing_incident.incident_location = incident_location
                 existing_incident.incident_location_lat = lat
                 existing_incident.incident_location_lng = lng

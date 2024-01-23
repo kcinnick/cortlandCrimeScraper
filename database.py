@@ -16,7 +16,6 @@ def get_database_session(environment='development'):
     print("database_username: ", database_username)
     print("database_password: ", database_password)
 
-
     # SQLAlchemy connection string for PostgreSQL
     if environment == 'test':
         DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test'
@@ -86,7 +85,7 @@ class Incident(Base):
     # Foreign Key to Source table
     source = Column(String)
 
-    #charges_relationship = relationship('Charges', back_populates='incident')
+    # charges_relationship = relationship('Charges', back_populates='incident')
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
@@ -119,40 +118,19 @@ class Incidents(Base):
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
-    #article = relationship("Article")  # This creates a link to the Article model
-    #charges_relationship = relationship('Charges', back_populates='incidents')
+    # article = relationship("Article")  # This creates a link to the Article model
+    # charges_relationship = relationship('Charges', back_populates='incidents')
 
     __table_args__ = (
-        UniqueConstraint('url', 'incident_reported_date', 'charges', 'accused_name', name='uix_url_incident_reported_date_charges_accused_name'),
+        UniqueConstraint(
+            'url', 'incident_reported_date', 'charges', 'accused_name',
+            name='uix_url_incident_reported_date_charges_accused_name'),
         {'schema': 'public'},
     )
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.url} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.structured_source} - {self.incident_date}'
 
-
-class IncidentsFromPdf(Base):
-    __tablename__ = 'incidents_from_pdf'
-    __table_args__ = {'schema': 'public'}
-
-    id = Column(Integer, autoincrement=True, primary_key=True)
-    incident_reported_date = Column(Date, primary_key=True)
-    accused_name = Column(String, primary_key=True)
-    accused_person_id = Column(Integer, ForeignKey('public.persons.id'))
-    accused_age = Column(String, nullable=True)
-    accused_location = Column(String)
-    charges = Column(String, primary_key=True)
-    details = Column(String, primary_key=True)
-    legal_actions = Column(String)
-    incident_date = Column(Date, nullable=True)
-    incident_location = Column(String, nullable=True)
-    incident_location_lat = Column(String, nullable=True)
-    incident_location_lng = Column(String, nullable=True)
-
-    #accused_person = relationship("Persons", backref="incidents_from_pdf")
-
-    def __str__(self):
-        return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
 
 class Addresses(Base):
     __tablename__ = 'addresses'
@@ -181,7 +159,7 @@ class Charges(Base):
 
     # Define the relationships
     # persons = relationship('Persons', back_populates='charges')
-    #incident = relationship('Incident', back_populates='charges_relationship')
+    # incident = relationship('Incident', back_populates='charges_relationship')
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
@@ -193,28 +171,6 @@ class Charges(Base):
 
     def __str__(self):
         return f'{self.charge_description}, {self.charge_class}, {self.degree}'
-
-# class Persons(Base):
-#     __tablename__ = 'persons'
-#     __table_args__ = {'schema': 'public'}
-#
-#     id = Column(Integer, primary_key=True, autoincrement=True)
-#     name = Column(String, unique=True)
-#
-#     charges = relationship('Charges', back_populates='persons')
-#     incident_persons = relationship('IncidentPerson', back_populates='persons')
-#
-#     def __str__(self):
-#         return f'{self.name}'
-
-
-# class PersonAddress(Base):
-#     __tablename__ = 'PersonAddress'
-#     __table_args__ = {'schema': 'public'}
-#
-#     PersonID = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
-#     AddressID = Column(Integer, ForeignKey('public.addresses.id'), primary_key=True)
-#     AsOfDate = Column(Date)
 
 
 class AlreadyScrapedUrls(Base):
@@ -231,20 +187,6 @@ class AlreadyScrapedPdfs(Base):
     pdf_date = Column(String, primary_key=True)
 
 
-# class IncidentPerson(Base):
-#     __tablename__ = 'incident_persons'
-#     __table_args__ = {'schema': 'public'}
-#
-#     incident_id = Column(Integer, ForeignKey('public.incidents.id'), primary_key=True)
-#     person_id = Column(Integer, ForeignKey('public.persons.id'), primary_key=True)
-#
-#     incidents = relationship('Incidents', back_populates='incident_persons')
-#     persons = relationship('Persons', back_populates='incident_persons')
-#
-#     def __str__(self):
-#         return f'{self.name}'
-
-
 def create_tables(environment='development'):
     print('environment==', environment)
     DBsession, engine = get_database_session(environment)
@@ -259,47 +201,6 @@ def create_tables(environment='development'):
         DBsession.close()
     else:
         Base.metadata.create_all(engine)
-
-
-def create_view(environment='test'):
-    print('environment==', environment)
-    create_view_sql = text("""CREATE OR REPLACE VIEW public.combined_incidents AS
-SELECT 
-    i.id,
-    i.incident_reported_date::date, 
-    i.accused_name AS accused_name,
-    i.accused_age, 
-    i.accused_location, 
-    i.charges, 
-    i.details, 
-    i.legal_actions, 
-    i.incident_date::date,
-    i.incident_location,
-    i.incident_location_lat,
-    i.incident_location_lng,
-    'url' AS source  -- Static value indicating the source of the data
-FROM incidents i
-UNION ALL
-SELECT 
-    ip.id,
-    ip.incident_reported_date::date, 
-    ip.accused_name AS accused_name,
-    ip.accused_age, 
-    ip.accused_location, 
-    ip.charges, 
-    ip.details, 
-    ip.legal_actions, 
-    ip.incident_date::date,
-    ip.incident_location,
-    ip.incident_location_lat,
-    ip.incident_location_lng,
-    'pdf' AS source  -- Static value indicating the source of the data
-FROM incidents_from_pdf ip
-""")
-    DBsession, engine = get_database_session(environment=environment)
-    with engine.connect() as connection:
-        connection.execute(create_view_sql)
-    DBsession.close()
 
 
 def create_view_for_already_scraped_urls(environment='test'):
@@ -336,7 +237,7 @@ def remove_non_standard_characters(string):
         return None
     string = unicodedata.normalize('NFKD', string).encode('ascii', 'ignore').decode('ascii')
     # Replace unwanted characters, e.g., line breaks, extra spaces
-    string = string.replace("\n", "").replace("\r", "").strip()
+    string = string.replace("\n", " ").replace("\r", " ").strip()
     return string
 
 
@@ -352,17 +253,16 @@ def clean_strings_in_table(environment):
         incident.incident_location = remove_non_standard_characters(incident.incident_location)
         DBsession.commit()
 
-
     return
 
 
 if __name__ == "__main__":
-    create_tables(environment='development')
+    # create_tables(environment='development')
     # create_view(environment='development')
     # create_view_for_already_scraped_urls(environment='prod')
-    # clean_strings_in_table(
-    # environment = 'prod'
-    # )
+    clean_strings_in_table(
+        environment='prod'
+    )
 
 # helpful query for finding duplicates:
 # SELECT

@@ -42,7 +42,8 @@ def get_incident_location(DBsession, incident):
 
 def choose_location_to_append(incident, incident_location, DBsession):
     print('Press 1 to append \'Cortland, New York\' to incident location.')
-    print('Press 2 to append \'New York\' to incident location.')
+    print('Press 2 to append \'Homer, New York\' to incident location.')
+    print('Press 3 to append \'New York\' to incident location.')
     print('Press Enter to skip.')
     choice = input()
     if choice == '1':
@@ -51,6 +52,11 @@ def choose_location_to_append(incident, incident_location, DBsession):
         DBsession.add(incident)
         DBsession.commit()
     elif choice == '2':
+        incident_location = incident_location + ', Homer, New York'
+        incident.incident_location = incident_location
+        DBsession.add(incident)
+        DBsession.commit()
+    elif choice == '3':
         incident_location = incident_location + ', New York'
         incident.incident_location = incident_location
         DBsession.add(incident)
