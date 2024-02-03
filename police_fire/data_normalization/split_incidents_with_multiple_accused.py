@@ -17,7 +17,7 @@ def split_incidents_with_multiple_accused(DBsession):
 
 def clean_split(incident, accused_names, addresses_in_cortland, accused_ages, DBsession):
     for i in range(len(accused_names)):
-        print('Creating new incident for ' + accused_names[i] + ' at ' + addresses_in_cortland[i])
+        print('Creating new charge for ' + accused_names[i] + ' at ' + addresses_in_cortland[i])
         accused_age = accused_ages[i] if i < len(accused_ages) else 'N/A'
         new_incident = Incident(
             source=incident.source,
@@ -60,7 +60,7 @@ def split_incident(incident, DBsession):
         print('Only one address found.  Splitting accused names and ages.')
         accused_names = [i.strip() for i in incident.accused_name.split(',') if i.strip() != '']
         accused_ages = [i.strip() for i in incident.accused_age.split(',') if i.strip() != '']
-        clean_split(incident, accused_names, accused_location * len(accused_names), accused_ages, DBsession)
+        clean_split(incident, accused_names, accused_names[0], accused_ages, DBsession)
     else:
         print(incident)
         pass
