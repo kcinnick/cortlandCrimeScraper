@@ -16,7 +16,6 @@ def get_database_session(environment='development'):
     print("database_username: ", database_username)
     print("database_password: ", database_password)
 
-
     # SQLAlchemy connection string for PostgreSQL
     if environment == 'test':
         DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test'
@@ -86,7 +85,7 @@ class Incident(Base):
     # Foreign Key to Source table
     source = Column(String)
 
-    #charges_relationship = relationship('Charges', back_populates='incident')
+    # charges_relationship = relationship('Charges', back_populates='incident')
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
@@ -119,11 +118,12 @@ class Incidents(Base):
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
-    #article = relationship("Article")  # This creates a link to the Article model
-    #charges_relationship = relationship('Charges', back_populates='incidents')
+    # article = relationship("Article")  # This creates a link to the Article model
+    # charges_relationship = relationship('Charges', back_populates='incidents')
 
     __table_args__ = (
-        UniqueConstraint('url', 'incident_reported_date', 'charges', 'accused_name', name='uix_url_incident_reported_date_charges_accused_name'),
+        UniqueConstraint('url', 'incident_reported_date', 'charges', 'accused_name',
+                         name='uix_url_incident_reported_date_charges_accused_name'),
         {'schema': 'public'},
     )
 
@@ -149,10 +149,11 @@ class IncidentsFromPdf(Base):
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
-    #accused_person = relationship("Persons", backref="incidents_from_pdf")
+    # accused_person = relationship("Persons", backref="incidents_from_pdf")
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
+
 
 class Addresses(Base):
     __tablename__ = 'addresses'
@@ -174,25 +175,19 @@ class Addresses(Base):
 
 class Charges(Base):
     __tablename__ = 'charges'
-    __table_args__ = (
-        UniqueConstraint('charge_description', 'charge_class', 'degree', name='unique_charge_combination'),
-        {'schema': 'public'},
-    )
-
-    # Define the relationships
-    # persons = relationship('Persons', back_populates='charges')
-    #incident = relationship('Incident', back_populates='charges_relationship')
+    __table_args__ = {'schema': 'public'}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
     charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
     degree = Column(String, nullable=True)
+    charged_name = Column(String, nullable=True)
 
-    # person_id = Column(Integer, ForeignKey('public.persons.id'))
     incident_id = Column(Integer, ForeignKey('public.incident.id'))
 
     def __str__(self):
-        return f'{self.charge_description}, {self.charge_class}, {self.degree}'
+        return f'{self.charged_name}, {self.charge_description}, {self.charge_class}, {self.degree}, {self.incident_id}'
+
 
 # class Persons(Base):
 #     __tablename__ = 'persons'
@@ -352,17 +347,16 @@ def clean_strings_in_table(environment):
         incident.incident_location = remove_non_standard_characters(incident.incident_location)
         DBsession.commit()
 
-
     return
 
 
 if __name__ == "__main__":
-    create_tables(environment='development')
+    # create_tables(environment='development')
     # create_view(environment='development')
     # create_view_for_already_scraped_urls(environment='prod')
-    # clean_strings_in_table(
-    # environment = 'prod'
-    # )
+    clean_strings_in_table(
+        environment = 'prod'
+    )
 
 # helpful query for finding duplicates:
 # SELECT
