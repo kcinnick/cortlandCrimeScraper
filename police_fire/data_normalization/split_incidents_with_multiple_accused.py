@@ -4,7 +4,8 @@
 # finally, delete the incident with multiple accused
 import re
 
-from database import Incident, get_database_session
+from database import get_database_session
+from models.incident import Incident
 
 
 def split_incidents_with_multiple_accused(DBsession):

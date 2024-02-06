@@ -3,8 +3,6 @@ import os
 from requests import Session
 from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
-
 
 def login():
     session = Session()
