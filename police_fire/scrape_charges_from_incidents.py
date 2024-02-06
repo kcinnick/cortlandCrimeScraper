@@ -1,25 +1,13 @@
 import re
 from pprint import pprint
 
-from database import get_database_session, Charges, Incident
+from database import get_database_session
+from models.incident import Incident
+from models.charges import Charges
 
 from police_fire.data_normalization.split_incidents_with_multiple_accused import split_incident
 
-DBsession, engine = get_database_session(environment='prod')
-columns = [
-    Incident.id,
-    Incident.incident_reported_date,
-    Incident.accused_name,
-    Incident.accused_age,
-    Incident.accused_location,
-    Incident.charges,
-    Incident.details,
-    Incident.legal_actions,
-    Incident.incident_date,
-    Incident.incident_location,
-]
-
-all_incidents = DBsession.query(*columns).all()
+DBsession, engine = get_database_session(environment='dev')
 
 
 def categorize_charges(incident_id, charges, accused_name):
