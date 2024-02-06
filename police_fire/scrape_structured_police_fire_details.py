@@ -21,7 +21,7 @@ def identify_articles_with_incident_formatting(db_session):
             articles_with_incidents.append(article)
 
     # order by article id, descending
-    articles_with_incidents = sorted(articles_with_incidents, key=lambda x: x.id, reverse=False)
+    articles_with_incidents = sorted(articles_with_incidents, key=lambda x: x.date_published, reverse=False)
 
     return articles_with_incidents
 
@@ -385,7 +385,7 @@ def main():
     print(f'{len(articles_with_incidents)} articles with incident formatting.')
     try:
         for index, article in enumerate(articles_with_incidents):
-            print('\n---Scraping article ' + str(index + 1) + ' of ' + str(len(articles_with_incidents)) + '---\n')
+            print('\n---Scraping article from ' + str(article.date_published) + ' #'  + str(index + 1) + ' of ' + str(len(articles_with_incidents)) + '---\n')
             scrape_structured_incident_details(article, database_session)
     finally:
         database_session.close()
