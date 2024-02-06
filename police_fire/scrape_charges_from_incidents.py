@@ -124,6 +124,7 @@ def split_charges_by_and(charges, charge_type):
         # and not a separator.  In these cases, we'll remove the word
         # and replace it with 'or'.
         'speed not reasonable and prudent': 'speed not reasonable or prudent',
+        'one count of failure to provide proper food and drink to an impounded animal': 'one count of failure to provide proper food or drink to an impounded animal',
     }
     for key, value in charges_to_rename.items():
         if key in charges:
@@ -135,7 +136,10 @@ def split_charges_by_and(charges, charge_type):
         split_charge = split_charge.strip()
         if split_charge.startswith('and '):
             split_charge = split_charge[4:]
-        split_charges.append(split_charge)
+        if len(split_charge) == 0:
+            continue
+        else:
+            split_charges.append(split_charge)
 
     return split_charges
 
@@ -205,6 +209,8 @@ def add_charges_to_charges_table(incident, categorized_charges):
                 charges_split_by_and = split_charges_by_and(c, charge_type)
                 for split_charge in charges_split_by_and:
                     split_charge = split_charge.strip()
+                    if len(split_charge) == 0:
+                        continue
                     if split_charge.startswith('and '):
                         split_charge = split_charge[4:]
 
