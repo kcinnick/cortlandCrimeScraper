@@ -16,12 +16,29 @@ def split_incidents_with_multiple_accused(DBsession):
     return multiple_accused
 
 
+def create_charge_dict(incident, accused_name, accused_age, accused_location, charge):
+    charge_dict = {}
+    charge_dict['incident_id'] = incident.id
+    charge_dict['accused_name'] = accused_name
+    charge_dict['accused_age'] = accused_age
+    charge_dict['accused_location'] = accused_location
+    charge_dict['charge'] = charge
+    return charge_dict
+
+
 def clean_split(incident, accused_names, accused_ages, addresses, DBsession):
-    #print('----')
+    # print('----')
     split_charges_by_sentence = [i for i in incident.charges.split('.') if len(i.strip()) > 1]
+    if len(split_charges_by_sentence) == 1:
+        # try splitting by semicolon
+        split_charges_by_sentence = [i for i in incident.charges.split(';') if len(i.strip()) > 1]
+
     raw_charges = []
     print('Splitting incident ' + str(incident.id) + ' with ' + str(len(accused_names)) + ' accused.')
     for i in range(len(accused_names)):
+        print('Accused name: ' + accused_names[i])
+        split_name = accused_names[i].split(' ')
+        last_name = split_name[-1]
 
         try:
             address = addresses[i]
@@ -36,28 +53,23 @@ def clean_split(incident, accused_names, accused_ages, addresses, DBsession):
         print('Creating new charge for ' + accused_names[i] + ' at ' + address)
         for split_charge in split_charges_by_sentence:
             print('Split charge: ' + split_charge)
-            split_name = accused_names[i].split(' ')
-            last_name = split_name[-1]
             if last_name in split_charge:
-                #print('Name found in charge: ' + name)
-                #print('Adding charge to ' + accused_names[i] + ' at ' + address)
-                #print('----')
-                raw_charge = {}
-                raw_charge['accused_name'] = accused_names[i]
-                raw_charge['accused_age'] = age
-                raw_charge['accused_location'] = address
-                raw_charge['charge'] = split_charge
-                raw_charge['incident_id'] = incident.id
-                raw_charges.append(raw_charge)
+                raw_charge_dict = create_charge_dict(incident, accused_names[i], age, address, split_charge)
+                raw_charges.append(raw_charge_dict)
             else:
-                print('Name not found in charge: ' + last_name)
-                raw_charge = {}
-                raw_charge['accused_name'] = accused_names[i]
-                raw_charge['accused_age'] = age
-                raw_charge['accused_location'] = address
-                raw_charge['charge'] = split_charge
-                raw_charge['incident_id'] = incident.id
-                raw_charges.append(raw_charge)
+                # check if any of the other last names are in the charge
+                other_last_name_found = False
+                for name in accused_names:
+                    if name.split(' ')[-1] in split_charge:
+                        raw_charge_dict = create_charge_dict(incident, name, age, address, split_charge)
+                        raw_charges.append(raw_charge_dict)
+                        other_last_name_found = True
+                        break
+                if not other_last_name_found:
+                    # if the charge doesn't contain any of the accused names, then it's likely a charge for all
+                    # accused.  We'll add it to all accused.
+                    raw_charge_dict = create_charge_dict(incident, accused_names[i], age, address, split_charge)
+                    raw_charges.append(raw_charge_dict)
 
     return raw_charges
 
@@ -71,7 +83,7 @@ def split_incident(incident, DBsession):
     if len(accused_names) == len(accused_locations):
         raw_charges = clean_split(incident, accused_names, accused_ages, accused_locations, DBsession)
     elif len(accused_locations) == 1:
-        #print('Only one address found.  Splitting accused names and ages.')
+        # print('Only one address found.  Splitting accused names and ages.')
         accused_names = [i.strip() for i in incident.accused_name.split(',') if i.strip() != '']
         raw_charges = clean_split(incident, accused_names, accused_ages, [accused_locations[0]], DBsession)
     else:
