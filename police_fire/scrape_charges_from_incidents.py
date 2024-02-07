@@ -1,6 +1,8 @@
 import re
 from pprint import pprint
 
+from tqdm import tqdm
+
 from database import get_database_session
 from models.incident import Incident
 from models.charges import Charges
@@ -124,6 +126,7 @@ def split_charges_by_and(charges, charge_type):
         # and not a separator.  In these cases, we'll remove the word
         # and replace it with 'or'.
         'speed not reasonable and prudent': 'speed not reasonable or prudent',
+        'one count of failure to provide proper food and drink to an impounded animal': 'one count of failure to provide proper food or drink to an impounded animal',
     }
     for key, value in charges_to_rename.items():
         if key in charges:
@@ -135,7 +138,10 @@ def split_charges_by_and(charges, charge_type):
         split_charge = split_charge.strip()
         if split_charge.startswith('and '):
             split_charge = split_charge[4:]
-        split_charges.append(split_charge)
+        if len(split_charge) == 0:
+            continue
+        else:
+            split_charges.append(split_charge)
 
     return split_charges
 
@@ -163,35 +169,6 @@ def process_charge(charge_description):
     return charge_description, charge_degree
 
 
-def main():
-    incidents = DBsession.query(Incident).all()
-    for incident in incidents:
-        #print(incident)
-        if ',' in incident.accused_name:
-            print('Accused name contains more than one name. Incident will be split.')
-            list_of_uncategorized_charges = split_incident(incident, DBsession)
-            for charges in list_of_uncategorized_charges:
-                uncategorized_charges = charges['charge']
-                accused_name = charges['accused_name']
-                print('uncategorized_charges: ', uncategorized_charges)
-                categorized_charges = categorize_charges(
-                    incident_id=incident.id,
-                    charges=uncategorized_charges,
-                    accused_name=accused_name
-                )
-                pprint(categorized_charges)
-                add_charges_to_charges_table(incident, categorized_charges)
-        else:
-            uncategorized_charges = incident.charges
-            accused_name = incident.accused_name
-            categorized_charges = categorize_charges(
-                incident_id=incident.id,
-                charges=uncategorized_charges,
-                accused_name=accused_name
-            )
-            add_charges_to_charges_table(incident, categorized_charges)
-
-
 def add_charges_to_charges_table(incident, categorized_charges):
     print('categorized_charges: ', categorized_charges)
     for charge_type, charges in categorized_charges.items():
@@ -200,11 +177,16 @@ def add_charges_to_charges_table(incident, categorized_charges):
         print('charges: ', charges)
         for charge in charges:
             accused_name = charge['accused_name']
+            # remove any commas from dollar amounts
+            charge['cleaned_charge_description'] = re.sub(r'\$(\d+),(\d+)', r'$\1\2',
+                                                          charge['cleaned_charge_description'])
             separated_charges_by_comma = charge['cleaned_charge_description'].split(',')
             for c in separated_charges_by_comma:
                 charges_split_by_and = split_charges_by_and(c, charge_type)
                 for split_charge in charges_split_by_and:
                     split_charge = split_charge.strip()
+                    if len(split_charge) == 0:
+                        continue
                     if split_charge.startswith('and '):
                         split_charge = split_charge[4:]
 
@@ -232,6 +214,18 @@ def add_charges_to_charges_table(incident, categorized_charges):
 
 
 def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_id):
+    name_used = re.search('(\w+) was charged with', charge_str, re.IGNORECASE)
+    try:
+        name_used = name_used.group(1)
+    except AttributeError:
+        name_used = None
+    if name_used:
+        # if the name used in the charge description is different from the accused name,
+        # don't add the charge to the charges table
+        if name_used.lower() != accused_name.split()[-1].lower():
+            print(
+                'Name used in charge description is different from accused name. Charge will not be added to charges table.')
+            return
     charge_description, charge_degree = process_charge(charge_str)
     print('------')
     print('incident id: ', incident_id)
@@ -259,6 +253,33 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         session.add(charge)
         session.commit()
         return charge.id
+
+
+def main():
+    incidents = DBsession.query(Incident).all()
+    for incident in tqdm(incidents):
+        # print(incident)
+        if ',' in incident.accused_name:
+            print('Accused name contains more than one name. Incident will be split.')
+            list_of_uncategorized_charges = split_incident(incident, DBsession)
+            for charges in list_of_uncategorized_charges:
+                uncategorized_charges = charges['charge']
+                accused_name = charges['accused_name']
+                categorized_charges = categorize_charges(
+                    incident_id=incident.id,
+                    charges=uncategorized_charges,
+                    accused_name=accused_name
+                )
+                add_charges_to_charges_table(incident, categorized_charges)
+        else:
+            uncategorized_charges = incident.charges
+            accused_name = incident.accused_name
+            categorized_charges = categorize_charges(
+                incident_id=incident.id,
+                charges=uncategorized_charges,
+                accused_name=accused_name
+            )
+            add_charges_to_charges_table(incident, categorized_charges)
 
 
 if __name__ == '__main__':
