@@ -2,7 +2,12 @@ import regex as re
 from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
-from database import get_database_session, Article, Incident, AlreadyScrapedUrls
+from database import get_database_session
+
+from models.article import Article
+from models.incident import Incident
+from models.already_scraped_urls import AlreadyScrapedUrls
+
 from police_fire.maps import get_lat_lng_of_addresses
 from police_fire.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \

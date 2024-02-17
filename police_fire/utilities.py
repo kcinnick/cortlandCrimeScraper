@@ -8,7 +8,9 @@ from openai import OpenAI
 from openai.types.chat.completion_create_params import ResponseFormat
 from tqdm import tqdm
 
-from database import IncidentsWithErrors, Incident, Article, get_database_session
+from models.incident import Incident
+from models.incidents_with_errors import IncidentsWithErrors
+from models.article import Article
 
 
 def delete_table_contents(DBsession, engine):

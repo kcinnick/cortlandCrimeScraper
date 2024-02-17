@@ -4,7 +4,8 @@ from time import sleep
 import requests
 from tqdm import tqdm
 
-from database import get_database_session, Incident
+from database import get_database_session
+from models.incident import Incident
 from police_fire.utilities import get_incident_location_from_details
 
 
