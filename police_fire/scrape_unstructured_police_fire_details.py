@@ -6,7 +6,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from tqdm import tqdm
 
-from database import Article, Incident, get_database_session
+from database import get_database_session
+from models.incident import Incident
+from models.article import Article
 
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -111,7 +113,6 @@ def main():
     police_fire_articles = DBsession.query(Article).where(Article.section == 'Police/Fire').order_by(
         Article.date_published.desc()).all()
     police_fire_articles = list(police_fire_articles)
-    # reverse list
     index = 0
     for article in tqdm(police_fire_articles):
         article_id, article_url, article_content, article_date_published = article.id, article.url, article.content, article.date_published

@@ -9,7 +9,9 @@ from newspaper import Config
 from requests import Session
 from tqdm import tqdm
 
-from database import get_database_session, Article, AlreadyScrapedUrls
+from models.already_scraped_urls import AlreadyScrapedUrls
+from models.article import Article
+from database import get_database_session
 from utilities import login
 
 config = Config()
