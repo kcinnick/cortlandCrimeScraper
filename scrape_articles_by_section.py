@@ -1,17 +1,14 @@
-import os
 from time import sleep
 
 import regex as re
-
 from bs4 import BeautifulSoup
 from newspaper import Article as NewspaperArticle
 from newspaper import Config
-from requests import Session
 from tqdm import tqdm
 
+from database import get_database_session
 from models.already_scraped_urls import AlreadyScrapedUrls
 from models.article import Article
-from database import get_database_session
 from utilities import login
 
 config = Config()
@@ -150,14 +147,41 @@ def get_article_urls(topics, keywords, byline, match_type, sub_types, start_date
     return articleUrls
 
 
-def scrape_article(article_url, logged_in_session, section, DBsession):
-    print(article_url)
-    parsed_article = NewspaperArticle(article_url, config=config)
-    parsed_article.download()
-    parsed_article.parse()
-    parsed_article.nlp()
-    print('keywords: ' + str(parsed_article.keywords))
+def get_or_create_article(article_url, section, DBsession, soup, headline, byline, date_published):
+    # try getting article from database by url
+    article = DBsession.query(Article).filter_by(url=article_url).first()
+    if article:
+        return article
+    else:
+        parsed_article = NewspaperArticle(article_url, config=config)
+        parsed_article.download()
+        parsed_article.parse()
+        parsed_article.nlp()
+        print('keywords: ' + str(parsed_article.keywords))
 
+        article = Article(
+            headline=headline,
+            section=section,
+            keywords=parsed_article.keywords,
+            author=byline,
+            date_published=date_published,
+            url=article_url,
+            content=parsed_article.text,
+            html_content=soup.prettify()
+        )
+        try:
+            DBsession.add(article)
+            DBsession.commit()
+            DBsession.close()
+        except Exception as e:
+            print('Error adding article to database: ', e)
+            DBsession.rollback()
+            DBsession.close()
+
+    return article
+
+
+def get_article_and_details(article_url, logged_in_session):
     r = logged_in_session.get(article_url)
     soup = BeautifulSoup(r.content, 'html.parser')
     headline = soup.find('h1', id='headline').text
@@ -166,26 +190,19 @@ def scrape_article(article_url, logged_in_session, section, DBsession):
     except AttributeError:
         byline = ''
     date_published = re.search('"datePublished": "(.*?)"', str(soup)).group(1)
+    return headline, byline, date_published, soup
 
-    article = Article(
-        headline=headline,
-        section=section,
-        keywords=parsed_article.keywords,
-        author=byline,
-        date_published=date_published,
-        url=article_url,
-        content=parsed_article.text,
-        html_content=soup.prettify()
-    )
 
-    try:
-        DBsession.add(article)
-        DBsession.commit()
-        DBsession.close()
-    except Exception as e:
-        print('Error adding article to database: ', e)
-        DBsession.rollback()
-        DBsession.close()
+def scrape_article(article_url, logged_in_session, section, DBsession):
+    print(article_url)
+    parsed_article = NewspaperArticle(article_url, config=config)
+    parsed_article.download()
+    parsed_article.parse()
+    parsed_article.nlp()
+    print('keywords: ' + str(parsed_article.keywords))
+
+    headline, byline, date_published, soup = get_article_and_details(article_url, logged_in_session)
+    get_or_create_article(article_url, section, DBsession, soup, headline, byline, date_published)
 
     return
 
