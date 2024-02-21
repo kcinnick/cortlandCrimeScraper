@@ -33,14 +33,12 @@ def identify_articles_with_incident_formatting(db_session):
 
 def scrape_separate_incident_details(separate_incident_tags, article, DBsession):
     separate_incident_tags = [i for i in separate_incident_tags if i.strip() != '']
+    if len(separate_incident_tags) in [0, 1]:
+        print('No separate incident tags found.')
+        return
     if 'Accused' not in separate_incident_tags[0]:
         # remove the first element if it's not an accused record
         separate_incident_tags = separate_incident_tags[1:]
-    if len(separate_incident_tags) in [0, 1]:
-        print('No separate incident tags found.')
-        # add the article to IncidentsWithErrors if it's not already there
-        add_incident_with_error_if_not_already_exists(article, DBsession)
-        return
     accused_tag_index = 0
     if 'Accused' in separate_incident_tags[accused_tag_index]:
         pass
