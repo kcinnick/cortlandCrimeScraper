@@ -9,7 +9,6 @@ from tqdm import tqdm
 from database import get_database_session
 from models.already_scraped_urls import AlreadyScrapedUrls
 from models.article import Article
-from utilities import login
 
 config = Config()
 userAgent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 "
@@ -178,6 +177,13 @@ def get_or_create_article(article_url, section, DBsession, soup, headline, bylin
             DBsession.rollback()
             DBsession.close()
 
+    # add article to AlreadyScrapedUrls
+    already_scraped_url = AlreadyScrapedUrls(url=article_url)
+    DBsession.add(already_scraped_url)
+    DBsession.commit()
+    # TODO: there needs to be 2 columns in AlreadyScrapedUrls: the URL, and if it's been verified or not.
+    #  If it's been scraped, it doesn't need to be scraped again. Verification will occur manually.
+
     return article
 
 
@@ -194,7 +200,10 @@ def get_article_and_details(article_url, logged_in_session):
 
 
 def scrape_article(article_url, logged_in_session, section, DBsession):
-    print(article_url)
+    article = DBsession.query(Article).filter_by(url=article_url).first()
+    if article:
+        print('Article already in database.')
+        return article
     parsed_article = NewspaperArticle(article_url, config=config)
     parsed_article.download()
     parsed_article.parse()
@@ -207,19 +216,18 @@ def scrape_article(article_url, logged_in_session, section, DBsession):
     return
 
 
-def main():
-    DBsession, engine = get_database_session(environment='prod')
+def main(max_pages=1, environment='prod'):
+    DBsession, engine = get_database_session(environment=environment)
     logged_in_session = login()
     article_urls = get_article_urls(
         ['Police/Fire'], [], '', 'any',
         '', '', [], session=logged_in_session,
-        max_pages=1
+        max_pages=max_pages
     )
     print(str(len(article_urls)) + ' articles found.')
     already_scraped_urls = [article.url for article in DBsession.query(AlreadyScrapedUrls).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
     for article_url in tqdm(article_urls):
-        print(article_url, ' not in already_scraped_urls')
         scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)
 
 
