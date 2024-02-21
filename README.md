@@ -21,7 +21,7 @@
 - **Function**: Focuses on specific incidents reported in Police/Fire categorized articles, extracting key details for deeper analysis.
 - **Relation to Article Table**: Each incident is linked to an article to maintain traceability and context.
 
-### TODO - Charges Table
+### Charges Table
 - **Derived From**: Incident table data.
 - **Purpose**: Provides a granular view of the charges associated with each incident, supporting detailed legal and statistical analyses.
 - **Relation to Incident Table**: Each entry in the charges table corresponds to a specific incident, allowing for a clear understanding of the legal aspects associated with each case.
