@@ -4,6 +4,7 @@ from database import get_database_session
 from police_fire.utilities import get_incident_location_from_details
 from models.incident import Incident
 
+
 def get_incident_location(DBsession, incident):
     if incident.incident_location:
         return incident.incident_location

@@ -1,4 +1,5 @@
-from database import Incident, get_database_session
+from database import get_database_session
+from models.incident import Incident
 from police_fire.utilities import search_for_day_of_week_in_details, get_last_date_of_day_of_week_before_date, \
     check_if_details_references_a_relative_date, check_if_details_references_an_actual_date, \
     update_incident_date_if_necessary
