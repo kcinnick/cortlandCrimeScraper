@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, declarative_base
 
-from database import Base
+from base import Base
 
 
 class IncidentsWithErrors(Base):

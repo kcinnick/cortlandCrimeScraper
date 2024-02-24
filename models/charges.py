@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Date, ForeignKey
 from sqlalchemy.orm import declarative_base
 
-from database import Base
+from base import Base
 
 
 class Charges(Base):

@@ -3,7 +3,8 @@ from sqlalchemy import Column, Integer, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-from database import Base, get_database_session
+from base import Base
+from database import get_database_session
 from models.already_scraped_pdfs import AlreadyScrapedPdfs
 from models.already_scraped_urls import AlreadyScrapedUrls
 from models.article import Article
