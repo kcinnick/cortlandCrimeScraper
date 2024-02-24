@@ -7,8 +7,9 @@ from newspaper import Config
 from tqdm import tqdm
 
 from database import get_database_session
-from models.already_scraped_urls import AlreadyScrapedUrls
 from models.article import Article
+from models.scraped_articles import ScrapedArticles
+from police_fire.utilities import login
 
 config = Config()
 userAgent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 "
@@ -169,6 +170,7 @@ def get_or_create_article(article_url, section, DBsession, soup, headline, bylin
             html_content=soup.prettify()
         )
         try:
+            print('adding article')
             DBsession.add(article)
             DBsession.commit()
             DBsession.close()
@@ -177,12 +179,14 @@ def get_or_create_article(article_url, section, DBsession, soup, headline, bylin
             DBsession.rollback()
             DBsession.close()
 
-    # add article to AlreadyScrapedUrls
-    already_scraped_url = AlreadyScrapedUrls(url=article_url)
+    # add article to ScrapedArticles table
+    already_scraped_url = ScrapedArticles(
+        path=article_url,
+        incidents_scraped=False,
+        incidents_verified=False
+    )
     DBsession.add(already_scraped_url)
     DBsession.commit()
-    # TODO: there needs to be 2 columns in AlreadyScrapedUrls: the URL, and if it's been verified or not.
-    #  If it's been scraped, it doesn't need to be scraped again. Verification will occur manually.
 
     return article
 
@@ -225,7 +229,7 @@ def main(max_pages=1, environment='prod'):
         max_pages=max_pages
     )
     print(str(len(article_urls)) + ' articles found.')
-    already_scraped_urls = [article.url for article in DBsession.query(AlreadyScrapedUrls).all()]
+    already_scraped_urls = [article.url for article in DBsession.query(ScrapedArticles).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
     for article_url in tqdm(article_urls):
         scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)
