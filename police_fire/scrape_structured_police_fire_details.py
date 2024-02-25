@@ -3,11 +3,9 @@ from bs4 import BeautifulSoup
 from sqlalchemy.exc import IntegrityError
 
 from database import get_database_session
-
 from models.article import Article
 from models.incident import Incident
-from models.already_scraped_urls import AlreadyScrapedUrls
-
+from models.scraped_articles import ScrapedArticles
 from police_fire.maps import get_lat_lng_of_addresses
 from police_fire.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
@@ -130,6 +128,11 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
             if incident_date_response:
                 update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
 
+    # when all separate incidents are scraped, update article to incidents_scraped == True
+    article = DBsession.query(ScrapedArticles).filter_by(path=article.url).first()
+    article.incidents_scraped = True
+    DBsession.commit()
+
     return
 
 
@@ -175,7 +178,8 @@ def clean_up_accused_record(article, accused_str, DBsession):
             if not accused_location:
                 print('not accused_location')
                 try:
-                    accused_location = ', '.join([i.strip() for i in accused_person.split(',')[accused_location_index:]])
+                    accused_location = ', '.join(
+                        [i.strip() for i in accused_person.split(',')[accused_location_index:]])
                     print('accused_location: ', accused_location)
                     if accused_location[-1] == '.':
                         accused_location = accused_location[:-1]
@@ -239,18 +243,27 @@ def clean_up_accused_record(article, accused_str, DBsession):
     return accused_names, accused_ages, accused_locations
 
 
+def update_article_incidents_to_already_scraped(article, DBsession):
+    if not DBsession.query(ScrapedArticles).filter_by(path=article.url).first():
+        scraped_article = ScrapedArticles(path=article.url, incidents_scraped=True, incidents_verified=False)
+        DBsession.add(scraped_article)
+        DBsession.commit()
+
+    return
+
+
 def scrape_structured_incident_details(article, DBsession):
     """
     Scrape incident details from article.
     """
     # get already scraped urls
-    alreadyScrapedUrls = DBsession.query(AlreadyScrapedUrls).all()
-    alreadyScrapedUrls = [alreadyScrapedUrl.url for alreadyScrapedUrl in alreadyScrapedUrls]
+    alreadyScrapedUrls = DBsession.query(ScrapedArticles).filter(ScrapedArticles.incidents_scraped == True).all()
+    alreadyScrapedUrls = [alreadyScrapedUrl.path for alreadyScrapedUrl in alreadyScrapedUrls]
     if article.url in alreadyScrapedUrls:
-        print('Article already scraped. Skipping.')
+        print('Incidents from article already scraped. Skipping.')
         return
     else:
-        print('Article not already scraped. Scraping now.')
+        print('Incidents not already scraped. Scraping now.')
         print(article.url)
     soup = BeautifulSoup(article.html_content, 'html.parser')
 
@@ -283,10 +296,12 @@ def scrape_structured_incident_details(article, DBsession):
             soupy_br_tags = [BeautifulSoup(br_tag, 'html.parser').text.strip() for br_tag in br_tags if
                              br_tag.strip() != '']
             scrape_separate_incident_details(soupy_br_tags, article, DBsession)
+
         return
 
     if len(accused) != len(charges) or len(accused) != len(details) or len(accused) != len(legal_actions):
-        scrape_unstructured_incident_details(article.id, article.source, article.content, article.date_published, DBsession)
+        scrape_unstructured_incident_details(article.id, article.url, article.content, article.date_published,
+                                             DBsession)
         return
 
     for index, accused in enumerate(accused):
@@ -355,7 +370,8 @@ def scrape_structured_incident_details(article, DBsession):
         )
 
         # add incident to database if it doesn't already exist
-        if DBsession.query(Incident).filter_by(accused_name=accused_name, incident_reported_date=article.date_published).count() == 0:
+        if DBsession.query(Incident).filter_by(accused_name=accused_name,
+                                               incident_reported_date=article.date_published).count() == 0:
             try:
                 DBsession.add(incident)
                 DBsession.commit()
@@ -381,15 +397,17 @@ def scrape_structured_incident_details(article, DBsession):
 
 
 def main():
-    database_session, engine = get_database_session(environment='prod')
+    database_session, engine = get_database_session(environment='dev')
     articles_with_incidents = identify_articles_with_incident_formatting(database_session)
     # reverse the list so that the most recent articles are scraped first
     articles_with_incidents = articles_with_incidents[::-1]
     print(f'{len(articles_with_incidents)} articles with incident formatting.')
     try:
         for index, article in enumerate(articles_with_incidents):
-            print('\n---Scraping article from ' + str(article.date_published) + ' #'  + str(index + 1) + ' of ' + str(len(articles_with_incidents)) + '---\n')
+            print('\n---Scraping article from ' + str(article.date_published) + ' #' + str(index + 1) + ' of ' + str(
+                len(articles_with_incidents)) + '---\n')
             scrape_structured_incident_details(article, database_session)
+            update_article_incidents_to_already_scraped(article, database_session)
     finally:
         database_session.close()
 

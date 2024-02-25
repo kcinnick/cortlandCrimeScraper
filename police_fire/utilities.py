@@ -83,7 +83,7 @@ def get_response_for_query(query):
 
 def get_last_date_of_day_of_week_before_date(day_of_week, date):
     # find the last time that day of the week occurred before the date
-    query = "What was the most recent date that " + day_of_week + " occurred before " + str(
+    query = "What was the most recent " + day_of_week + " that occurred before " + str(
         date) + "? Return ONLY the date in JSON format, with the key as 'date', as a string formatted YYYY-MM-DD. If none, return N/A."
 
     response = get_response_for_query(query)
