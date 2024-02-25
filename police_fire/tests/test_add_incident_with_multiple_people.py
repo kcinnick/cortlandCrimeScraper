@@ -15,9 +15,7 @@ def test_add_structured_incident_with_multiple_people(setup_database):
     article_object = DBsession.query(Article).filter(Article.url == article_url).first()
     scrape_structured_incident_details(article_object, DBsession)
 
-    incidents = DBsession.query(Incident).all()
-
-    last_incident = incidents[-1]
-    assert last_incident.accused_name == 'Samuel J. Swan,Adrianne L. Wagoner'
-    assert last_incident.accused_age == '47,40'
-    assert last_incident.accused_location == 'N/A,Nye Road, Virgil'
+    incident = DBsession.query(Incident).filter(Incident.accused_name == 'Samuel J. Swan,Adrianne L. Wagoner').first()
+    assert incident.accused_name == 'Samuel J. Swan,Adrianne L. Wagoner'
+    assert incident.accused_age == '47,40'
+    assert incident.accused_location == 'N/A,Nye Road, Virgil'

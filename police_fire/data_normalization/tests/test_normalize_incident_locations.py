@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from database import Base, Incidents
+from base import Base
 from police_fire.data_normalization.normalize_incident_locations import main
 
 database_username = os.getenv('DATABASE_USERNAME')

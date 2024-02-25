@@ -1,56 +1,27 @@
-import os
-
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
-
-from database import Incident, Base
+from models.incident import Incident
 from police_fire.scrape_structured_police_fire_details import check_if_details_references_a_relative_date
-from police_fire.utilities import add_or_get_person
-
-database_username = os.getenv('DATABASE_USERNAME')
-database_password = os.getenv('DATABASE_PASSWORD')
-
-
-@pytest.fixture(scope="function")
-def setup_database():
-    # Connect to your test database
-    engine = create_engine(
-        f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test')
-    Base.metadata.create_all(engine)  # Create tables
-
-    # Create a new session for testing
-    db_session = scoped_session(sessionmaker(bind=engine))
-
-    fake_incident = Incident(
-        accused_name='Fake Person',
-        incident_reported_date='2022-11-02',
-        incident_date='2022-10-28',
-        accused_age=52,
-        accused_location='Cortland',
-        charges='Third-degree burglary, a felony; petit larceny, a misdemeanor',
-        details="Heath stole items Friday from Walmart on Bennie Road in Cortlandville, Cortland County sheriff's officers said. She had previously been issued a trespass order barring her from the property.",
-        legal_actions='Heath was arraigned via Cortland County central arraignment and released without bail pending an appearance today in Cortlandville Town Court.',
-        incident_location='Walmart on Bennie Road, Cortlandville, Cortland County',
-        source='https://www.fakeurl.com',
-    )
-
-    db_session.add(fake_incident)
-    db_session.commit()
-
-    yield db_session  # Provide the session for testing
-
-    db_session.close()
-    Base.metadata.drop_all(engine)  # Drop tables after tests are done
+from police_fire.test_database import setup_database
 
 
 def test_check_if_details_references_a_relative_date(setup_database):
     db_session = setup_database
+    # add fake incident
+    fake_incident = Incident(
+        accused_name='Fake Person',
+        incident_reported_date='2022-10-28',
+        accused_age=40,
+        accused_location='Groton, NY',
+        charges='Fake charges',
+        details='Two people called 911 about 5:35 p.m. Monday complaining',
+        source='https://www.fakeurl.com',
+    )
+    db_session.add(fake_incident)
+    db_session.commit()
     incident = db_session.query(Incident).filter(
-        Incident.source == 'https://www.fakeurl.com'
-    ).filter(Incident.accused_name == 'Fake Person').first()
+        Incident.incident_reported_date == '2022-10-28'
+    ).first()
 
     response = check_if_details_references_a_relative_date(incident.details, incident.incident_reported_date)
-    assert response == '2022-10-28'
+    assert response == '2022-10-24'
 
     return

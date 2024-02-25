@@ -1,60 +1,17 @@
-import os
-
-import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, scoped_session
-
-from database import Article, Incident, IncidentsWithErrors, Base
+from models.article import Article
+from models.incident import Incident
+from models.incidents_with_errors import IncidentsWithErrors
 from police_fire.scrape_structured_police_fire_details import scrape_structured_incident_details, \
     identify_articles_with_incident_formatting
-from police_fire.utilities import add_or_get_person
 from scrape_articles_by_section import login, scrape_article
 
-database_username = os.getenv('DATABASE_USERNAME')
-database_password = os.getenv('DATABASE_PASSWORD')
-
-
-@pytest.fixture(scope="function")
-def setup_database():
-    # Connect to your test database
-    engine = create_engine(
-        f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test')
-    Base.metadata.create_all(engine)  # Create tables
-
-    # Create a new session for testing
-    db_session = scoped_session(sessionmaker(bind=engine))
-
-    yield db_session  # Provide the session for testing
-
-    db_session.close()
-    Base.metadata.drop_all(engine)  # Drop tables after tests are done
-
-
-def test_structured_data_with_wrong_counts_gets_added_to_incidentsWithErrors_table(setup_database):
-    DBsession = setup_database
-    DBsession.query(IncidentsWithErrors).delete()
-    incidents_with_errors = DBsession.query(IncidentsWithErrors).all()
-    assert len(incidents_with_errors) == 0
-
-    logged_in_session = login()
-    scrape_article('https://www.cortlandstandard.com/stories/policefire-march-9-2022,9090?', logged_in_session,
-                   section='Police/Fire', DBsession=DBsession)
-    test_article = DBsession.query(Article).where(
-        Article.url == 'https://www.cortlandstandard.com/stories/policefire-march-9-2022,9090?').first()
-
-    scrape_structured_incident_details(test_article, DBsession)
-    incidents_with_errors = DBsession.query(IncidentsWithErrors).all()
-    assert len(incidents_with_errors) == 1
-
-    DBsession.close()
-    return
+from police_fire.test_database import setup_database
 
 
 def test_structure_data_with_matching_counts_gets_added_to_incidents_table(setup_database):
     DBsession = setup_database
 
-    incidents = DBsession.query(Incident).all()
-    assert len(incidents) == 0
+    drop_existing_incidents(DBsession)
 
     logged_in_session = login()
     scrape_article('https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?', logged_in_session,
@@ -88,8 +45,7 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly(setup_datab
 
     article_url = 'https://www.cortlandstandard.com/stories/groton-driver-charged-after-crash-causes-injury,13070?'
 
-    incidents = DBsession.query(Incident).all()
-    assert len(incidents) == 0
+    drop_existing_incidents(DBsession)
 
     logged_in_session = login()
     scrape_article(article_url, logged_in_session,
@@ -103,12 +59,19 @@ def test_structure_data_with_multiple_incidents_gets_added_correctly(setup_datab
     assert len(incidents) == 9
 
 
+def drop_existing_incidents(DBsession):
+    incidents = DBsession.query(Incident).all()
+    for incident in incidents:
+        DBsession.delete(incident)
+    DBsession.commit()
+    return
+
+
 def test_structure_data_with_multiple_incidents_with_span_tag_gets_added_correctly(setup_database):
     DBsession = setup_database
     article_url = 'https://www.cortlandstandard.com/stories/two-charged-with-drunken-driving,12273?'
 
-    incidents = DBsession.query(Incident).all()
-    assert len(incidents) == 0
+    drop_existing_incidents(DBsession)
 
     logged_in_session = login()
     scrape_article(article_url, logged_in_session,
@@ -128,8 +91,7 @@ def test_structure_data_with_br_tags_gets_added_correctly(setup_database):
     DBsession = setup_database
 
     article_url = 'https://www.cortlandstandard.com/stories/10-year-old-hurt-when-vehicle-tips,19473?'
-    incidents = DBsession.query(Incident).all()
-    assert len(incidents) == 0
+    drop_existing_incidents(DBsession)
 
     logged_in_session = login()
     scrape_article(article_url, logged_in_session,
@@ -215,6 +177,7 @@ def test_identify_articles_with_incident_formatting_correctly_returns_0_incident
 def test_duplicate_incident_does_not_get_added_twice(setup_database):
     # test setup - add the article to the database
     DBsession = setup_database
+    drop_existing_incidents(DBsession)
 
     article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053??'
 
@@ -227,11 +190,32 @@ def test_duplicate_incident_does_not_get_added_twice(setup_database):
 
     # scrape the article for the first time
     scrape_structured_incident_details(article, DBsession)
-
-    # scrape the article for the second time
-    scrape_structured_incident_details(article, DBsession)
-
-    # check that there is only one incident in the database
+    # check that there are three incidents in the database
     incidents = DBsession.query(Incident).all()
     assert len(incidents) == 3
 
+    # scrape the article for the second time
+    scrape_structured_incident_details(article, DBsession)
+    # assert no new incidents were added
+    incidents = DBsession.query(Incident).all()
+    assert len(incidents) == 3
+
+
+def test_scraped_article_gets_added_to_scraped_articles_table(setup_database):
+    DBsession = setup_database
+
+    article_url = 'https://www.cortlandstandard.com/stories/preble-driver-charged-with-dwi,70053??'
+
+    logged_in_session = login()
+    scrape_article(article_url, logged_in_session,
+                   section='Police/Fire', DBsession=DBsession)
+
+    article = DBsession.query(Article).where(
+        Article.url == article_url).first()
+
+    scrape_structured_incident_details(article, DBsession)
+
+    scraped_article = DBsession.query(Incident).where(
+        Incident.source == article_url).first()
+
+    assert scraped_article.source == article_url
