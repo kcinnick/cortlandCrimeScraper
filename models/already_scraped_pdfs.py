@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String
 
-from database import Base
+from base import Base
 
 
 class AlreadyScrapedPdfs(Base):

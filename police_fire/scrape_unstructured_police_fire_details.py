@@ -81,7 +81,8 @@ def scrape_unstructured_incident_details(article_id, source, article_content, ar
             print('No potential duplicate incidents found.  Filtering for nulls before adding to database.')
             nulls_found = 0
             if incident.accused_name == 'N/A':
-                nulls_found += 1
+                print('No accused name found.  Not adding to database.')
+                return
             if incident.accused_age in ['N/A', '0', 0]:
                 nulls_found += 1
             if incident.accused_location == 'N/A':

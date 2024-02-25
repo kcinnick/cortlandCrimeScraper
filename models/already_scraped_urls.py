@@ -1,6 +1,6 @@
 from sqlalchemy import Column, String
 from sqlalchemy.orm import declarative_base
-from database import Base
+from base import Base
 
 
 class AlreadyScrapedUrls(Base):

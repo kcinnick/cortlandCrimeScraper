@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Date
 
-from database import Base
+from base import Base
 
 
 class Article(Base):

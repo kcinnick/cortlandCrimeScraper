@@ -11,7 +11,9 @@ from openai import OpenAI
 from pdf2image import convert_from_path
 from tqdm import tqdm
 
-from database import get_database_session, Incident
+from database import get_database_session
+from models.incident import Incident
+from models.scraped_articles import ScrapedArticles
 from police_fire.maps.get_lat_lng_of_addresses import get_lat_lng_of_address
 from police_fire.utilities import check_if_details_references_a_relative_date, \
     check_if_details_references_an_actual_date, get_incident_location_from_details \
@@ -196,6 +198,11 @@ def parse_details_for_incident(incident, year_month_day_str):
         DBsession.add(incident)
         DBsession.commit()
         sleep(1)
+
+    if not DBsession.query(ScrapedArticles).filter_by(path='pdfs/' + year_month_day_str.replace('-', '/')).first():
+        scraped_article = ScrapedArticles(path='pdfs/' + year_month_day_str.replace('-', '/'), incidents_scraped=True, incidents_verified=False)
+        DBsession.add(scraped_article)
+        DBsession.commit()
 
     return
 

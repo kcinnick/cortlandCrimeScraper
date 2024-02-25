@@ -4,8 +4,9 @@ import unicodedata
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from tqdm import tqdm
+from models.scraped_articles import ScrapedArticles
 
-Base = declarative_base()
+from base import Base
 
 
 def get_database_session(environment='development'):
@@ -28,6 +29,8 @@ def get_database_session(environment='development'):
     engine = create_engine(DATABASE_URI, echo=False)
     Session = sessionmaker(bind=engine)
     db_session = Session()
+    # create tables if they don't exist
+    Base.metadata.create_all(engine)
 
     return db_session, engine
 
@@ -59,4 +62,4 @@ def clean_strings_in_table(environment):
 
 
 if __name__ == "__main__":
-    clean_strings_in_table('dev')
+    get_database_session(environment='development')
