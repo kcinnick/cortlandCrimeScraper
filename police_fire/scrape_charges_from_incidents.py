@@ -147,26 +147,38 @@ def split_charges_by_and(charges, charge_type):
 
 
 def process_charge(charge_description):
-    degrees = [
-        "First", "Second", "Third", "Fourth",
-        "Fifth", "Sixth", "Seventh", "Eighth",
-        "Ninth"
-    ]
+    # Mapping dictionaries
+    degree_number_mapping = {
+        'first degree': 1, 'first-degree': 1, 'second degree': 2, 'second-degree': 2,
+        'third degree': 3, 'third-degree': 3, 'fourth degree': 4, 'fourth-degree': 4,
+        'fifth degree': 5, 'fifth-degree': 5, 'sixth degree': 6, 'sixth-degree': 6,
+        'seventh degree': 7, 'seventh-degree': 7, 'eighth degree': 8, 'eighth-degree': 8,
+        'ninth degree': 9, 'ninth-degree': 9, 'tenth degree': 10, 'tenth-degree': 10,
+    }
+    counts_number_mapping = {
+        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+    }
 
-    charge_degree = None
-    for degree in degrees:
-        if degree.lower() + '-degree' in charge_description.lower():
-            charge_degree = degree
-            # Normalize the charge description by removing the degree part
-            charge_description = charge_description.replace(f'{degree}-degree ', '', 1)
-            charge_description = charge_description.replace(f'{degree.lower()}-degree ', '', 1)
-            break
+    # Combined pattern to capture both counts (if present) and degree in one search
+    pattern = r'(?i)(?:(\w+) counts? of )?((first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)[ -]degree)'
 
-    charge_description = charge_description.strip()
-    if charge_degree:
-        charge_degree = charge_degree.strip()
+    match = re.search(pattern, charge_description)
 
-    return charge_description, charge_degree
+
+    if match:
+        count_str, degree_str = match.groups(default="one")[:2]  # Default count to "one" if not matched
+        # Extracting and converting count and degree
+        cleaned_count = counts_number_mapping.get(count_str.lower(), 1)  # Default to 1 if not found
+        cleaned_degree = degree_number_mapping.get(degree_str.lower(), None)
+
+        # Remove matched patterns from the description
+        cleaned_description = re.sub(pattern, '', charge_description, count=1).strip()
+    else:
+        print('No match found for charge description: ', charge_description)
+        raise Exception('No match found for charge description: ' + charge_description)
+
+    return cleaned_description, cleaned_count, cleaned_degree
 
 
 def add_charges_to_charges_table(incident, categorized_charges):
@@ -226,18 +238,13 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
             print(
                 'Name used in charge description is different from accused name. Charge will not be added to charges table.')
             return
-    charge_description, charge_degree = process_charge(charge_str)
-    print('------')
-    print('incident id: ', incident_id)
-    print('charge_description: ', charge_description)
-    print('charge_type: ', charge_type)
-    print('charge_degree: ', charge_degree)
-    print('accused_name: ', accused_name)
+    charge_description, counts, charge_degree = process_charge(charge_str)
     charge = session.query(Charges).filter(
         Charges.charge_description == charge_str,
         Charges.charge_class == charge_type,
         Charges.degree == charge_degree,
         Charges.charged_name == accused_name,
+        Charges.counts == counts,
         incident_id == incident_id
     ).first()
     if charge:
@@ -246,8 +253,10 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         charge = Charges(
             charged_name=accused_name,
             charge_description=charge_str,
+            charge=charge_description,
             charge_class=charge_type,
             degree=charge_degree,
+            counts=counts,
             incident_id=incident_id,
         )
         session.add(charge)
