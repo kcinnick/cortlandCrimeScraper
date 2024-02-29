@@ -148,6 +148,7 @@ def split_charges_by_and(charges, charge_type):
 
 def process_charge(charge_description):
     # Mapping dictionaries
+    print('charge_description: ', charge_description)
     degree_number_mapping = {
         'first degree': 1, 'first-degree': 1, 'second degree': 2, 'second-degree': 2,
         'third degree': 3, 'third-degree': 3, 'fourth degree': 4, 'fourth-degree': 4,
@@ -165,7 +166,6 @@ def process_charge(charge_description):
 
     match = re.search(pattern, charge_description)
 
-
     if match:
         count_str, degree_str = match.groups(default="one")[:2]  # Default count to "one" if not matched
         # Extracting and converting count and degree
@@ -175,8 +175,9 @@ def process_charge(charge_description):
         # Remove matched patterns from the description
         cleaned_description = re.sub(pattern, '', charge_description, count=1).strip()
     else:
-        print('No match found for charge description: ', charge_description)
-        raise Exception('No match found for charge description: ' + charge_description)
+        cleaned_description = charge_description
+        cleaned_count = 1
+        cleaned_degree = None
 
     return cleaned_description, cleaned_count, cleaned_degree
 
@@ -226,7 +227,7 @@ def add_charges_to_charges_table(incident, categorized_charges):
 
 
 def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_id):
-    name_used = re.search('(\w+) was charged with', charge_str, re.IGNORECASE)
+    name_used = re.search('(\w+) (?:was|were) charged with ', charge_str, re.IGNORECASE)
     try:
         name_used = name_used.group(1)
     except AttributeError:
@@ -238,9 +239,11 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
             print(
                 'Name used in charge description is different from accused name. Charge will not be added to charges table.')
             return
-    charge_description, counts, charge_degree = process_charge(charge_str)
+    charge_str_without_name = re.sub(r'(\w+) (?:was|were) charged with ', '', charge_str, re.IGNORECASE)
+    charge_description, counts, charge_degree = process_charge(charge_str_without_name)
     charge = session.query(Charges).filter(
         Charges.charge_description == charge_str,
+        Charges.crime == charge_description,
         Charges.charge_class == charge_type,
         Charges.degree == charge_degree,
         Charges.charged_name == accused_name,
@@ -253,7 +256,7 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         charge = Charges(
             charged_name=accused_name,
             charge_description=charge_str,
-            charge=charge_description,
+            crime=charge_description,
             charge_class=charge_type,
             degree=charge_degree,
             counts=counts,

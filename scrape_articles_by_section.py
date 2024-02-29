@@ -229,7 +229,7 @@ def main(max_pages=1, environment='prod'):
         max_pages=max_pages
     )
     print(str(len(article_urls)) + ' articles found.')
-    already_scraped_urls = [article.url for article in DBsession.query(ScrapedArticles).all()]
+    already_scraped_urls = [article.path for article in DBsession.query(ScrapedArticles).all()]
     article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
     for article_url in tqdm(article_urls):
         scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)
