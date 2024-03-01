@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date
+from sqlalchemy import Column, Integer, String, Date, Boolean
 
 from base import Base
 
@@ -16,3 +16,6 @@ class Article(Base):
     url = Column(String, unique=True)
     content = Column(String)
     html_content = Column(String)
+
+    incidents_scraped = Column(Boolean, default=False)
+    incidents_verified = Column(Boolean, default=False)

@@ -5,9 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from tqdm import tqdm
 
-from models.scraped_articles import ScrapedArticles
 from models.incident import Incident
 from models.charges import Charges
+from models.article import Article
 from base import Base
 
 
