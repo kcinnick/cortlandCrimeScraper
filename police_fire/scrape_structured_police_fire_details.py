@@ -243,28 +243,12 @@ def clean_up_accused_record(article, accused_str, DBsession):
     return accused_names, accused_ages, accused_locations
 
 
-def update_article_incidents_to_already_scraped(article, DBsession):
-    if not DBsession.query(ScrapedArticles).filter_by(path=article.url).first():
-        scraped_article = ScrapedArticles(path=article.url, incidents_scraped=True, incidents_verified=False)
-        DBsession.add(scraped_article)
-        DBsession.commit()
-
-    return
-
-
 def scrape_structured_incident_details(article, DBsession):
     """
     Scrape incident details from article.
     """
     # get already scraped urls
-    alreadyScrapedUrls = DBsession.query(ScrapedArticles).filter(ScrapedArticles.incidents_scraped == True).all()
-    alreadyScrapedUrls = [alreadyScrapedUrl.path for alreadyScrapedUrl in alreadyScrapedUrls]
-    if article.url in alreadyScrapedUrls:
-        print('Incidents from article already scraped. Skipping.')
-        return
-    else:
-        print('Incidents not already scraped. Scraping now.')
-        print(article.url)
+    print('Scraping structured incident details from ' + article.url + '...')
     soup = BeautifulSoup(article.html_content, 'html.parser')
 
     # check for <strong> tags first
@@ -407,7 +391,6 @@ def main():
             print('\n---Scraping article from ' + str(article.date_published) + ' #' + str(index + 1) + ' of ' + str(
                 len(articles_with_incidents)) + '---\n')
             scrape_structured_incident_details(article, database_session)
-            update_article_incidents_to_already_scraped(article, database_session)
     finally:
         database_session.close()
 
