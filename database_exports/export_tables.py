@@ -32,7 +32,7 @@ def export_table(table_name, folder_name, engine):
 
 def main():
     DBsession, engine = get_database_session(environment='prod')
-    for table_name in ['incident', 'charges']:
+    for table_name in ['incident', 'charges', 'article']:
         folder_name = make_folder_for_today(table_name)
         export_table(table_name, folder_name, engine)
 
