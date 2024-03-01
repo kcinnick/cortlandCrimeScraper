@@ -179,15 +179,6 @@ def get_or_create_article(article_url, section, DBsession, soup, headline, bylin
             DBsession.rollback()
             DBsession.close()
 
-    # add article to ScrapedArticles table
-    already_scraped_url = ScrapedArticles(
-        path=article_url,
-        incidents_scraped=False,
-        incidents_verified=False
-    )
-    DBsession.add(already_scraped_url)
-    DBsession.commit()
-
     return article
 
 
@@ -229,8 +220,6 @@ def main(max_pages=1, environment='prod'):
         max_pages=max_pages
     )
     print(str(len(article_urls)) + ' articles found.')
-    already_scraped_urls = [article.path for article in DBsession.query(ScrapedArticles).all()]
-    article_urls = [article_url for article_url in article_urls if article_url not in already_scraped_urls]
     for article_url in tqdm(article_urls):
         scrape_article(article_url, logged_in_session, section='Police/Fire', DBsession=DBsession)
 
