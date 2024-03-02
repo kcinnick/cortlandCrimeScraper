@@ -9,9 +9,12 @@ from openai.types.chat.completion_create_params import ResponseFormat
 from requests import Session
 from tqdm import tqdm
 
+from database import get_database_session
 from models.incident import Incident
 from models.incidents_with_errors import IncidentsWithErrors
 from models.article import Article
+
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
 def delete_table_contents(DBsession, engine):
@@ -52,9 +55,6 @@ def clean_up_charges_details_and_legal_actions_records(charges_str, details_str,
         legal_actions_str = re.sub(r'Legal [Aa]ctions: ', '', legal_actions_str)
 
     return charges_str, details_str, legal_actions_str
-
-
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
 def search_for_day_of_week_in_details(details_str):
@@ -175,11 +175,6 @@ def add_or_get_person(session, name):
     return person.id
 
 
-def main():
-    DBsession, engine = get_database_session(environment='prod')
-    link_persons_to_incident(DBsession)
-
-
 def login():
     session = Session()
     session.headers.update({
@@ -200,6 +195,25 @@ def login():
     assert r.status_code == 200
 
     return session
+
+
+def backfill_article_attributes(DBsession):
+    articles = DBsession.query(Article).all()
+    # for each article, we can consider it scraped if there is an incident
+    # with `source` equal to the article's `url`
+    for article in articles:
+        incidents = DBsession.query(Incident).filter_by(source=article.url).all()
+        if incidents:
+            article.incidents_scraped = True
+            DBsession.add(article)
+            DBsession.commit()
+
+    return
+
+
+def main():
+    DBsession, engine = get_database_session(environment='dev')
+
 
 if __name__ == '__main__':
     main()
