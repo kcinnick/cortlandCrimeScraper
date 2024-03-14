@@ -12,10 +12,10 @@ from models.article import Article
 from models.incident import Incident
 from police_fire.maps import get_lat_lng_of_addresses
 
-DBsession, engine = get_database_session(environment='dev')
+DBsession, engine = get_database_session(environment='prod')
 
 # filter by both if incidents_scraped == True and incidents_verified == False
-articles = DBsession.query(Article).filter_by(incidents_scraped=True, incidents_verified=False).all()
+articles = DBsession.query(Article).filter_by(incidents_scraped=True, incidents_verified=None).all()
 
 
 def handle_incorrect_number_of_incidents(article):
@@ -78,6 +78,7 @@ def verify_incidents_for_article(article):
         # grab the updated incidents from the database
         incidents = DBsession.query(Incident).filter_by(source=article.url).all()
     for incident in incidents:
+        print('\n')
         print(f"Accused Name: {incident.accused_name}")
         print(f"Accused Age: {incident.accused_age}")
         print(f"Accused Location: {incident.accused_location}")
@@ -85,6 +86,7 @@ def verify_incidents_for_article(article):
         print(f"Details: {incident.details}")
         print(f"Legal Actions: {incident.legal_actions}")
         # prompt to verify the incident
+        print('\n')
         verified = input("Is this incident correct? (y/n): ")
         if verified == 'y':
             article_incidents_verified.append(incident)
@@ -106,7 +108,7 @@ def verify_incidents_for_article(article):
 
 
 def main():
-    for article in tqdm(articles):
+    for article in articles:
         verify_incidents_for_article(article)
 
     return
