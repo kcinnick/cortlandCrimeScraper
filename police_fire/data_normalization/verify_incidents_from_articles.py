@@ -15,7 +15,7 @@ from police_fire.maps import get_lat_lng_of_addresses
 DBsession, engine = get_database_session(environment='prod')
 
 # filter by both if incidents_scraped == True and incidents_verified == False
-articles = DBsession.query(Article).filter_by(incidents_scraped=True, incidents_verified=None).all()
+articles = DBsession.query(Article).filter_by(incidents_scraped=True, incidents_verified=False).all()
 
 
 def handle_incorrect_number_of_incidents(article):
