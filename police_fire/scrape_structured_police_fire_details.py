@@ -5,7 +5,6 @@ from sqlalchemy.exc import IntegrityError
 from database import get_database_session
 from models.article import Article
 from models.incident import Incident
-from models.scraped_articles import ScrapedArticles
 from police_fire.maps import get_lat_lng_of_addresses
 from police_fire.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
 from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
@@ -129,7 +128,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
                 update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
 
     # when all separate incidents are scraped, update article to incidents_scraped == True
-    article = DBsession.query(ScrapedArticles).filter_by(path=article.url).first()
+    article = DBsession.query(Article).filter_by(path=article.url).first()
     article.incidents_scraped = True
     DBsession.commit()
 

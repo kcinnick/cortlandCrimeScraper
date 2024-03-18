@@ -8,7 +8,6 @@ from tqdm import tqdm
 
 from database import get_database_session
 from models.article import Article
-from models.scraped_articles import ScrapedArticles
 from police_fire.utilities import login
 
 config = Config()

@@ -5,8 +5,6 @@ from sqlalchemy.orm import sessionmaker
 
 from base import Base
 from database import get_database_session
-from models.already_scraped_pdfs import AlreadyScrapedPdfs
-from models.already_scraped_urls import AlreadyScrapedUrls
 from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
