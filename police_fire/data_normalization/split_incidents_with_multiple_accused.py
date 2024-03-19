@@ -42,13 +42,21 @@ def clean_split(incident, accused_names, accused_ages, addresses, DBsession):
 
         try:
             address = addresses[i]
-            age = accused_ages[i]
         except IndexError:
             # if the accused_names live at the same address, or the address is just the city/town name,
             # then the address list will be shorter than the accused_names list. In this case, we'll just
             # use the last address in the list.
             address = addresses[-1]
-            age = accused_ages[-1]
+
+        if address is None:
+            address = 'Unknown'
+
+        print('Accused address: ' + address)
+        try:
+            age = accused_ages[i]
+        except IndexError:
+            # accused age is not always given. in this instance, use None
+            age = None
 
         print('Creating new charge for ' + accused_names[i] + ' at ' + address)
         for split_charge in split_charges_by_sentence:
@@ -86,6 +94,10 @@ def split_incident(incident, DBsession):
         # print('Only one address found.  Splitting accused names and ages.')
         accused_names = [i.strip() for i in incident.accused_name.split(',') if i.strip() != '']
         raw_charges = clean_split(incident, accused_names, accused_ages, [accused_locations[0]], DBsession)
+    elif len(accused_locations) == 0:
+        # print('No addresses found.  Splitting accused names and ages.')
+        accused_names = [i.strip() for i in incident.accused_name.split(',') if i.strip() != '']
+        raw_charges = clean_split(incident, accused_names, accused_ages, [None] * len(accused_names), DBsession)
     else:
         raise Exception(f'Unable to split incident.  Please check the following: {incident}')
 
