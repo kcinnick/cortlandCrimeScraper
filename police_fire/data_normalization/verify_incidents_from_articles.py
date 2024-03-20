@@ -108,6 +108,7 @@ def verify_incidents_for_article(article):
 
 
 def main():
+    print(len(articles), 'articles with unverified incidents found.')
     for article in articles:
         verify_incidents_for_article(article)
 

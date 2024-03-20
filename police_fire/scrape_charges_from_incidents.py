@@ -9,13 +9,34 @@ from models.charges import Charges
 
 from police_fire.data_normalization.split_incidents_with_multiple_accused import split_incident
 
-DBsession, engine = get_database_session(environment='dev')
+DBsession, engine = get_database_session(environment='prod')
+
+
+def clean_end_of_charge_description(charge_description):
+    # get rid of ', a' at the end of the charge description
+    if charge_description.endswith(', a '):
+        charge_description = charge_description[:-4]
+
+    if charge_description.endswith(', a'):
+        charge_description = charge_description[:-3]
+
+    if charge_description.startswith('; '):
+        charge_description = charge_description[2:]
+
+    if charge_description.endswith(', '):
+        charge_description = charge_description[:-2]
+
+    # get rid of ', all' at the end of the charge description
+    if charge_description.endswith(', all'):
+        charge_description = charge_description[:-5]
+
+    return charge_description
 
 
 def categorize_charges(incident_id, charges, accused_name):
     # Regular expression to match charge descriptions
     # The regex captures all text up to target words
-    regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|midemeanor|misdemean-or|traffic infractions?|traffic violations|violations|violation|infractions?)"
+    regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|midemeanor|misdemean-or|traffic infractions?|traffic violations|violations|a? ?violation|infractions?)"
     # Find all matches
     matches = re.findall(regex, charges, re.IGNORECASE | re.DOTALL)
 
@@ -37,25 +58,14 @@ def categorize_charges(incident_id, charges, accused_name):
         })
 
     for match in matches:
+        print('---')
+        print(match)
         charge_description, charge_type = match
         original_charge_description = charge_description
 
         charge_description = charge_description.strip().rstrip(',')
 
-        # get rid of ', a' at the end of the charge description
-        if charge_description.endswith(', a '):
-            charge_description = charge_description[:-4]
-
-        if charge_description.endswith(', a'):
-            charge_description = charge_description[:-3]
-
-        if charge_description.startswith('; '):
-            charge_description = charge_description[2:]
-
-        if charge_description.endswith(', '):
-            charge_description = charge_description[:-2]
-
-        cleaned_charge_description = charge_description
+        cleaned_charge_description = clean_end_of_charge_description(charge_description)
 
         # Categorize based on charge type
         if 'felony' in charge_type.lower():
@@ -83,7 +93,7 @@ def categorize_charges(incident_id, charges, accused_name):
                 'accused_name': accused_name
             })
         elif 'violation' in charge_type.lower():
-            categorized_charges['misdemeanors'].append({
+            categorized_charges['violations'].append({
                 'original_charge_description': original_charge_description,
                 'cleaned_charge_description': cleaned_charge_description,
                 'charge_type': 'violation',
@@ -121,17 +131,6 @@ def separate_charges_from_charge_descriptions(charges):
 
 
 def split_charges_by_and(charges, charge_type):
-    charges_to_rename = {
-        # occasionally, the word 'and' is part of a charge description
-        # and not a separator.  In these cases, we'll remove the word
-        # and replace it with 'or'.
-        'speed not reasonable and prudent': 'speed not reasonable or prudent',
-        'one count of failure to provide proper food and drink to an impounded animal': 'one count of failure to provide proper food or drink to an impounded animal',
-    }
-    for key, value in charges_to_rename.items():
-        if key in charges:
-            charges = charges.replace(key, value)
-
     split_charges_by_and = charges.split(' and ')
     split_charges = []
     for split_charge in split_charges_by_and:
@@ -168,8 +167,13 @@ def process_charge(charge_description):
 
     if match:
         count_str, degree_str = match.groups(default="one")[:2]  # Default count to "one" if not matched
+        if count_str:
+            count_str = count_str.strip()
         # Extracting and converting count and degree
-        cleaned_count = counts_number_mapping.get(count_str.lower(), 1)  # Default to 1 if not found
+        if count_str.isdigit():
+            cleaned_count = int(count_str)
+        else:
+            cleaned_count = counts_number_mapping.get(count_str.lower(), 1)  # Default to 1 if not found
         cleaned_degree = degree_number_mapping.get(degree_str.lower(), None)
 
         # Remove matched patterns from the description
@@ -179,7 +183,31 @@ def process_charge(charge_description):
         cleaned_count = 1
         cleaned_degree = None
 
+    cleaned_description = cleaned_description.replace('.', '').replace('_', '').strip()
+    cleaned_description = rename_charge_description(cleaned_description)
+
     return cleaned_description, cleaned_count, cleaned_degree
+
+
+def rename_charge_description(cleaned_charge_description):
+    print('cleaned_charge_description: ', cleaned_charge_description)
+    charges_to_rename = {
+        # occasionally, the word 'and' is part of a charge description
+        # and not a separator.  In these cases, we'll remove the word
+        # and replace it with 'or'.
+        'speed not reasonable and prudent': 'speed not reasonable or prudent',
+        'one count of failure to provide proper food and drink to an impounded animal': 'one count of failure to provide proper food or drink to an impounded animal',
+        'no distinctive, dirty, obstructed or only one license plate': 'no distinctive/dirty/obstructed or only one license plate',
+        'aggravated DWI': 'Aggravated driving while intoxicated',
+        'Aggravated driving while in-toxicated': 'Aggravated driving while intoxicated',
+        'DWI': 'Driving while intoxicated',
+        'wrong way on a one way': 'wrong way on a one-way street',
+        'wrong way on a one way street': 'wrong way on a one-way street',
+    }
+    if cleaned_charge_description in charges_to_rename:
+        return charges_to_rename[cleaned_charge_description]
+    else:
+        return cleaned_charge_description
 
 
 def add_charges_to_charges_table(incident, categorized_charges):
@@ -193,6 +221,7 @@ def add_charges_to_charges_table(incident, categorized_charges):
             # remove any commas from dollar amounts
             charge['cleaned_charge_description'] = re.sub(r'\$(\d+),(\d+)', r'$\1\2',
                                                           charge['cleaned_charge_description'])
+            charge['cleaned_charge_description'] = rename_charge_description(charge['cleaned_charge_description'])
             separated_charges_by_comma = charge['cleaned_charge_description'].split(',')
             for c in separated_charges_by_comma:
                 charges_split_by_and = split_charges_by_and(c, charge_type)
