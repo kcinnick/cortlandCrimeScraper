@@ -14,9 +14,11 @@ class Incident(Base):
     accused_age = Column(String, nullable=True)
     accused_location = Column(String)
     charges = Column(String)
+    spellchecked_charges = Column(String, nullable=True)
     details = Column(String)
     legal_actions = Column(String)
     incident_date = Column(Date, nullable=True)
+    # TODO: spin out incident locations to separate table
     incident_location = Column(String, nullable=True)
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
