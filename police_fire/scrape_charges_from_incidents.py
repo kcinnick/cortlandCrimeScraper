@@ -59,7 +59,6 @@ def categorize_charges(incident_id, charges, accused_name):
 
     for match in matches:
         print('---')
-        print(match)
         charge_description, charge_type = match
         original_charge_description = charge_description
 
@@ -131,6 +130,8 @@ def separate_charges_from_charge_descriptions(charges):
 
 
 def split_charges_by_and(charges, charge_type):
+    print('split_charges_by_and: ', charges)
+    charges = rename_charge_description(charges)
     split_charges_by_and = charges.split(' and ')
     split_charges = []
     for split_charge in split_charges_by_and:
@@ -145,28 +146,20 @@ def split_charges_by_and(charges, charge_type):
     return split_charges
 
 
-def process_charge(charge_description):
-    # Mapping dictionaries
-    print('charge_description: ', charge_description)
-    degree_number_mapping = {
-        'first degree': 1, 'first-degree': 1, 'second degree': 2, 'second-degree': 2,
-        'third degree': 3, 'third-degree': 3, 'fourth degree': 4, 'fourth-degree': 4,
-        'fifth degree': 5, 'fifth-degree': 5, 'sixth degree': 6, 'sixth-degree': 6,
-        'seventh degree': 7, 'seventh-degree': 7, 'eighth degree': 8, 'eighth-degree': 8,
-        'ninth degree': 9, 'ninth-degree': 9, 'tenth degree': 10, 'tenth-degree': 10,
-    }
+def get_counts_from_charge_description(charge_description):
+    print('get counts from charge description: ', charge_description)
     counts_number_mapping = {
         'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
         'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
     }
 
-    # Combined pattern to capture both counts (if present) and degree in one search
-    pattern = r'(?i)(?:(\w+) counts? of )?((first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)[ -]degree)'
+    # pattern to capture counts
+    pattern = r'(\w+)[- ]counts?'
 
-    match = re.search(pattern, charge_description)
+    match = re.search(pattern, charge_description.strip().lower())
 
     if match:
-        count_str, degree_str = match.groups(default="one")[:2]  # Default count to "one" if not matched
+        count_str = match.groups(default="one")[0]  # Default count to "one" if not matched
         if count_str:
             count_str = count_str.strip()
         # Extracting and converting count and degree
@@ -174,19 +167,60 @@ def process_charge(charge_description):
             cleaned_count = int(count_str)
         else:
             cleaned_count = counts_number_mapping.get(count_str.lower(), 1)  # Default to 1 if not found
-        cleaned_degree = degree_number_mapping.get(degree_str.lower(), None)
 
         # Remove matched patterns from the description
         cleaned_description = re.sub(pattern, '', charge_description, count=1).strip()
+        if cleaned_description.startswith('of '):
+            cleaned_description = cleaned_description[3:]
+        if cleaned_description.startswith('.'):
+            cleaned_description = cleaned_description[1:]
     else:
         cleaned_description = charge_description
         cleaned_count = 1
+
+    return cleaned_description, cleaned_count
+
+
+def get_degree_from_charge_description(cleaned_description):
+    degree_number_mapping = {
+        'first degree': 1, 'first-degree': 1, 'second degree': 2, 'second-degree': 2,
+        'third degree': 3, 'third-degree': 3, 'fourth degree': 4, 'fourth-degree': 4,
+        'fifth degree': 5, 'fifth-degree': 5, 'sixth degree': 6, 'sixth-degree': 6,
+        'seventh degree': 7, 'seventh-degree': 7, 'eighth degree': 8, 'eighth-degree': 8,
+        'ninth degree': 9, 'ninth-degree': 9, 'tenth degree': 10, 'tenth-degree': 10,
+    }
+    degree_pattern = r'((first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)-?degree)'
+    match = re.search(degree_pattern, cleaned_description.lower())
+    if match:
+        degree_str = match.groups(default="first")[0]
+        if degree_str:
+            degree_str = degree_str.strip()
+        cleaned_degree = degree_number_mapping.get(degree_str.lower(), 1)  # Default to 1 if not found
+    else:
         cleaned_degree = None
 
-    cleaned_description = cleaned_description.replace('.', '').replace('_', '').strip()
-    cleaned_description = rename_charge_description(cleaned_description)
+    cleaned_description = re.sub(degree_pattern, '', cleaned_description, count=1).strip()
 
-    return cleaned_description, cleaned_count, cleaned_degree
+    return cleaned_description, cleaned_degree
+
+
+def process_charge(charge_description):
+    cleaned_description, cleaned_counts = get_counts_from_charge_description(charge_description)
+    cleaned_description, cleaned_degree = get_degree_from_charge_description(cleaned_description)
+
+    cleaned_description = cleaned_description.strip()
+    if cleaned_description.startswith('. '):
+        cleaned_description = cleaned_description[2:].strip()
+    if cleaned_description.startswith('of '):
+        cleaned_description = cleaned_description[3:].strip()
+
+    print('charge_description: ', charge_description)
+    print('cleaned_description: ', cleaned_description)
+    print('cleaned_counts: ', cleaned_counts)
+    print('cleaned_degree: ', cleaned_degree)
+    # pattern to capture degree
+
+    return cleaned_description, cleaned_counts, cleaned_degree
 
 
 def rename_charge_description(cleaned_charge_description):
@@ -199,14 +233,95 @@ def rename_charge_description(cleaned_charge_description):
         'one count of failure to provide proper food and drink to an impounded animal': 'one count of failure to provide proper food or drink to an impounded animal',
         'no distinctive, dirty, obstructed or only one license plate': 'no distinctive/dirty/obstructed or only one license plate',
         'aggravated DWI': 'Aggravated driving while intoxicated',
+        'Aggravated DWI': 'Aggravated driving while intoxicated',
+        'aggravated driving while in-toxicated': 'Aggravated driving while intoxicated',
         'Aggravated driving while in-toxicated': 'Aggravated driving while intoxicated',
         'DWI': 'Driving while intoxicated',
         'wrong way on a one way': 'wrong way on a one-way street',
         'wrong way on a one way street': 'wrong way on a one-way street',
+        'failure to use designate lane': 'Failure to use designated lane',
+        'Criminal use of drug paraphernalia': 'Criminally using drug paraphernalia',
+        'Driving with 0.08% or more blood-alcohol': 'Driving with a blood-alcohol content above 0.08 percent',
+        'DWI with blood alcohol content of 0.08 percent or higher': 'Driving with a blood-alcohol content above 0.08 percent',
+        'DWI with blood-alcohol content above 0.08 percent': 'Driving with a blood-alcohol content above 0.08 percent',
+        'Leaving the scene of a property damage accident': 'Leaving the scene of a property damage accident without reporting',
+        'Refusal of a breath test': 'Refusal to take a breath test',
+        'Refusal to take breath screening': 'Refusal to take a breath test',
+        'Refusal to take breath test': 'Refusal to take a breath test',
+        'Speed in zone': 'Speeding in zone',
+        'Unlicensed operator': 'Unlicensed operation',
+        'False presentation': 'False personation',
+        'Illegal discharger of a firearm': 'Illegal discharge of a firearm',
+        'Failure to comply with a lawful order of a police order': 'Failure to comply with a police officer',
+        'Moving from lane unsafely': 'Moving from a lane unsafely',
+        'No distinctive plate': 'No distinctive/dirty/obstructed or only one license plate',
+        'No distinctive plates': 'No distinctive/dirty/obstructed or only one license plate',
+        'Obstructing governmental administration': 'Obstruction of governmental administration',
+        'Open container in a motor vehicle': 'Open container of an alcoholic beverage in a motor vehicle',
+        'Operating a motor vehicle above 0.08 percent blood alcohol content': 'Operating a motor vehicle with a blood-alcohol content of 0.08% or greater',
+        'Operation of a motor vehicle with a blood-alcohol content above 0.08 percent': 'Operating a motor vehicle with a blood-alcohol content of 0.08% or greater',
+        'Unapproved stickers': 'Unauthorized stickers',
+        'Unauthorized sticker': 'Unauthorized stickers',
+        'Uninspected vehicle': 'Uninspected motor vehicle',
+        'Unlawful manufacture methamphetamine': 'Unlawful manufacturing of methamphetamine',
+        'Unlawful manufacture of methamphetamine': 'Unlawful manufacturing of methamphetamine',
+        'Unsafe tire': 'Unsafe tires',
+        'Wrong way on a one way': 'Wrong way on a one-way street',
+        'A parole': 'Parole violation',
+        'A traffi': 'Traffic violation',
+        'Obstruction governmental administration': 'Obstruction of governmental administration',
+        'Several': 'Several violations',
+        'Speed in excess of 55 mph': 'Speeding in excess of 55 mph',
+        'Driving with 0.08% blood alcohol content': 'Driving with a blood-alcohol content above 0.08 percent',
+        'Driving with 0.08% or more blood-alcohol content': 'Driving with a blood-alcohol content above 0.08 percent',
+        'DWI with a blood-alcohol content of 0.08 percent or higher': 'Driving with a blood-alcohol content above 0.08 percent',
+        'Failure to signal turn': 'Failure to signal a turn',
+        'No license': 'No drivers license',
+        'Refusal of breath test': 'Refusal to take a breath test',
+        'Refusal to submit to a breath test': 'Refusal to take a breath test',
+        'Refusing a breath test': 'Refusal to take a breath test',
+        'Unlawful fleeing of a police officer': 'Unlawful fleeing from a police officer',
+        'Unlicensed operation of a motor vehicle': 'Unlicensed operation',
+        'Using other license': 'Using the license of another',
+        'Refusing a breath screening': 'Refusal to take a breath test',
+        'Speed imprudent': 'Speed not reasonable or prudent',
+        'Speed not reasonable or imprudent': 'Speed not reasonable or prudent',
+        'Ag-gravated unlicensed operationof a motor vehicle': 'Aggravated unlicensed operation of a motor vehicle',
+        'Aggra-vated unlicensed operation of a motor vehicle': 'Aggravated unlicensed operation of a motor vehicle',
+        'Aggravated criminal contemp': 'Aggravated criminal contempt',
+        'Aggravated diving while intoxicated with a child in car': 'Aggravated driving while intoxicated with a child in the car',
+        'Aggravated unlicensed opera-tion': 'Aggravated unlicensed operation of a motor vehicle',
+        'Aggravated unlicensed operation': 'Aggravated unlicensed operation of a motor vehicle',
+        'Using the drivers license of another': 'Using the license of another',
+        'Use of license of another person': 'Using the license of another',
+        'Welfarefraud': 'Welfare fraud',
+        'Unregistered': 'Unregistered motor vehicle',
+        'Criminal trespassing': 'Criminal trespass',
+        'Trespassing': 'Trespass',
+        'Aggravated unlicensed operator': 'Aggravated unlicensed operation of a motor vehicle',
+        'No license place': 'No license plate',
+        'No head lamps': 'No headlamps',
+        'No front plate': 'No front license plate',
+        'No distinct license plate': 'No distinctive/dirty/obstructed or only one license plate',
+        'No rear license plate': 'No distinctive/dirty/obstructed or only one license plate',
+        'No/distinct plate': 'No distinctive/dirty/obstructed or only one license plate',
+        'Obstructed plates': 'No distinctive/dirty/obstructed or only one license plate',
+        'Offering a false instrumentfor filing': 'Offering a false instrument for filing',
+        'Offering a false instrument': 'Offering a false instrument for filing',
+        'Offering a false instrument of filing': 'Offering a false instrument for filing',
+        'Operating whiel registration suspended or revoked': 'Operating while registration suspended or revoked',
+        'Operating while _ registration is suspended or revoked': 'Operating while registration suspended or revoked',
+        'Operating while a registration was suspended or revoked': 'Operating while registration suspended or revoked',
+        'Operating while registration suspended': 'Operating while registration suspended or revoked',
+
+
+
+
     }
-    if cleaned_charge_description in charges_to_rename:
-        return charges_to_rename[cleaned_charge_description]
+    if cleaned_charge_description.strip() in charges_to_rename:
+        return charges_to_rename[cleaned_charge_description.strip()]
     else:
+        print(f'charge description not found: {cleaned_charge_description}')
         return cleaned_charge_description
 
 
@@ -221,12 +336,14 @@ def add_charges_to_charges_table(incident, categorized_charges):
             # remove any commas from dollar amounts
             charge['cleaned_charge_description'] = re.sub(r'\$(\d+),(\d+)', r'$\1\2',
                                                           charge['cleaned_charge_description'])
+            print('charge cleaned description: ', charge['cleaned_charge_description'])
             charge['cleaned_charge_description'] = rename_charge_description(charge['cleaned_charge_description'])
             separated_charges_by_comma = charge['cleaned_charge_description'].split(',')
             for c in separated_charges_by_comma:
                 charges_split_by_and = split_charges_by_and(c, charge_type)
                 for split_charge in charges_split_by_and:
                     split_charge = split_charge.strip()
+                    print('split_charge: ', split_charge)
                     if len(split_charge) == 0:
                         continue
                     if split_charge.startswith('and '):
@@ -256,6 +373,7 @@ def add_charges_to_charges_table(incident, categorized_charges):
 
 
 def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_id):
+    print('charge_str: ', charge_str)
     name_used = re.search('(\w+) (?:was|were) charged with ', charge_str, re.IGNORECASE)
     try:
         name_used = name_used.group(1)
@@ -269,14 +387,25 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
                 'Name used in charge description is different from accused name. Charge will not be added to charges table.')
             return
     charge_str_without_name = re.sub(r'(\w+) (?:was|were) charged with ', '', charge_str, re.IGNORECASE)
-    charge_description, counts, charge_degree = process_charge(charge_str_without_name)
+    #charge_description, counts, charge_degree = process_charge(charge_str_without_name)
+    cleaned_description, cleaned_counts, cleaned_degree = process_charge(charge_str_without_name)
+    cleaned_description = cleaned_description.replace('  ', ' ')
+    if ' charged with ' in cleaned_description:
+        cleaned_description = ' '.join(cleaned_description.split(' charged with ')[1:])
+    if 'degree' in cleaned_description:
+        cleaned_description = ' '.join(cleaned_description.split('degree')[1:])
+    if cleaned_description.startswith('_ '):
+        cleaned_description = cleaned_description[2:]
+    cleaned_description = cleaned_description.strip()
+    cleaned_description = cleaned_description[0].upper() + cleaned_description[1:]
+    cleaned_description = rename_charge_description(cleaned_description)
     charge = session.query(Charges).filter(
         Charges.charge_description == charge_str,
-        Charges.crime == charge_description,
+        Charges.crime == cleaned_description,
         Charges.charge_class == charge_type,
-        Charges.degree == charge_degree,
+        Charges.degree == cleaned_degree,
         Charges.charged_name == accused_name,
-        Charges.counts == counts,
+        Charges.counts == cleaned_counts,
         incident_id == incident_id
     ).first()
     if charge:
@@ -285,10 +414,10 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         charge = Charges(
             charged_name=accused_name,
             charge_description=charge_str,
-            crime=charge_description,
+            crime=cleaned_description,
             charge_class=charge_type,
-            degree=charge_degree,
-            counts=counts,
+            degree=cleaned_degree,
+            counts=cleaned_counts,
             incident_id=incident_id,
         )
         session.add(charge)
@@ -298,6 +427,7 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
 
 def main():
     incidents = DBsession.query(Incident).all()
+    #incidents = DBsession.query(Incident).filter(Incident.id == 756)
     for incident in tqdm(incidents):
         # print(incident)
         if ',' in incident.accused_name:
