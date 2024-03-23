@@ -33,7 +33,7 @@ for threshold in thresholds:
     # Ensure each offender is counted only once
     unique_offenders = filtered_df.drop_duplicates(subset=['accused_name'])
 
-    print(f"Threshold: {threshold}, Unique Offenders Count: {len(unique_offenders)}")
+    print(f"Threshold: {threshold}, Unique Re-offenders Count: {len(unique_offenders)}")
 
     with open(f"repeat_offenders_{threshold}.html", 'w') as f:
         f.write(unique_offenders.to_html())

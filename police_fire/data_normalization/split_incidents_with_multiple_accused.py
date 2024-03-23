@@ -28,10 +28,10 @@ def create_charge_dict(incident, accused_name, accused_age, accused_location, ch
 
 def clean_split(incident, accused_names, accused_ages, addresses, DBsession):
     # print('----')
-    split_charges_by_sentence = [i for i in incident.charges.split('.') if len(i.strip()) > 1]
+    split_charges_by_sentence = [i for i in incident.spellchecked_charges.split('.') if len(i.strip()) > 1]
     if len(split_charges_by_sentence) == 1:
         # try splitting by semicolon
-        split_charges_by_sentence = [i for i in incident.charges.split(';') if len(i.strip()) > 1]
+        split_charges_by_sentence = [i for i in incident.spellchecked_charges.split(';') if len(i.strip()) > 1]
 
     raw_charges = []
     print('Splitting incident ' + str(incident.id) + ' with ' + str(len(accused_names)) + ' accused.')
