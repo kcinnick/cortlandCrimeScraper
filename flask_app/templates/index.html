@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+<head>
+    <meta charset="UTF-8">
+    <title>Crime Records</title>
+</head>
+<body>
+    <h1>Crime Records</h1>
+    <div>
+        <select id="crimeFilter" multiple>
+            <!-- Options will be populated by JavaScript -->
+        </select>
+        <button onclick="filterCrimes()">Filter</button>
+    </div>
+    <div id="crimeStats"></div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
