@@ -22,11 +22,9 @@ function populateFilter(crimeData) {
 }
 
 function filterCrimes() {
-    const selectedCrime = document.getElementById('crimeFilter').value;
-    // Now you can use `selectedCrime` to filter your data or make another fetch request
-    // For demonstration, let's just log it to the console
-    console.log('Selected crime for filtering:', selectedCrime);
+  const selectedCrime = document.getElementById('crimeFilter').value;
+  console.log('Selected crime for filtering:', selectedCrime);
+  window.location.href = `/crimes/${selectedCrime}`; // Redirect to the route for the selected crime
 
-    // Here you'd typically have logic to filter your dataset based on the selected crime
-    // For now, as a placeholder, we're just logging the selected crime to the console
 }
+

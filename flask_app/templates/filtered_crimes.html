@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<style>
+  table {
+  border-collapse: collapse; /* Remove gaps between table cells */
+  width: 100%; /* Make table take full width */
+}
+
+th, td {
+  padding: 10px; /* Add padding for better spacing */
+  border: 1px solid #ddd; /* Add a light border */
+  text-align: left; /* Align content to the left */
+}
+
+th { /* Style headers with a different background color */
+  background-color: #f2f2f2;
+}
+
+</style>
+<head>
+  <title>Filtered Crimes</title>
+</head>
+<body>
+<table>
+  <thead>
+    <tr>
+      <th>Crime</th>
+      <th>Degree</th>
+      <th>Charge Class</th>
+      <th>Charged Name</th>
+      <th>Counts</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for crime in crimes %}
+      <tr>
+        <td>{{ crime.crime }}</td>
+        <td>{% if crime.degree %}{{ crime.degree }}{% else %}{% endif %}</td>
+        <td>{{ crime.charge_class }}</td>
+        <td>{{ crime.charged_name }}</td>
+        <td>{{ crime.counts }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</body>
+</html>
