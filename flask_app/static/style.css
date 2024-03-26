@@ -66,3 +66,7 @@ header {
     padding: 10px 20px;
     margin-bottom: 20px; /* Add space below the navbar */
 }
+
+body {
+    font-family: sans-serif; /* Or a specific font family you prefer */
+}

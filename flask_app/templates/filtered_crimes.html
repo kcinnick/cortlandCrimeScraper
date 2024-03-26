@@ -26,7 +26,7 @@
         <td>{{ crime.charge_class }}</td>
         <td>{{ crime.charged_name }}</td>
         <td>{{ crime.counts }}</td>
-        <td>{{ crime.incident_id }}</td>
+        <td><a href="/incidents/{{ crime.incident_id }}">{{ crime.incident_id }}</a></td>
       </tr>
     {% endfor %}
   </tbody>

@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <h1>Incidents</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Incident</th>
+        <th>Date</th>
+        <th>Name(s)</th>
+        <th>Charges</th>
+        </tr>
+    </thead>
+    <tbody>
+      {% for incident in incidents %}
+        <tr>
+          <td><a href="/incidents/{{ incident.id }}">{{ incident.id }}</a></td>
+          <td>{{ incident.incident_date }}</td>
+          <td>{{ incident.accused_name }}</td>
+          <td>{{ incident.charges }}</td>
+          </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
