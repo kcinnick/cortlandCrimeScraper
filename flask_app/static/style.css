@@ -32,3 +32,37 @@ th, td {
 th { /* Style headers with a different background color */
   background-color: #f2f2f2;
 }
+
+header {
+      background-color: #f2f2f2; /* Light gray background */
+      padding: 10px 20px;
+    }
+
+nav {
+  display: flex; /* Make navbar items horizontal */
+  justify-content: space-between; /* Space items evenly */
+}
+
+nav ul {
+  list-style: none; /* Remove default bullet points */
+  margin: 0; /* Remove default margin */
+  padding: 0; /* Remove default padding */
+}
+
+nav li {
+  display: inline-block; /* Display list items horizontally */
+  margin-right: 10px; /* Add spacing between items */
+}
+
+nav li a {
+  text-decoration: none; /* Remove underline from links */
+  color: #333; /* Darker text color */
+  font-family: sans-serif; /* Use a sans-serif font */
+  font-weight: bold; /* Make text bold */
+}
+
+header {
+    background-color: #f2f2f2; /* Light gray background */
+    padding: 10px 20px;
+    margin-bottom: 20px; /* Add space below the navbar */
+}
