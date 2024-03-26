@@ -1,41 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "layout.html" %}
 
-<style>
-    #crimeFilter {
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-}
+{% block content %}
+  <h1>Crime Records</h1>
+  <div>
+    <select id="crimeFilter" multiple>
+      </select>
+    <button onclick="filterCrimes()">Filter</button>
+  </div>
+  <div id="crimeStats"></div>
+{% endblock %}
 
-#crimeFilter option {
-    padding: 5px 10px;
-}
-
-button[onclick="filterCrimes()"] {
-    padding: 8px 16px;
-    background-color: #4CAF50; /* Green */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer; /* Indicate clickable element */
-}
-
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 <script src="{{ url_for('static', filename='script.js') }}"></script>
-<head>
-    <meta charset="UTF-8">
-    <title>Crime Records</title>
-</head>
-<body>
-    <h1>Crime Records</h1>
-    <div>
-        <select id="crimeFilter" multiple>
-        </select>
-        <button onclick="filterCrimes()">Filter</button>
-    </div>
-    <div id="crimeStats"></div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-</html>

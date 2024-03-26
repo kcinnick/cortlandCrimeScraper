@@ -1,22 +1,8 @@
 <!DOCTYPE html>
 <html>
-<style>
-  table {
-  border-collapse: collapse; /* Remove gaps between table cells */
-  width: 100%; /* Make table take full width */
-}
+{% extends "layout.html" %}
 
-th, td {
-  padding: 10px; /* Add padding for better spacing */
-  border: 1px solid #ddd; /* Add a light border */
-  text-align: left; /* Align content to the left */
-}
-
-th { /* Style headers with a different background color */
-  background-color: #f2f2f2;
-}
-
-</style>
+{% block content %}
 <head>
   <title>Filtered Crimes</title>
 </head>
@@ -45,3 +31,4 @@ th { /* Style headers with a different background color */
 </table>
 </body>
 </html>
+{% endblock %}
