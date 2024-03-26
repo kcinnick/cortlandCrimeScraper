@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <h1>Incident Details</h1>
+
+  {% if incident %}
+    <table>
+      <tbody>
+        <tr>
+          <th>Incident ID:</th>
+          <td>{{ incident.id }}</td>
+        </tr>
+        <tr>
+          <th>Accused Name:</th>
+          <td>{{ incident.accused_name }}</td>
+        </tr>
+        <tr>
+          <th>Accused Age:</th>
+          <td>{{ incident.accused_age }}</td>
+        </tr>
+        <tr>
+          <th>Accused Charges:</th>
+          <td>{{ incident.spellchecked_charges }}</td>
+        </tr>
+        <tr>
+          <th>Source:</th>
+          <td>
+            {% if incident.source.startswith('http') %}
+              <a href="{{ incident.source }}">{{ incident.source }}</a>
+            {% else %}
+              {{ incident.source }}
+            {% endif %}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  {% else %}
+    <p>No incident found for this ID.</p>
+  {% endif %}
+{% endblock %}

@@ -2,6 +2,7 @@ from flask import Flask, render_template, jsonify
 
 from database import get_database_session
 from models.charges import Charges
+from models.incident import Incident
 
 db_session, engine = get_database_session(environment='production')
 
@@ -39,6 +40,22 @@ def show_filtered_crimes(crime_type):
 
     return render_template('filtered_crimes.html', crimes=filtered_crimes)
 
+
+def fetch_incidents():
+    incidents = db_session.query(Incident).distinct()
+    return incidents
+
+
+@app.route('/incidents')
+def incidents():
+    incidents = fetch_incidents()
+    return render_template('incidents.html', incidents=incidents)
+
+
+@app.route('/incidents/<int:incident_id>')
+def incident(incident_id):
+    incident = db_session.query(Incident).filter(Incident.id == incident_id).first()
+    return render_template('incident.html', incident=incident)
 
 if __name__ == '__main__':
     app.run(debug=True)
