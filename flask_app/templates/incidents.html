@@ -9,6 +9,7 @@
         <th>Date</th>
         <th>Name(s)</th>
         <th>Charges</th>
+        <th>Details</th>
         </tr>
     </thead>
     <tbody>
@@ -16,9 +17,16 @@
         <tr>
           <td><a href="/incidents/{{ incident.id }}">{{ incident.id }}</a></td>
           <td>{{ incident.incident_date }}</td>
-          <td>{{ incident.accused_name }}</td>
+          <td>
+            {% for name in incident.accused_name.split(',') %}
+              <a href="{{ url_for('charges', person_name=name.strip()) }}">{{ name.strip() }}</a>
+              {% if not loop.last %}, {% endif %}
+            {% endfor %}
+          </td>
           <td>{{ incident.charges }}</td>
+          <td>{{ incident.details }}</td>
           </tr>
+
       {% endfor %}
     </tbody>
   </table>
