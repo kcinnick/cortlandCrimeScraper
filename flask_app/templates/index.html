@@ -9,8 +9,39 @@
   </div>
   <div id="crimeStats"></div>
 
-  <h1>Crime Statistics</h1>
-  <div id="crimes-by-year-chart"></div>
+  <h1>Crimes By Year</h1>
+  <div id="crime-statistics-graph-parent">  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const crimesByYear = JSON.parse('{{ incidents_by_year | tojson | safe }}');  // Use tojson if available
+
+      const canvas = document.createElement('canvas');
+      canvas.id = 'crimes-by-year-chart';
+      const parentElement = document.getElementById('crime-statistics-graph-parent');
+      parentElement.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      const chart = new Chart(ctx, {
+        type: 'bar', // Choose chart type (bar, line, etc.)
+        data: {
+          labels: Object.keys(crimesByYear),  // Extract year labels from data
+          datasets: [{
+            label: 'Total Crimes',
+            data: Object.values(crimesByYear),  // Extract crime counts from data
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          // Add chart options (scales, title, etc.)
+        }
+      });
+    });
+  </script>
+
 
 {% endblock %}
 

@@ -12,7 +12,10 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    incidents = fetch_incidents()  # Fetch incidents data
+    incidents_by_year = get_incidents_by_year(incidents)  # Process data
+    return render_template('index.html', incidents_by_year=incidents_by_year)  # Pass data to template
+
 
 
 @app.route('/data')
@@ -93,20 +96,24 @@ def people():
     return render_template('people.html', people=people)
 
 
-def get_crimes_by_year(crimes):
-    print('crimes:', crimes)
-    df = pd.DataFrame(crimes)  # Convert crimes to pandas DataFrame
-    print('columns: ', df.columns)
-    df['year'] = pd.to_datetime(df['incident_date']).dt.year  # Extract year from date
+def get_incidents_by_year(incidents):
+    incident_data = []
+    for incident in incidents:
+        incident_data.append({
+            'incident_reported_date': incident.incident_date,
+        })
+    df = pd.DataFrame(incident_data)  # Convert crimes to pandas DataFrame
+    df['year'] = pd.to_datetime(df['incident_reported_date']).dt.year  # Extract year from date
     crimes_by_year = df.groupby('year').size().to_dict()  # Group by year and count
     return crimes_by_year
 
 
-@app.route('/api/crimes_by_year')
-def crimes_by_year_api():
-    crimes = fetch_incidents()  # Fetch all incidents
-    crimes_by_year = get_crimes_by_year(crimes)  # Call the data processing function
-    return jsonify(crimes_by_year)  # Return data as JSON
+@app.route('/api/incidents_by_year')
+def incidents_by_year_api():
+    incidents = fetch_incidents()
+    incidents_by_year = get_incidents_by_year(incidents)
+    return render_template('index.html', incidents_by_year=incidents_by_year)
+
 
 
 if __name__ == '__main__':
