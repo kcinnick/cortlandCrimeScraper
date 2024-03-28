@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+
+{% block content %}
+  <h1>Charges for {{ person_name }}</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>Incident ID</th>
+        <th>Charge Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if charges %}
+        {% for charge in charges %}
+          <tr>
+            <td><a href="/incidents/{{ charge.incident_id }}">{{ charge.incident_id }}</a></td>
+            <td>{{ charge.charge_description }}</td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td>No charges found for this person.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+{% endblock %}
