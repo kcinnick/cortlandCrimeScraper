@@ -29,6 +29,10 @@ th, td {
   text-align: left; /* Align content to the left */
 }
 
+td.date-published {
+  max-width: 10px;
+}
+
 th { /* Style headers with a different background color */
   background-color: #f2f2f2;
 }
@@ -70,3 +74,17 @@ header {
 body {
     font-family: sans-serif; /* Or a specific font family you prefer */
 }
+
+nav ul li {
+  display: inline-block;  /* Make list items display inline */
+  margin-right: 10px;     /* Add margin for spacing */
+  padding-right: 10px;    /* Add padding for separator */
+  border-right: 1px solid #ddd;  /* Add pipe separator using a border */
+}
+
+nav ul li:last-child {  /* Remove separator from the last item */
+  margin-right: 0;
+  padding-right: 0;
+  border-right: none;
+}
+

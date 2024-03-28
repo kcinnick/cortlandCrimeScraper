@@ -2,6 +2,7 @@ import pandas as pd
 from flask import Flask, render_template, jsonify
 
 from database import get_database_session
+from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
 
@@ -15,7 +16,6 @@ def index():
     incidents = fetch_incidents()  # Fetch incidents data
     incidents_by_year = get_incidents_by_year(incidents)  # Process data
     return render_template('index.html', incidents_by_year=incidents_by_year)  # Pass data to template
-
 
 
 @app.route('/data')
@@ -47,7 +47,7 @@ def show_filtered_crimes(crime_type):
 
 def fetch_incidents():
     incidents = db_session.query(Incident).distinct().all()
-    #print('incidents: ', incidents)
+    # print('incidents: ', incidents)
     return incidents
 
 
@@ -114,6 +114,13 @@ def incidents_by_year_api():
     incidents_by_year = get_incidents_by_year(incidents)
     return render_template('index.html', incidents_by_year=incidents_by_year)
 
+
+@app.route('/verify_incidents')
+def verify_incidents():
+    # Fetch unverified articles
+    unverified_articles = db_session.query(Article).filter(Article.incidents_verified == False).all()
+    # unverified_articles = Article.query.filter_by(incidents_verified=False).all()
+    return render_template('verify_incidents.html', articles=unverified_articles)
 
 
 if __name__ == '__main__':
