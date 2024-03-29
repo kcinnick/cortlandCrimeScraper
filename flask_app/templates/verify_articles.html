@@ -31,7 +31,7 @@ td.actions {
       <td class="headline">{{ article.headline }}</td>
       <td class="url"><a href="{{ article.url }}">Link</a></td>
       <td class="date-published" id="date-published-cell">{{ article.date_published }}</td>
-      <td class="actions">  <a href="#">Verify</a>  </td>
+      <td class="actions">  <a href="/verify-article/{{ article.id }}">Verify</a>  </td>
     </tr>
     {% endfor %}
   </tbody>

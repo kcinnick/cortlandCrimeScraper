@@ -88,3 +88,24 @@ nav ul li:last-child {  /* Remove separator from the last item */
   border-right: none;
 }
 
+.verification-container {
+  margin-top: 20px;  /* Add some space above the verification section */
+  text-align: center;  /* Center the verification button horizontally */
+}
+
+.verification-container form {
+  display: inline-block;  /* Make the form inline to accommodate the button */
+}
+
+.verification-container button {
+  background-color: #4CAF50;  /* Green background color */
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.verification-container button:hover {
+  background-color: #45A049;  /* Darker green on hover */
+}
