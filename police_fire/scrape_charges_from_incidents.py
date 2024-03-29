@@ -229,6 +229,7 @@ def rename_charge_description(cleaned_charge_description):
         # occasionally, the word 'and' is part of a charge description
         # and not a separator.  In these cases, we'll remove the word
         # and replace it with 'or'.
+        'All promoting prison contraband': 'Promoting prison contraband',
         'speed not reasonable and prudent': 'speed not reasonable or prudent',
         'one count of failure to provide proper food and drink to an impounded animal': 'one count of failure to provide proper food or drink to an impounded animal',
         'no distinctive, dirty, obstructed or only one license plate': 'no distinctive/dirty/obstructed or only one license plate',
@@ -949,17 +950,37 @@ def add_charges_to_charges_table(incident, categorized_charges):
 def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_id):
     print('charge_str: ', charge_str)
     name_used = re.search('(\w+) (?:was|were) charged with ', charge_str, re.IGNORECASE)
-    try:
-        name_used = name_used.group(1)
-    except AttributeError:
-        name_used = None
+    if charge_str.startswith('All '):
+        name_used = 'all'
+    else:
+        try:
+            name_used = name_used.group(1)
+        except AttributeError:
+            name_used = None
+    print('Name used is: ', name_used)
     if name_used:
+        if name_used.lower() == 'each':
+            # 'each' means that everyone mentioned was charged with the crime, so we'll add it for all.
+            pass
+        elif name_used.lower() == 'all':
+            # 'all' means that everyone mentioned was charged with the crime, so we'll add it for all.
+            pass
+        elif name_used.lower() == 'both':
+            # 'the' means that the person mentioned was charged with the crime, so we'll add it for that person.
+            pass
         # if the name used in the charge description is different from the accused name,
         # don't add the charge to the charges table
-        if name_used.lower() != accused_name.split()[-1].lower():
+        elif name_used.lower() != accused_name.split()[-1].lower():
             print(
-                'Name used in charge description is different from accused name. Charge will not be added to charges table.')
+                'Name used in charge description is different from accused name. '
+                'Charge will not be added to charges table.')
             return
+        elif name_used.lower() == accused_name.split()[-1].lower():
+            # names are the same
+            pass
+        else:
+            print(f'Name used: {name_used.lower()}, accused name: {accused_name.split()[-1].lower()}')
+            raise Exception('Name used in charge description is different from accused name.')
     charge_str_without_name = re.sub(r'(\w+) (?:was|were) charged with ', '', charge_str, re.IGNORECASE)
     #charge_description, counts, charge_degree = process_charge(charge_str_without_name)
     cleaned_description, cleaned_counts, cleaned_degree = process_charge(charge_str_without_name)
@@ -983,9 +1004,11 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         Charges.degree == cleaned_degree,
         Charges.charged_name == accused_name,
         Charges.counts == cleaned_counts,
-        incident_id == incident_id
+        Charges.incident_id == incident_id
     ).first()
     if charge:
+        print('Charge already found.')
+        print(charge.id)
         return charge.id
     else:
         charge = Charges(
@@ -999,13 +1022,27 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         )
         session.add(charge)
         session.commit()
+        print('Charge added.')
         return charge.id
 
 
 def main():
-    incidents = DBsession.query(Incident).all()
-    #incidents = DBsession.query(Incident).filter(Incident.id == 1573)
+    # use the below for a full load:
+    #incidents = DBsession.query(Incident).all()
+
+    # use the below for a partial load:
+    # get all incident_ids referenced in the charges table
+    incident_ids_in_charges_table = DBsession.query(Charges.incident_id).distinct().all()
+    incident_ids_in_charges_table = [i[0] for i in incident_ids_in_charges_table]
+    # get all incidents that are not in the charges table
+    incidents = DBsession.query(Incident).filter(~Incident.id.in_(incident_ids_in_charges_table)).all()
+
+    # use the below for a single incident:
+    #incidents = DBsession.query(Incident).filter(Incident.id == 2984)
+
+    print(len(incidents), 'incidents to process')
     for incident in tqdm(incidents):
+        print('Incident ID: ', incident.id)
         # print(incident)
         if ',' in incident.accused_name:
             print('Accused name contains more than one name. Incident will be split.')
@@ -1020,6 +1057,7 @@ def main():
                 )
                 add_charges_to_charges_table(incident, categorized_charges)
         else:
+            print('Accused name contains only one name. Incident will not be split.')
             uncategorized_charges = incident.spellchecked_charges
             accused_name = incident.accused_name
             categorized_charges = categorize_charges(
