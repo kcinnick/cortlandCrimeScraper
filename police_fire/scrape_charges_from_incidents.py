@@ -229,6 +229,7 @@ def rename_charge_description(cleaned_charge_description):
         # occasionally, the word 'and' is part of a charge description
         # and not a separator.  In these cases, we'll remove the word
         # and replace it with 'or'.
+        'All promoting prison contraband': 'Promoting prison contraband',
         'speed not reasonable and prudent': 'speed not reasonable or prudent',
         'one count of failure to provide proper food and drink to an impounded animal': 'one count of failure to provide proper food or drink to an impounded animal',
         'no distinctive, dirty, obstructed or only one license plate': 'no distinctive/dirty/obstructed or only one license plate',
@@ -427,7 +428,6 @@ def rename_charge_description(cleaned_charge_description):
         'Operating a motor vehicle while ability impaired by drugs': 'Operating a motor vehicle while impaired by drugs',
         'Operating a motor vehicle impaired by drugs': 'Operating a motor vehicle while impaired by drugs',
         'Open container of alcohol in a motor vehicle': 'Open container of an alcoholic beverage in a motor vehicle',
-        'Open container': 'Open container of alcohol',
         'Of criminal possession of stolen property': 'Criminal possession of stolen property',
         'Of criminally using drug paraphernalia': 'Criminally using drug paraphernalia',
         'Of endangering the welfare of a child': 'Endangering the welfare of a child',
@@ -593,7 +593,6 @@ def rename_charge_description(cleaned_charge_description):
         'Criminal possession of a controlled substance and': 'Criminal possession of a controlled substance',
         'Possession of a synthetic drug': 'Possession of synthetic drugs',
         'No/improper signal': 'No or improper signal',
-        'Improper signal': 'No or improper signal',
         'No or improper turn signal': 'Improper or no turn signal use',
         'Endangering the welfare of an incompetent or disabled person': 'Endangering the welfare of an incompetent or physically disabled person',
         'Tinted windows': 'Excessive window tint',
@@ -666,7 +665,6 @@ def rename_charge_description(cleaned_charge_description):
         'Driving while using a cell phone': 'Driving while using a mobile phone',
         'Endangering the welfare of child': 'Endangering the welfare of a child',
         'Each of endangering the welfare of a child': 'Endangering the welfare of a child',
-        'Fleeing from a police officer in a motor vehicle': 'Unlawful fleeing of a police officer in a motor vehicle',
         'Operating a vehicle without a valid registration': 'Operating a motor vehicle without a valid registration',
         'Driving while intoxicted': 'Driving while intoxicated',
         'Driving While Intoxicated': 'Driving while intoxicated',
@@ -678,7 +676,6 @@ def rename_charge_description(cleaned_charge_description):
         'Possession of open container': 'Open container of alcohol',
         'Unlawful dealing with a child': 'Unlawfully dealing with a child',
         'Driving while ability impaired': 'Driving while ability impaired by drugs or alcohol',
-        'Driving while ability impaired by drugs': 'Driving while ability impaired by drugs or alcohol',
         'Driving while intoxicated with prior conviction': 'Driving while intoxicated with a prior conviction',
         'Driving while intoxicated with a previous conviction': 'Driving while intoxicated with a prior conviction',
         'Criminal obstruction of breathing or circulation': 'Criminal obstruction of breathing or blood circulation',
@@ -692,13 +689,10 @@ def rename_charge_description(cleaned_charge_description):
         'Moving from the lane unsafely': 'Moving from a lane unsafely',
         'Unsafe lane change': 'Moving from a lane unsafely',
         'Wrong way on a one way street': 'Driving the wrong way on a one-way street',
-        'Criminal possession of a controlled substance with intent to sell': 'Criminal possession of a controlled substance with the intent to sell',
         'Imprudent speed': 'Speed not reasonable or prudent',
-        'Parked on pavement': 'Stopped or parked on pavement',
         'No headlamp': 'Inadequate headlights',
         'Failure to use a turn signal': 'Failure to signal a turn',
         'Wrong way on a one-way street': 'Driving the wrong way on a one-way street',
-        'Unregistered motor vehicle': 'Operating an unregistered motor vehicle',
         'Theft of service': 'Theft of services',
         'Driving an uninspected vehicle': 'Operating an uninspected vehicle',
         'Possession of drug paraphernalia': 'Criminal possession of drug paraphernalia',
@@ -719,7 +713,6 @@ def rename_charge_description(cleaned_charge_description):
         'Aggravated driving while intoxicated with a blood-alcohol level higher than 0.18': 'Aggravated driving while intoxicated with a blood-alcohol content of 0.18% or greater',
         'Speeding': 'Speeding in zone',
         'Operating a motor vehicle without ignition interlock device': 'Operating a vehicle without an ignition interlock device',
-        'Driving while intoxicated (drugs)': 'Driving while intoxicated by drugs',
         'Suspended registration': 'Operating while registration suspended or revoked',
         'Operating a motor vehicle with a blood-alcohol content of 0.08% or greater': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a motor vehicle with a blood-alcohol level of 0.18% or greater': 'Driving while intoxicated with a blood-alcohol content of 0.18% or greater',
@@ -729,7 +722,6 @@ def rename_charge_description(cleaned_charge_description):
         'No plate or distinct plate': 'No distinctive/dirty/obstructed or only one license plate',
         'No distinctive license plate': 'No distinctive/dirty/obstructed or only one license plate',
         'Failure to stay in a designated lane': 'Failure to use designated lane',
-        'Driver\'s view obstructed': 'Driver\'s view obstructed or obstructed windshield',
         'Obstructed view': 'Driver\'s view obstructed or obstructed windshield',
         'Driving with obstructed view': 'Driver\'s view obstructed or obstructed windshield',
         'Driving with a blood alcohol contest greater than 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
@@ -771,7 +763,6 @@ def rename_charge_description(cleaned_charge_description):
         'DWI with a blood-alcohol content of more than 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Unauthorized use of a vehicle': 'Unauthorized use of a motor vehicle',
         "Driver’s view obstructed": "Driver's view obstructed or obstructed windshield",
-        'Driver\'s view obstructed': 'Driver\'s view obstructed or obstructed windshield',
         'Tampering with physical evidence': 'Tampering with evidence',
         'Switched plates': 'Switched/improper license plates',
         'Failure to obey a police officer': 'Failure to comply with a police officer',
@@ -779,19 +770,16 @@ def rename_charge_description(cleaned_charge_description):
         'DWI with a blood-alcohol content of 0.08 percent or greater': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'First-offense driving while intoxicated': 'Driving while intoxicated',
         'Driving while intoxicated as a first offense': 'Driving while intoxicated',
-        'Failing to stop for stop signs': 'Failure to stop at a stop sign',
         'License plate': 'No distinctive/dirty/obstructed or only one license plate',
         'Driving with a blood-alcohol level of 0.08% or more': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a motor vehicle with a blood-alcohol level greater than 0.08%': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a motor vehicle with a blood-alcohol level greater than 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Improver signal': 'No or improper signal',
         'Appropriate shelter for dogs left outdoors': 'Failure to provide appropriate shelter for dogs left outdoors',
-        'Sexual misconduct a': 'Sexual misconduct',
         'Possession of a dangerous substance or synthetic drug': 'Possession or use of a dangerous or synthetic drug',
         'Sexual Assault': 'Sexual assault',
         'Appearing in public under the influence of narcotics or a drug other than alcohol': 'Appearing in public under the influence of a drug other than alcohol',
         'Possession of marijuana': 'Unlawful possession of marijuana',
-        'Speed unreasonable or prudent': 'Speed not reasonable or prudent',
         'Drink to an impounded animal': 'Failure to provide proper food or drink to an impounded animal',
         'Distorted or broken glass': 'Visibility distorted or broken glass',
         'Drinking alcohol in public': 'Consumption of alcohol in public',
@@ -800,20 +788,16 @@ def rename_charge_description(cleaned_charge_description):
         'Driving with a blood-alcohol content of 0.08% or higher': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'E burglary': 'Burglary',
         'Forged inspection certificate': 'Displaying a forged inspection certificate',
-        'Sexual misconduct a': 'Sexual misconduct',
-        'Failing to stop for stop signs': 'Failure to stop at a stop sign',
         'Drove across hazard markings': 'Driving across hazard markings',
         'Driving while intoxicated in a commercial motor vehicle': 'Driving while intoxicated in a commercial vehicle',
         'Possessing a sexual performance by a child': 'Possession of a sexual performance by a child',
         'Driving without a license': 'Operating without a valid license',
         'Driving with no license': 'Operating without a valid license',
-        'Driving while intoxicated (drugs)': 'Driving while intoxicated by drugs',
         'Operation of a motor vehicle with a blood alcohol content above 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Driving while intoxicated with previous conviction within 10 years': 'Driving while intoxicated with a conviction in the previous 10 years',
         'Improper plate': 'Switched/improper license plates',
         'Possess with intent to distribute 50 grams or more of methamphetamine': 'Possession with intent to distribute 50 grams or more of methamphetamine',
         'Operation without headlights': 'Operating a motor vehicle with no headlights',
-        'Speed unreasonable or prudent': 'Speed not reasonable or prudent',
         'Speed not prudent': 'Speed not reasonable or prudent',
         'Possession of hypodermic needle': 'Criminal possession of a hypodermic instrument',
         'Criminal possession of precursors for making methamphetamine': 'Criminal possession of methamphetamine manufacturing material',
@@ -822,11 +806,9 @@ def rename_charge_description(cleaned_charge_description):
         'Criminal contempt of an arrest warrant': 'Criminal contempt for an outstanding warrant',
         'License plate light out': 'Inadequate plate lamps',
         'Inadequate plate lights': 'Inadequate plate lamps',
-        'No front license plate': 'No distinctive/dirty/obstructed or only one license plate',
         'No license plate': 'No distinctive/dirty/obstructed or only one license plate',
         'No license plate lamps': 'Inadequate plate lamps',
         'Two': 'Traffic violations',
-        'Open container': 'Open container of alcohol',
         'Having an open container in a motor vehicle': 'Open container of an alcoholic beverage in a motor vehicle',
         'Operating out of ignition interlock restriction': 'Operating a vehicle without an ignition interlock device',
         'Operating without ignition interlock': 'Operating a vehicle without an ignition interlock device',
@@ -835,19 +817,15 @@ def rename_charge_description(cleaned_charge_description):
         'Violating of conditional license': 'Operating while violating conditional license',
         'A traffic': 'Traffic violations',
         'Traffic': 'Traffic violations',
-        'Probation': 'Violating probation',
         'Other': 'Traffic violations',
         'Several other': 'Traffic violations',
         'Unlawful fleeing': 'Unlawful fleeing of a police officer',
-        'Improper signal': 'No or improper signal',
-        'Two traffic violations': 'Traffic violations',
         'Nine': 'Traffic violations',
         'First-offense operating a motor vehicle while impaired by drugs': 'Operating a motor vehicle while impaired by drugs',
         'Operating a vehicle while impaired by drugs': 'Operating a motor vehicle while impaired by drugs',
         'Driving with a damaged wind-shield': "Driver's view obstructed or obstructed windshield",
         'Broken or cracked windshield': "Driver's view obstructed or obstructed windshield",
         'Windshield non-transparent': "Driver's view obstructed or obstructed windshield",
-        'Four vehicle violations': 'Traffic violations',
         'Passing a red signal': 'Passing a red light',
         'Going through a red light': 'Passing a red light',
         'Running a red light': 'Passing a red light',
@@ -857,50 +835,35 @@ def rename_charge_description(cleaned_charge_description):
         'Driving while ability impaired by alcohol & drugs combined': 'Driving while ability impaired by drugs or alcohol',
         'Driving while ability impaired by drugs-special': 'Driving while ability impaired by drugs or alcohol',
         'Driving while ability impaired by drugs or alcohol': 'Driving while ability impaired by drugs or alcohol',
-        'Fleeing from a police officer in a motor vehicle': 'Unlawful fleeing of a police officer in a motor vehicle',
         'Failure to obey a traffic control device': 'Disregarding a traffic control device',
         'Driving while intoxicated by drugs': 'Driving while intoxicated by drugs or alcohol',
         'Unlawful sale/possession/use of dangerous substances': 'Unlawful sale/possession/use of dangerous substances/synthetics',
         'Driving while intoxicated with a conviction in the previous 10 years': 'Driving while intoxicated with a prior conviction',
-        'Failure to maintain designated lane': 'Failure to use designated lane',
-        'Two traffic violations': 'Traffic violations',
         'A traffic violation': 'Traffic violations',
         'Traffic Law': 'Traffic violations',
         'Crossing pavement markings': 'Driving across pavement markings',
-        'Probation': 'Violating probation',
         'Numerous': 'Traffic violations',
         'Ignition interlock restrictions': 'Operating a vehicle without an ignition interlock device',
         'No tail lamp': 'No/insufficient tail lamps',
         'No tail lamps': 'No/insufficient tail lamps',
         'No tail lights': 'No/insufficient tail lamps',
-        'Criminal possession of a controlled substance with intent to sell': 'Criminal possession of a controlled substance with the intent to sell',
         'Unlawfully fleeing a police officer': 'Unlawful fleeing of a police officer',
-        'Failure to maintain designated lane': 'Failure to use designated lane',
         'No or improper signal': 'Improper or no turn signal use',
-        'Four vehicle violations': 'Traffic violations',
         'Four': 'Traffic violations',
-        'Driving while ability impaired by drugs': 'Driving while ability impaired by drugs or alcohol',
         'Driving while ability impaired by alcohol or drugs': 'Driving while ability impaired by drugs or alcohol',
         'Several traffic': 'Traffic violations',
         'Various': 'Traffic violations',
-        'Other vehicle and': 'Traffic violations',
         'Several vehicle and': 'Traffic violations',
-        'Unregistered motor vehicle': 'Operating an unregistered motor vehicle',
-        'No front license plate': 'No distinctive/dirty/obstructed or only one license plate',
         'A traffic device': 'Disregarding a traffic control device',
         'Speed over posted 55 mph zone': 'Speeding in excess of 55 mph',
         'Speed over 55 mph': 'Speeding in excess of 55 mph',
         'Noise prohibited': 'General prohibition of noise',
         'Noise ordinance': 'General prohibition of noise',
-        'Other vehicle and': 'Traffic violations',
         'Three vehicle and': 'Traffic violations',
         'Obstruction of government administration': 'Obstruction of governmental administration',
         'DWI with blood-alcohol content more than 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
-        'DWI with a blood-alcohol content of 0.08 percent or more': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
-        'DWI with blood-alcohol content of at least 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Five vehicle violations': 'Traffic violations',
         'Unsafe passing on the left': 'Improper passing',
-        'Four vehicle violations': 'Traffic violations',
         'No inspection': 'Operating without inspection',
         'No taillights': 'No/insufficient tail lamps',
         'Three': 'Traffic violations',
@@ -920,55 +883,14 @@ def rename_charge_description(cleaned_charge_description):
         'Driving while intoxicated with a blood-alcohol content greater than 0.08%': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Harrassment': 'Harassment',
         'Driving while intoxicated with a blood alcohol content greater than 0.08%': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
-        'DWI with blood-alcohol content of at least 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
-        'DWI with a blood-alcohol content of 0.08 percent or more': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Driving while intoxicated with a blood-alcohol content over 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Driving while intoxicated with a blood alcohol level of 0.08% or greater': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Driving while intoxicated-Leandras law': 'Driving while intoxicated',
-        'Parked on pavement': 'Stopped or parked on pavement',
         'Driving on the sidewalk': 'Driving a motor vehicle on or across a sidewalk',
         'Driving while ability impaired with a child 15 or under as a passenger': 'Driving while impaired by drugs with a child in the vehicle',
         'Inadequate brake lamps': 'Inadequate brake lights',
         'Driving below the minimum speed limit': 'Driving too slowly',
         'Driving while impaired': 'Driving while ability impaired by drugs or alcohol',
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-
     }
 
     if cleaned_charge_description.strip() in charges_to_rename:
@@ -1028,17 +950,37 @@ def add_charges_to_charges_table(incident, categorized_charges):
 def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_id):
     print('charge_str: ', charge_str)
     name_used = re.search('(\w+) (?:was|were) charged with ', charge_str, re.IGNORECASE)
-    try:
-        name_used = name_used.group(1)
-    except AttributeError:
-        name_used = None
+    if charge_str.startswith('All '):
+        name_used = 'all'
+    else:
+        try:
+            name_used = name_used.group(1)
+        except AttributeError:
+            name_used = None
+    print('Name used is: ', name_used)
     if name_used:
+        if name_used.lower() == 'each':
+            # 'each' means that everyone mentioned was charged with the crime, so we'll add it for all.
+            pass
+        elif name_used.lower() == 'all':
+            # 'all' means that everyone mentioned was charged with the crime, so we'll add it for all.
+            pass
+        elif name_used.lower() == 'both':
+            # 'the' means that the person mentioned was charged with the crime, so we'll add it for that person.
+            pass
         # if the name used in the charge description is different from the accused name,
         # don't add the charge to the charges table
-        if name_used.lower() != accused_name.split()[-1].lower():
+        elif name_used.lower() != accused_name.split()[-1].lower():
             print(
-                'Name used in charge description is different from accused name. Charge will not be added to charges table.')
+                'Name used in charge description is different from accused name. '
+                'Charge will not be added to charges table.')
             return
+        elif name_used.lower() == accused_name.split()[-1].lower():
+            # names are the same
+            pass
+        else:
+            print(f'Name used: {name_used.lower()}, accused name: {accused_name.split()[-1].lower()}')
+            raise Exception('Name used in charge description is different from accused name.')
     charge_str_without_name = re.sub(r'(\w+) (?:was|were) charged with ', '', charge_str, re.IGNORECASE)
     #charge_description, counts, charge_degree = process_charge(charge_str_without_name)
     cleaned_description, cleaned_counts, cleaned_degree = process_charge(charge_str_without_name)
@@ -1062,9 +1004,11 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         Charges.degree == cleaned_degree,
         Charges.charged_name == accused_name,
         Charges.counts == cleaned_counts,
-        incident_id == incident_id
+        Charges.incident_id == incident_id
     ).first()
     if charge:
+        print('Charge already found.')
+        print(charge.id)
         return charge.id
     else:
         charge = Charges(
@@ -1078,13 +1022,27 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         )
         session.add(charge)
         session.commit()
+        print('Charge added.')
         return charge.id
 
 
 def main():
-    incidents = DBsession.query(Incident).all()
-    #incidents = DBsession.query(Incident).filter(Incident.id == 1573)
+    # use the below for a full load:
+    #incidents = DBsession.query(Incident).all()
+
+    # use the below for a partial load:
+    # get all incident_ids referenced in the charges table
+    incident_ids_in_charges_table = DBsession.query(Charges.incident_id).distinct().all()
+    incident_ids_in_charges_table = [i[0] for i in incident_ids_in_charges_table]
+    # get all incidents that are not in the charges table
+    incidents = DBsession.query(Incident).filter(~Incident.id.in_(incident_ids_in_charges_table)).all()
+
+    # use the below for a single incident:
+    #incidents = DBsession.query(Incident).filter(Incident.id == 2984)
+
+    print(len(incidents), 'incidents to process')
     for incident in tqdm(incidents):
+        print('Incident ID: ', incident.id)
         # print(incident)
         if ',' in incident.accused_name:
             print('Accused name contains more than one name. Incident will be split.')
@@ -1099,6 +1057,7 @@ def main():
                 )
                 add_charges_to_charges_table(incident, categorized_charges)
         else:
+            print('Accused name contains only one name. Incident will not be split.')
             uncategorized_charges = incident.spellchecked_charges
             accused_name = incident.accused_name
             categorized_charges = categorize_charges(

@@ -13,11 +13,13 @@ DBsession, engine = get_database_session(environment='prod')
 correct_words = []
 corrected_words = {}
 
-incidents = DBsession.query(Incident).all()
+# incidents = DBsession.query(Incident).all()
+# get incidents where spellchecked_charges is null
+incidents = DBsession.query(Incident).filter(Incident.spellchecked_charges == None).all()
 spell = SpellChecker()
 for incident in tqdm(incidents):
     print('---')
-    charges = incident.spellchecked_charges
+    charges = incident.charges
     print(charges)
     misspelled_charges = spell.unknown(charges.split())
     real_misspelled_charges = [word for word in misspelled_charges if word[-1] not in ['.', ',', ';']]

@@ -1,13 +1,17 @@
 import pandas as pd
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, redirect, url_for
+from flask_wtf import FlaskForm
+from wtforms import BooleanField, SubmitField
 
 from database import get_database_session
+from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
 
 db_session, engine = get_database_session(environment='production')
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'mysecretkey'
 
 
 @app.route('/')
@@ -15,7 +19,6 @@ def index():
     incidents = fetch_incidents()  # Fetch incidents data
     incidents_by_year = get_incidents_by_year(incidents)  # Process data
     return render_template('index.html', incidents_by_year=incidents_by_year)  # Pass data to template
-
 
 
 @app.route('/data')
@@ -47,7 +50,7 @@ def show_filtered_crimes(crime_type):
 
 def fetch_incidents():
     incidents = db_session.query(Incident).distinct().all()
-    #print('incidents: ', incidents)
+    # print('incidents: ', incidents)
     return incidents
 
 
@@ -114,6 +117,57 @@ def incidents_by_year_api():
     incidents_by_year = get_incidents_by_year(incidents)
     return render_template('index.html', incidents_by_year=incidents_by_year)
 
+
+@app.route('/verify_incidents')
+def verify_incidents():
+    # Fetch unverified articles
+    unverified_articles = db_session.query(Article).filter(Article.incidents_verified == False).all()
+    return render_template('verify_articles.html', articles=unverified_articles)
+
+
+@app.route('/verify-article/<int:article_id>', methods=['GET', 'POST'])
+def verify_article(article_id):
+    print('137')
+    article = db_session.query(Article).filter(Article.id == article_id).first()
+    associated_incidents = db_session.query(Incident).filter(
+        Incident.source == article.url).all()  # Fetch associated incidents
+    form = VerificationForm(csrf_enabled=True)  # Enable CSRF protection
+
+    return render_template(
+        'verify_article.html',
+        article=article,
+        incidents=associated_incidents,
+        form=form
+    )
+
+
+class VerificationForm(FlaskForm):
+    verified = BooleanField('Verified?')
+    submit = SubmitField('Mark as Verified')
+    csrf_enabled = True  # Enable CSRF protection in the form
+
+
+@app.route('/update-verification/<int:article_id>', methods=['POST'])
+def update_verification(article_id):
+    print('159')
+    # Access form data and perform verification logic here
+    article = db_session.query(Article).filter(Article.id == article_id).first()
+    form = VerificationForm(csrf_enabled=True)  # Create a VerificationForm instance
+
+    if form.validate_on_submit():
+        print(form.data)
+        is_verified = form.verified.data  # Access the checkbox value using .data
+        print(f"Checkbox is checked: {is_verified}")
+        article.incidents_verified = is_verified
+        db_session.commit()  # Commit changes to the database
+
+        # Redirect to verify_incidents route after successful update
+        return redirect(url_for('verify_incidents'))
+    else:
+        print('form errors: ', form.errors)  # Print errors if validation fails
+
+    # Optionally, you can pass the form object back to the verify_article template for error display
+    return render_template('verify_article.html', article=article, form=form)
 
 
 if __name__ == '__main__':

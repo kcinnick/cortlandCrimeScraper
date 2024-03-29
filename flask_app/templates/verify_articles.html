@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+#verify-table td {
+  white-space: nowrap; /* Prevent wrapping */
+  overflow: hidden;  /* Hide overflowing content */
+  text-overflow: ellipsis; /* Add ellipsis (...) at the end */
+}
+td.headline {
+  max-width: 150px; /* Limit width of headline column */
+}
+td.actions {
+  /* Adjust width as needed */
+  width: 200px;
+}
+
+</style>
+<h1>Verify Incidents in Article</h1>
+<table id="verify-table">
+  <thead>
+    <tr>
+      <th>Headline</th>
+      <th>URL</th>
+      <th>Date Published</th>
+      <th>Actions</th>  </tr>
+  </thead>
+  <tbody>
+    {% for article in articles %}
+    <tr>
+      <td class="headline">{{ article.headline }}</td>
+      <td class="url"><a href="{{ article.url }}">Link</a></td>
+      <td class="date-published" id="date-published-cell">{{ article.date_published }}</td>
+      <td class="actions">  <a href="/verify-article/{{ article.id }}">Verify</a>  </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='script.js') }}"></script>

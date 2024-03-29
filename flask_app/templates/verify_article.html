@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Verify Article: {{ article.headline }}</h1>
+<p>Source URL: <a href="{{ article.url }}">{{ article.url }}</a></p>
+
+<h2>Associated Incidents</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Incident ID</th>
+      <th>Person</th>
+      <th>Charges</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for incident in incidents %}
+    <tr>
+      <td>
+        <a href="{{ url_for('incident', incident_id=incident.id) }}">{{ incident.id }}</a>
+      </td>
+      <td>
+        {% if incident.accused_name: %}
+          <a href="/charges/{{ incident.accused_name }}">{{ incident.accused_name }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>{{ incident.charges }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="verification-container">
+  <form action="{{ url_for('update_verification', article_id=article.id) }}" method="post">
+    {{ form.hidden_tag() }}  <label for="verified">Verified?</label>
+<input type="checkbox" id="verified" name="verified">
+<button type="submit">Mark as Verified</button>  <script>
+  const checkbox = document.getElementById('verified');
+
+  // Check if the checkbox is initially checked
+  if (checkbox.checked) {
+    checkbox.value = 'True';  // Set value to 'True' if checked initially
+  }
+
+  // Event listener for checkbox change
+  checkbox.addEventListener('change', function() {
+    checkbox.value = this.checked ? 'True' : '';  // Set value based on checked state
+  });
+</script>  </form>
+</div>
+
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+{% endblock %}
