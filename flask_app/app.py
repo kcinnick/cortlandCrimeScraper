@@ -1,5 +1,5 @@
 import pandas as pd
-from flask import Flask, render_template, jsonify, redirect, url_for
+from flask import Flask, render_template, jsonify, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField
 
@@ -127,7 +127,6 @@ def verify_incidents():
 
 @app.route('/verify-article/<int:article_id>', methods=['GET', 'POST'])
 def verify_article(article_id):
-    print('137')
     article = db_session.query(Article).filter(Article.id == article_id).first()
     associated_incidents = db_session.query(Incident).filter(
         Incident.source == article.url).all()  # Fetch associated incidents
@@ -141,6 +140,25 @@ def verify_article(article_id):
     )
 
 
+def get_article_id_from_incident(incident):
+    article = db_session.query(Article).filter(Article.url == incident.source).first()
+    return article.id
+
+
+@app.route('/delete-incident/<int:incident_id>', methods=['POST'])
+def delete_incident(incident_id):
+    incident = db_session.query(Incident).filter(Incident.id == incident_id).first()
+    if incident:
+        db_session.delete(incident)
+        db_session.commit()
+        flash('Incident deleted successfully!', 'success')
+    else:
+        flash('Incident not found!', 'danger')
+
+    article_id = get_article_id_from_incident(incident)
+    return redirect(url_for('verify_article', article_id=article_id))  # Redirect back to verification page
+
+
 class VerificationForm(FlaskForm):
     verified = BooleanField('Verified?')
     submit = SubmitField('Mark as Verified')
@@ -149,8 +167,6 @@ class VerificationForm(FlaskForm):
 
 @app.route('/update-verification/<int:article_id>', methods=['POST'])
 def update_verification(article_id):
-    print('159')
-    # Access form data and perform verification logic here
     article = db_session.query(Article).filter(Article.id == article_id).first()
     form = VerificationForm(csrf_enabled=True)  # Create a VerificationForm instance
 
@@ -166,7 +182,6 @@ def update_verification(article_id):
     else:
         print('form errors: ', form.errors)  # Print errors if validation fails
 
-    # Optionally, you can pass the form object back to the verify_article template for error display
     return render_template('verify_article.html', article=article, form=form)
 
 
