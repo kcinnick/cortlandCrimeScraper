@@ -36,6 +36,7 @@ def clean_end_of_charge_description(charge_description):
 def categorize_charges(incident_id, charges, accused_name):
     # Regular expression to match charge descriptions
     # The regex captures all text up to target words
+    print('charges: ', charges)
     regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|midemeanor|misdemean-or|traffic infractions?|traffic violations|violations|a? ?violation|infractions?)"
     # Find all matches
     matches = re.findall(regex, charges, re.IGNORECASE | re.DOTALL)
