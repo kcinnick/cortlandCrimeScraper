@@ -140,10 +140,12 @@ def verify_article(article_id):
         form=form
     )
 
+
 class VerificationForm(FlaskForm):
     verified = BooleanField('Verified?')
     submit = SubmitField('Mark as Verified')
     csrf_enabled = True  # Enable CSRF protection in the form
+
 
 @app.route('/update-verification/<int:article_id>', methods=['POST'])
 def update_verification(article_id):
@@ -158,7 +160,9 @@ def update_verification(article_id):
         print(f"Checkbox is checked: {is_verified}")
         article.incidents_verified = is_verified
         db_session.commit()  # Commit changes to the database
-        return redirect(url_for('verify_article', article_id=article_id))  # Redirect back
+
+        # Redirect to verify_incidents route after successful update
+        return redirect(url_for('verify_incidents'))
     else:
         print('form errors: ', form.errors)  # Print errors if validation fails
 

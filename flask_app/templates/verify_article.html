@@ -36,9 +36,7 @@
   <form action="{{ url_for('update_verification', article_id=article.id) }}" method="post">
     {{ form.hidden_tag() }}  <label for="verified">Verified?</label>
 <input type="checkbox" id="verified" name="verified">
-<button type="submit">{{ form.submit.label }}</button>
-
-<script>
+<button type="submit">Mark as Verified</button>  <script>
   const checkbox = document.getElementById('verified');
 
   // Check if the checkbox is initially checked
