@@ -10,39 +10,43 @@ from models.incident import Incident
 
 DBsession, engine = get_database_session(environment='prod')
 
-correct_words = []
-corrected_words = {}
 
-# incidents = DBsession.query(Incident).all()
-# get incidents where spellchecked_charges is null
-incidents = DBsession.query(Incident).filter(Incident.spellchecked_charges == None).all()
-spell = SpellChecker()
-for incident in tqdm(incidents):
-    print('---')
-    charges = incident.charges
-    print(charges)
-    misspelled_charges = spell.unknown(charges.split())
-    real_misspelled_charges = [word for word in misspelled_charges if word[-1] not in ['.', ',', ';']]
-    real_misspelled_charges = [word for word in real_misspelled_charges if word not in correct_words]
+def spellcheck_charges():
+    correct_words = ['first-degree', 'second-degree', 'third-degree', 'fourth-degree',]
+    corrected_words = {}
 
-    print(f"Misspelled charges: {real_misspelled_charges}")
+    # incidents = DBsession.query(Incident).all()
+    # get incidents where spellchecked_charges is null
+    incidents = DBsession.query(Incident).filter(Incident.spellchecked_charges == None).all()
+    spell = SpellChecker()
+    for incident in tqdm(incidents):
+        print('---')
+        charges = incident.charges
+        print(charges)
+        misspelled_charges = spell.unknown(charges.split())
+        real_misspelled_charges = [word for word in misspelled_charges if word[-1] not in ['.', ',', ';']]
+        real_misspelled_charges = [word for word in real_misspelled_charges if word not in correct_words]
 
-    for misspelled_charge in real_misspelled_charges:
-        if misspelled_charge in correct_words:
-            continue
-        elif misspelled_charge in corrected_words.keys():
-            charges = charges.replace(misspelled_charge, corrected_words[misspelled_charge])
-            continue
-        corrected_charge = input(f"Correct {misspelled_charge} (leave blank to keep): ")
+        print(f"Misspelled charges: {real_misspelled_charges}")
 
-        if not corrected_charge:
-            print(f'Keeping original: {misspelled_charge}')
-            correct_words.append(misspelled_charge)
-        else:
-            punctuation = misspelled_charge[-1] if misspelled_charge[-1] in ['.', ',', ';'] else ''
-            corrected_charge_with_punctuation = corrected_charge + punctuation
-            corrected_words[misspelled_charge] = corrected_charge_with_punctuation
-            charges = charges.replace(misspelled_charge, corrected_charge_with_punctuation)
+        for misspelled_charge in real_misspelled_charges:
+            if misspelled_charge in correct_words:
+                continue
+            elif misspelled_charge in corrected_words.keys():
+                charges = charges.replace(misspelled_charge, corrected_words[misspelled_charge])
+                continue
+            corrected_charge = input(f"Correct {misspelled_charge} (leave blank to keep): ")
 
-    incident.spellchecked_charges = charges
-    DBsession.commit()
+            if not corrected_charge:
+                print(f'Keeping original: {misspelled_charge}')
+                correct_words.append(misspelled_charge)
+            else:
+                punctuation = misspelled_charge[-1] if misspelled_charge[-1] in ['.', ',', ';'] else ''
+                corrected_charge_with_punctuation = corrected_charge + punctuation
+                corrected_words[misspelled_charge] = corrected_charge_with_punctuation
+                charges = charges.replace(misspelled_charge, corrected_charge_with_punctuation)
+
+        incident.spellchecked_charges = charges
+        DBsession.commit()
+
+    return
