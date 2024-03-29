@@ -1,8 +1,8 @@
 {% extends "layout.html" %}
 
 {% block content %}
-  <h1>Incidents</h1>
-  <table>
+  <h1 class="incidents">Incidents</h1>
+  <table class="main">
     <thead>
       <tr>
         <th>Incident</th>
@@ -15,16 +15,20 @@
     <tbody>
       {% for incident in incidents %}
         <tr>
-          <td><a href="/incidents/{{ incident.id }}">{{ incident.id }}</a></td>
-          <td>{{ incident.incident_date }}</td>
-          <td>
+          <td class="incident_id" width="10px"><a href="/incidents/{{ incident.id }}">{{ incident.id }}</a></td>
+          <td style="white-space: nowrap;" width="100px">
+            {% if incident.incident_date %}  {{ incident.incident_date }}
+            {% else %}
+              {{ incident.incident_reported_date }}  {% endif %}
+          </td>
+          <td width="100px">
             {% for name in incident.accused_name.split(',') %}
               <a href="{{ url_for('charges', person_name=name.strip()) }}">{{ name.strip() }}</a>
               {% if not loop.last %}, {% endif %}
             {% endfor %}
           </td>
-          <td>{{ incident.charges }}</td>
-          <td>{{ incident.details }}</td>
+          <td width="750px">{{ incident.charges }}</td>
+          <td width="1000px">{{ incident.details }}</td>
           </tr>
 
       {% endfor %}
