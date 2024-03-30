@@ -892,6 +892,7 @@ def rename_charge_description(cleaned_charge_description):
         'Inadequate brake lamps': 'Inadequate brake lights',
         'Driving below the minimum speed limit': 'Driving too slowly',
         'Driving while impaired': 'Driving while ability impaired by drugs or alcohol',
+        'Unlawfully fleeing in a motor vehicle': 'Unlawful fleeing of a police officer in a motor vehicle',
     }
 
     if cleaned_charge_description.strip() in charges_to_rename:
