@@ -2,7 +2,6 @@ import pandas as pd
 from flask import Flask, render_template, jsonify, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField
-
 from database import get_database_session
 from models.article import Article
 from models.charges import Charges
@@ -57,6 +56,8 @@ def fetch_incidents():
 @app.route('/incidents')
 def incidents():
     incidents = fetch_incidents()
+    # order Incidents by reported_date
+    incidents.sort(key=lambda x: x.incident_reported_date, reverse=True)
     return render_template('incidents.html', incidents=incidents)
 
 

@@ -1,15 +1,16 @@
 {% extends "layout.html" %}
 
 {% block content %}
-  <h1>Crime Records</h1>
-  <div>
-    <select id="crimeFilter" multiple>
+  <h1 class="crime-records">Crime Records</h1>
+  <div class="crime_types">
+    <label for="crimeFilter"></label><select class="crimeFilter" id="crimeFilter" multiple>
       </select>
-    <button onclick="filterCrimes()">Filter</button>
+    <button class="crimeFilterButton" onclick="filterCrimes()">Filter</button>
   </div>
-  <div id="crimeStats"></div>
 
-  <h1>Crimes By Year</h1>
+  <div></div>
+
+  <h1 class="crimes-by-year">Crimes By Year</h1>
   <div id="crime-statistics-graph-parent">  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>

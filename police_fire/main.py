@@ -9,6 +9,8 @@ from models.article import Article
 from models.incident import Incident
 
 from scrape_articles_by_section import main as scrape_articles_by_section
+from scrape_charges_from_incidents import main as scrape_charges_from_incidents
+from data_normalization.fix_charge_descriptions_with_misspellings import spellcheck_charges
 
 
 def main(environment='dev'):
@@ -30,6 +32,9 @@ def main(environment='dev'):
         )
         article.incidents_scraped = True
         database_session.commit()
+
+    spellcheck_charges()
+    scrape_charges_from_incidents()
 
     return
 

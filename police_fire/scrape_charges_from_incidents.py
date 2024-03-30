@@ -36,6 +36,7 @@ def clean_end_of_charge_description(charge_description):
 def categorize_charges(incident_id, charges, accused_name):
     # Regular expression to match charge descriptions
     # The regex captures all text up to target words
+    print('charges: ', charges)
     regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|midemeanor|misdemean-or|traffic infractions?|traffic violations|violations|a? ?violation|infractions?)"
     # Find all matches
     matches = re.findall(regex, charges, re.IGNORECASE | re.DOTALL)
@@ -891,6 +892,7 @@ def rename_charge_description(cleaned_charge_description):
         'Inadequate brake lamps': 'Inadequate brake lights',
         'Driving below the minimum speed limit': 'Driving too slowly',
         'Driving while impaired': 'Driving while ability impaired by drugs or alcohol',
+        'Unlawfully fleeing in a motor vehicle': 'Unlawful fleeing of a police officer in a motor vehicle',
     }
 
     if cleaned_charge_description.strip() in charges_to_rename:
