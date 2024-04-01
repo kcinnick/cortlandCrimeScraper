@@ -1,6 +1,14 @@
 {% extends "layout.html" %}
 
 {% block content %}
+
+<style>
+  #crime-statistics-graph-parent {
+    width: 1000px;
+    height: 500px;
+    margin: 0 auto;
+}
+</style>
   <h1 class="crime-records">Crime Records</h1>
   <div class="crime_types">
     <label for="crimeFilter"></label><select class="crimeFilter" id="crimeFilter" multiple>
@@ -11,7 +19,7 @@
   <div></div>
 
   <h1 class="crimes-by-year">Crimes By Year</h1>
-  <div id="crime-statistics-graph-parent">  </div>
+  <div id="crime-statistics-graph-parent">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
   <script>
@@ -42,7 +50,7 @@
       });
     });
   </script>
-
+</div>
 
 {% endblock %}
 

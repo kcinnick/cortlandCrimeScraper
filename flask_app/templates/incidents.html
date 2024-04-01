@@ -17,9 +17,7 @@
         <tr>
           <td class="incident_id" width="10px"><a href="/incidents/{{ incident.id }}">{{ incident.id }}</a></td>
           <td style="white-space: nowrap;" width="100px">
-            {% if incident.incident_date %}  {{ incident.incident_date }}
-            {% else %}
-              {{ incident.incident_reported_date }}  {% endif %}
+              {{ incident.incident_reported_date }}
           </td>
           <td width="100px">
             {% for name in incident.accused_name.split(',') %}
