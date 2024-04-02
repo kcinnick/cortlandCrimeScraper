@@ -10,6 +10,7 @@ class Charges(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     charge_description = Column(String)
+    category = Column(String)
     crime = Column(String)
     charge_class = Column(String)  # felony, misdemeanor, violation, traffic_infraction
     degree = Column(Integer, nullable=True)
