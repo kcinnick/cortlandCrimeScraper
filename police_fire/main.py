@@ -11,6 +11,7 @@ from models.incident import Incident
 from scrape_articles_by_section import main as scrape_articles_by_section
 from scrape_charges_from_incidents import main as scrape_charges_from_incidents
 from data_normalization.fix_charge_descriptions_with_misspellings import spellcheck_charges
+from data_normalization.categorize_charges import main as categorize_charges
 
 
 def main(environment='dev'):
@@ -35,6 +36,7 @@ def main(environment='dev'):
 
     spellcheck_charges()
     scrape_charges_from_incidents()
+    categorize_charges()
 
     return
 
