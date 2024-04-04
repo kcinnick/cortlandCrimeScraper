@@ -6,13 +6,17 @@
     <thead>
       <tr>
         <th>Name</th>
+        <th>Total Charges</th>
+        <th>Total Incidents</th>
       </tr>
     </thead>
     <tbody>
       {% if people %}
         {% for person in people %}
           <tr>
-            <td><a href="/charges/{{ person }}">{{ person }}</a></td>
+            <td><a href="/charges/{{ person['name'] }}">{{ person.name }}</a></td>
+            <td>{{ person.total_charges }}</td>
+            <td>{{ person.total_incidents }}</td>
           </tr>
         {% endfor %}
       {% else %}

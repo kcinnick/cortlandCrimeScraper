@@ -2,6 +2,8 @@ import pandas as pd
 from flask import Flask, render_template, jsonify, redirect, url_for, flash
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField
+from sqlalchemy import func
+
 from database import get_database_session
 from models.article import Article
 from models.charges import Charges
@@ -49,6 +51,7 @@ def show_filtered_crimes(crime_type):
 
 def fetch_incidents():
     incidents = db_session.query(Incident).distinct().all()
+
     # print('incidents: ', incidents)
     return incidents
 
@@ -68,14 +71,24 @@ def incident(incident_id):
 
 
 def get_people():
-    people = db_session.query(
+    people_counts = db_session.query(
+        Charges.charged_name,
+        func.count(Charges.id).label('total_charges'),
+        func.count(Charges.incident_id.distinct()).label('total_incidents')
+    ).group_by(
         Charges.charged_name
-    ).distinct().all()
-    # order people alphabetically
-    people.sort()
-    people = [person[0] for person in people]
+    ).order_by(
+        func.count(Charges.id).desc()
+    ).all()
 
-    return people  # Replace with the actual list of distinct names
+    # Transform query results into a list of dictionaries for easier handling in the template
+    people = [{
+        'name': person.charged_name,
+        'total_charges': person.total_charges,
+        'total_incidents': person.total_incidents
+    } for person in people_counts]
+
+    return people
 
 
 def get_charges_by_person(person):
@@ -104,11 +117,22 @@ def get_incidents_by_year(incidents):
     incident_data = []
     for incident in incidents:
         incident_data.append({
-            'incident_reported_date': incident.incident_date,
+            'incident_reported_date': incident.incident_reported_date,
+            'id': incident.id
         })
-    df = pd.DataFrame(incident_data)  # Convert crimes to pandas DataFrame
-    df['year'] = pd.to_datetime(df['incident_reported_date']).dt.year  # Extract year from date
-    crimes_by_year = df.groupby('year').size().to_dict()  # Group by year and count
+
+    # Convert crimes to pandas DataFrame
+    df = pd.DataFrame(incident_data)
+
+    # Ensure 'incident_reported_date' is a datetime type
+    df['incident_reported_date'] = pd.to_datetime(df['incident_reported_date'])
+
+    # Extract year and month for sorting
+    df['year'] = df['incident_reported_date'].dt.year
+
+    # Group by year and count incidents
+    crimes_by_year = df.groupby('year').size().to_dict()
+
     return crimes_by_year
 
 
