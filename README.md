@@ -1,10 +1,10 @@
-# cortlandStandardScraper
+# cortlandCrimeScraper
 
 ## Overview
-`cortlandStandardScraper` is a Python-based web scraping tool designed to gather and store detailed information about local news stories from the Cortland Standard website. The primary purpose of this tool is to facilitate data collection for analysis and querying of local news incidents.
+`cortlandCrimeScraper` is a Python-based web scraping tool designed to gather and store detailed information about local news stories from the Cortland Standard & Cortland Voice websites. The primary purpose of this tool is to facilitate data collection for analysis and querying of local news incidents.
 
 ## Features
-- Scrapes local news articles from the Cortland Standard website.
+- Scrapes local news articles from the Cortland Standard and Cortland Voice websites.
 - Extracts and stores article details such as title, author, publish date, and content.
 - Populates an `incidents` table with relevant data extracted from articles.
 - Further refines data into a `charges` table for detailed analysis.
