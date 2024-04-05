@@ -1,5 +1,5 @@
 from models.incident import Incident
-from police_fire.scrape_structured_police_fire_details import check_if_details_references_a_relative_date
+from police_fire.cortland_standard.scrape_structured_police_fire_details import check_if_details_references_a_relative_date
 from police_fire.test_database import setup_database
 
 
