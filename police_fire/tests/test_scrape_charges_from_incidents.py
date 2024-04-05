@@ -1,5 +1,5 @@
 from models.incident import Incident
-from police_fire.scrape_charges_from_incidents import categorize_charges
+from police_fire.cortland_standard.scrape_charges_from_incidents import categorize_charges
 
 from police_fire.test_database import setup_database
 

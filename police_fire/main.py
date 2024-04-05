@@ -1,15 +1,11 @@
-from datetime import date
-
 from tqdm import tqdm
 
-import scrape_structured_police_fire_details
-import scrape_unstructured_police_fire_details
+from police_fire.cortland_standard import scrape_unstructured_police_fire_details, scrape_structured_police_fire_details
 from database import get_database_session
 from models.article import Article
-from models.incident import Incident
 
 from scrape_articles_by_section import main as scrape_articles_by_section
-from scrape_charges_from_incidents import main as scrape_charges_from_incidents
+from police_fire.cortland_standard.scrape_charges_from_incidents import main as scrape_charges_from_incidents
 from data_normalization.fix_charge_descriptions_with_misspellings import spellcheck_charges
 from data_normalization.categorize_charges import main as categorize_charges
 

@@ -30,7 +30,8 @@ charge_types = {
     'Document Tampering': [],
     'Obstruction of Justice': [],
     'Sexual Offenses': [],
-    'Endangering Welfare': []
+    'Endangering Welfare': [],
+    'Tampering with Evidence': [],
 }
 
 
@@ -50,7 +51,7 @@ def get_manual_response():
                      'contempt,'
                      '41. Escape or attempted escape\n42. Unlawful sale of alcohol, 43. Stalking, 44. Sex offender '
                      'registry violation'
-                     '\n45. Leaving the scene of an accident, 46. Promoting prison contraband, 47. Other\n\n> ')
+                     '\n45. Leaving the scene of an accident, 46. Promoting prison contraband, 47. Tampering with Evidence, 48. Other\n\n> ')
 
     return response
 
@@ -102,7 +103,8 @@ def categorize_charge(charge):
         '44': 'Sex offender registry violation',
         '45': 'Leaving the scene of an accident',
         '46': 'Promoting prison contraband',
-        '47': 'Other',
+        '47': 'Tampering with evidence',
+        '48': 'Other',
 
     }
     print('\nIncident ID: ', charge.incident_id)
