@@ -4,7 +4,7 @@ from police_fire.cortland_standard import scrape_unstructured_police_fire_detail
 from database import get_database_session
 from models.article import Article
 
-from scrape_articles_by_section import main as scrape_articles_by_section
+from police_fire.cortland_standard.scrape_articles_by_section import main as scrape_articles_by_section
 from police_fire.cortland_standard.scrape_charges_from_incidents import main as scrape_charges_from_incidents
 from data_normalization.fix_charge_descriptions_with_misspellings import spellcheck_charges
 from data_normalization.categorize_charges import main as categorize_charges
