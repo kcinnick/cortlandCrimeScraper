@@ -2,7 +2,7 @@ from models.article import Article
 from models.incident import Incident
 from police_fire.cortland_standard.scrape_structured_police_fire_details import scrape_structured_incident_details
 from police_fire.cortland_standard.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
-from scrape_articles_by_section import login, scrape_article
+from police_fire.cortland_standard.scrape_articles_by_section import login, scrape_article
 
 from police_fire.test_database import setup_database
 

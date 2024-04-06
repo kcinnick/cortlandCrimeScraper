@@ -2,7 +2,7 @@ from tqdm import tqdm
 
 from database import get_database_session, IncidentsWithErrors, Article
 from police_fire.cortland_standard.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
-from scrape_articles_by_section import scrape_article
+from police_fire.cortland_standard.scrape_articles_by_section import scrape_article
 from utilities import login
 
 

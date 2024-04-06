@@ -1,5 +1,5 @@
 from database import get_database_session, Base, Article
-from scrape_articles_by_section import login, scrape_article, get_article_urls
+from police_fire.cortland_standard.scrape_articles_by_section import login, scrape_article, get_article_urls
 
 
 def test_scrape_article():

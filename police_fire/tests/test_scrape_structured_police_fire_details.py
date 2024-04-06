@@ -3,7 +3,7 @@ from models.incident import Incident
 from models.incidents_with_errors import IncidentsWithErrors
 from police_fire.cortland_standard.scrape_structured_police_fire_details import scrape_structured_incident_details, \
     identify_articles_with_incident_formatting
-from scrape_articles_by_section import login, scrape_article
+from police_fire.cortland_standard.scrape_articles_by_section import login, scrape_article
 
 from police_fire.test_database import setup_database
 
