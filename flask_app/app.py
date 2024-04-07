@@ -145,8 +145,11 @@ def incidents_by_year_api():
 
 @app.route('/verify_incidents')
 def verify_incidents():
-    # Fetch unverified articles
-    unverified_articles = db_session.query(Article).filter(Article.incidents_verified == False).all()
+    # Fetch unverified articles by incidents_verified == False and incidents_scraped == True
+    unverified_articles = db_session.query(Article).filter(
+        Article.incidents_verified == False,
+        Article.incidents_scraped == True
+    ).all()
     return render_template('verify_articles.html', articles=unverified_articles)
 
 

@@ -16,7 +16,11 @@ def identify_articles_with_incident_formatting(db_session):
     """
     Identify articles that contain incidents in the headline or keywords.
     """
-    articles = db_session.query(Article).where(Article.section == 'Police/Fire').all()
+    # get articles with URLs that begin with https://www.cortlandstandard.com
+    articles = db_session.query(Article).filter(Article.url.like('https://www.cortlandstandard.com%')).all()
+    # filter out articles that have already had incidents scraped
+    articles = [article for article in articles if not article.incidents_scraped]
+
     articles_with_incidents = []
     for article in articles:
         if 'Accused' in article.html_content and 'Charges' in article.html_content and 'Details' in article.html_content:
