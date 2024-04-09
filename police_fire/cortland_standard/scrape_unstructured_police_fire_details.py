@@ -13,18 +13,6 @@ from models.article import Article
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
-class incident_metadata_schema(BaseModel):
-    """Event information"""
-
-    article_url: str = Field(description="URL of the article")
-    accused_name: str = Field(description="Name of the accused.")
-    accused_age: int = Field(description="Age of the accused if given.")
-    accused_location: str = Field(description="Location of the accused if given.")
-    charges: str = Field(description="Charges against the accused.")
-    details: str = Field(description="Details of the incident.")
-    legal_actions: str = Field(description="Legal actions taken against the accused.")
-
-
 def scrape_unstructured_incident_details(article_id, source, article_content, article_date_published, DBsession):
     # print('Article content: ', article.content)
 
@@ -60,7 +48,7 @@ def scrape_unstructured_incident_details(article_id, source, article_content, ar
     for incident in jsonified_response['incidents']:
         print('incident: ', incident)
         incident = Incident(
-            source=source,
+            cortlandStandardSource=source,
             incident_reported_date=article_date_published,
             accused_name=incident['accused_name'],
             accused_age=incident['accused_age'],
