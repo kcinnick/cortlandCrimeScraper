@@ -165,6 +165,8 @@ def verify_article(article_id):
 
     cortlandVoice = False
     cortlandStandard = False
+    cortland_voice_associated_incidents = []
+    cortland_standard_associated_incidents = []
 
     if 'cortlandvoice' in article.url:
         cortlandVoice = True
@@ -178,6 +180,9 @@ def verify_article(article_id):
             Incident.cortlandStandardSource == article.url).all()
     else:
         raise ValueError('Article URL does not contain a recognized source.')
+
+    print('cortlandVoiceAssociatedIncidents: ', cortland_voice_associated_incidents)
+    print('cortlandStandardAssociatedIncidents: ', cortland_standard_associated_incidents)
 
     all_associated_incidents = []
 
@@ -195,7 +200,7 @@ def verify_article(article_id):
                 # if the incident_reported_date is within a week of the new incident
                 if new_incident_reported_date - timedelta(
                         days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
-                    print('Duplicate incident found.')
+                    print('Duplicate incident found in Cortland Standard.')
                     #
                     all_associated_incidents.append(existing_incident)
     elif cortlandVoice:
@@ -213,11 +218,9 @@ def verify_article(article_id):
                 # if the incident_reported_date is within a week of the new incident
                 if new_incident_reported_date - timedelta(
                         days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
-                    print('Duplicate incident found.')
+                    print('Duplicate incident found in Cortland Voice.')
                     #
                     all_associated_incidents.append(existing_incident)
-
-    print(all_associated_incidents)
 
     return render_template(
         'verify_article.html',
