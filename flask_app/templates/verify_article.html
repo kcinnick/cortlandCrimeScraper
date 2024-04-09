@@ -9,6 +9,8 @@
   <thead>
     <tr>
       <th>Incident ID</th>
+      <th>Cortland Voice URL</th>
+      <th>Cortland Standard URL</th>
       <th>Person</th>
       <th>Charges</th>
       <th>Delete</th>
@@ -19,6 +21,20 @@
     <tr>
       <td>
         <a href="{{ url_for('incident', incident_id=incident.id) }}">{{ incident.id }}</a>
+      </td>
+      <td>
+        {% if incident.cortlandVoiceSource: %}
+          <a href="{{ incident.cortlandVoiceSource }}">{{ incident.cortlandVoiceSource }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>
+        {% if incident.cortlandStandardSource: %}
+          <a href="{{ incident.cortlandStandardSource }}">{{ incident.cortlandStandardSource }}</a>
+        {% else %}
+          -
+        {% endif %}
       </td>
       <td>
         {% if incident.accused_name: %}

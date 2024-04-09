@@ -1,8 +1,8 @@
 import datetime
 import json
 from datetime import timedelta
-from pprint import pprint
 
+from sqlalchemy import and_
 from tqdm import tqdm
 
 from database import get_database_session
@@ -22,8 +22,16 @@ def get_articles(DBsession):
 
 def filter_incidents(DBsession, new_incident):
     # Fetch all incidents for the person, ordered by date
+
+    first_name, last_name = new_incident['accused_name'].split()[0], new_incident['accused_name'].split()[-1]
+
     incidents = DBsession.query(Incident).filter(
-        Incident.accused_name == new_incident['accused_name'],
+        and_(
+            # Match records where the accused_name starts with the first name
+            Incident.accused_name.ilike(f"{first_name}%"),
+            # And also contains the last name at the end.
+            Incident.accused_name.ilike(f"%{last_name}")
+        )
     ).order_by(Incident.incident_reported_date.asc()).all()
 
     new_incident_reported_date = new_incident['incident_reported_date']
@@ -32,46 +40,55 @@ def filter_incidents(DBsession, new_incident):
         existing_incident_reported_date = existing_incident.incident_reported_date
         print('new incident reported date: ', new_incident_reported_date)
         print('existing incident reported date: ', existing_incident_reported_date)
-        # if the incident_reported_date is within a week of the new incident, check if the details are the same
+        # if the incident_reported_date is within a week of the new incident
         if new_incident_reported_date - timedelta(
-                days=7) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=7):
-            print('Duplicate incident found.  Not adding to database.')
-            return True
+                days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
+            print('Duplicate incident found.  Adding cortlandVoiceSource.')
+            #
+            return existing_incident
         else:
             continue
 
     return False
 
 
-def check_if_incident_already_scraped(DBsession, incident):
+def check_if_incident_already_scraped(DBsession, incident, article_url):
     # if there's an incident within the same week with the same accused name, it's probably a duplicate
     duplicate_incident = filter_incidents(DBsession, incident)
-
     if duplicate_incident:
-        print('Potential duplicate incident found.  Not adding to database.')
+        print('Duplicate incident found.  Adding cortlandVoiceSource.')
+        duplicate_incident.cortlandVoiceSource = article_url
+        DBsession.add(duplicate_incident)
+        DBsession.commit()
         return True
     else:
-        print('No potential duplicate incidents found.  Filtering for nulls before adding to database.')
-        nulls_found = 0
-        if incident['accused_name'] in ['N/A', None]:
-            print('No accused name found.  Not adding to database.')
-            return True
-        if incident['accused_age'] in ['N/A', '0', 0, None]:
-            nulls_found += 1
-        if incident['accused_location'] in ['N/A', None]:
-            nulls_found += 1
-        if incident['charges'] in ['N/A', None]:
-            nulls_found += 1
-        if incident['details'] in ['N/A', None]:
-            nulls_found += 1
-        if incident['legal_actions'] in ['N/A', None]:
-            nulls_found += 1
+        return False
 
-        if nulls_found > 4:
-            print('Too many nulls found.  Not adding to database.')
-            return True
-        else:
-            return False
+
+def normalize_charges(charges):
+    # Attempt to parse the charges as JSON
+    try:
+        parsed_charges = json.loads(charges)
+    except (json.JSONDecodeError, TypeError):
+        # If there's a parsing error or a TypeError, use the original charges string
+        parsed_charges = charges
+
+    # Normalize the parsed charges to a string
+    if isinstance(parsed_charges, list):
+        # If it's a list, join the elements with a comma
+        return ', '.join(parsed_charges)
+    elif isinstance(parsed_charges, dict):
+        # If it's a dictionary, join the values with a comma
+        return ', '.join(parsed_charges.values())
+    elif not parsed_charges:
+        # If parsed_charges is empty or None
+        return 'N/A'
+    elif isinstance(parsed_charges, str):
+        # If it's already a string, just return it
+        return parsed_charges
+    else:
+        # If parsed_charges is of an unexpected type
+        raise ValueError('Charges not in expected format.')
 
 
 def scrape_incidents_from_article(DBsession, article):
@@ -90,10 +107,22 @@ def scrape_incidents_from_article(DBsession, article):
         incidents.append(jsonified_response)
 
     errors = False
+    print(str(len(incidents)) + ' incidents found.')
     for incident in incidents:
         incident['incident_reported_date'] = article.date_published
         print('incident: ', incident)
-        already_scraped = check_if_incident_already_scraped(DBsession, incident)
+        if incident.get('error'):
+            article.incidents_scraped = False
+            DBsession.add(article)
+            DBsession.commit()
+            return
+        if incident['accused_name'] in ['N/A', '']:
+            continue
+        duplicate_incident = check_if_incident_already_scraped(DBsession, incident, article.url)
+        if duplicate_incident:
+            continue
+        else:
+            already_scraped = False
         incident['location'] = get_incident_location_from_details(incident['details'])
 
         print('already scraped: ', already_scraped)
@@ -113,33 +142,17 @@ def scrape_incidents_from_article(DBsession, article):
                 )
 
         charges = incident['charges']
-        try:
-            jsonified_charges = json.loads(charges)
-        except json.JSONDecodeError:
-            jsonified_charges = charges
-        except TypeError:
-            jsonified_charges = charges
-        if type(jsonified_charges) == list:
-            jsonified_charges = ', '.join(jsonified_charges)
-        elif type(jsonified_charges) == str:
-            jsonified_charges = charges
-        elif not jsonified_charges:
-            jsonified_charges = 'N/A'
-        elif type(charges) == dict:
-            jsonified_charges = ', '.join(charges.values())
-        else:
-            raise ValueError('Charges not in expected format.')
+        jsonified_charges = normalize_charges(charges)
 
-        # check if incident_date is a date
         try:
             possible_date = datetime.datetime.strptime(incident['incident_date'], '%Y-%m-%d')
-        except ValueError:
+        except (ValueError, TypeError):
             print('Incident date is not a date.  Using reported date.')
             incident['incident_date'] = incident['incident_reported_date']
 
         try:
             incident = Incident(
-                source=article.url,
+                cortlandVoiceSource=article.url,
                 incident_reported_date=incident['incident_reported_date'],
                 accused_name=incident['accused_name'],
                 accused_age=incident['accused_age'],

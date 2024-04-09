@@ -23,10 +23,8 @@ class Incident(Base):
     incident_location_lat = Column(String, nullable=True)
     incident_location_lng = Column(String, nullable=True)
 
-    # Foreign Key to Source table
-    source = Column(String)
-
-    # charges_relationship = relationship('Charges', back_populates='incident')
+    cortlandStandardSource = Column(String)
+    cortlandVoiceSource = Column(String)
 
     def __str__(self):
         return f'{self.incident_reported_date} - {self.accused_name} - {self.accused_age} - {self.accused_location} - {self.charges} - {self.details} - {self.legal_actions} - {self.incident_date}'
