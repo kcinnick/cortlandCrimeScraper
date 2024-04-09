@@ -23,12 +23,22 @@
           <td>{{ incident.spellchecked_charges }}</td>
         </tr>
         <tr>
-          <th>Source:</th>
+          <th>Cortland Voice Source:</th>
           <td>
-            {% if incident.source.startswith('http') %}
-              <a href="{{ incident.source }}">{{ incident.source }}</a>
+            {% if incident.cortlandVoiceSource.startswith('http') %}
+              <a href="{{ incident.cortlandVoiceSource }}">{{ incident.cortlandVoiceSource }}</a>
             {% else %}
-              {{ incident.source }}
+              {{ incident.cortlandVoiceSource }}
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <th>Cortland Standard Source:</th>
+          <td>
+            {% if incident.cortlandStandardSource.startswith('http') %}
+              <a href="{{ incident.cortlandStandardSource }}">{{ incident.cortlandStandardSource }}</a>
+            {% else %}
+              {{ incident.cortlandStandardSource }}
             {% endif %}
           </td>
         </tr>

@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 import pandas as pd
 from flask import Flask, render_template, jsonify, redirect, url_for, flash
 from flask_wtf import FlaskForm
@@ -156,20 +158,79 @@ def verify_incidents():
 @app.route('/verify-article/<int:article_id>', methods=['GET', 'POST'])
 def verify_article(article_id):
     article = db_session.query(Article).filter(Article.id == article_id).first()
-    associated_incidents = db_session.query(Incident).filter(
-        Incident.source == article.url).all()  # Fetch associated incidents
+    # now that there are 2 sources, but we only want incidents created for one source or the other,
+    # we need to do the same lookup we do before adding the incident to the database
+    # when verifying it.
     form = VerificationForm(csrf_enabled=True)  # Enable CSRF protection
+
+    cortlandVoice = False
+    cortlandStandard = False
+
+    if 'cortlandvoice' in article.url:
+        cortlandVoice = True
+        cortland_voice_associated_incidents = db_session.query(
+            Incident).filter(
+            Incident.cortlandVoiceSource == article.url).all()
+    elif 'cortlandstandard' in article.url:
+        cortlandStandard = True
+        cortland_standard_associated_incidents = db_session.query(
+            Incident).filter(
+            Incident.cortlandStandardSource == article.url).all()
+    else:
+        raise ValueError('Article URL does not contain a recognized source.')
+
+    all_associated_incidents = []
+
+    if cortlandStandard:
+        for cortland_standard_incident in cortland_standard_associated_incidents:
+            incidents = db_session.query(Incident).filter(
+                Incident.accused_name == cortland_standard_incident['accused_name'],
+            ).order_by(Incident.incident_reported_date.asc()).all()
+            new_incident_reported_date = cortland_standard_incident['incident_reported_date']
+
+            for existing_incident in incidents:
+                existing_incident_reported_date = existing_incident.incident_reported_date
+                print('new incident reported date: ', new_incident_reported_date)
+                print('existing incident reported date: ', existing_incident_reported_date)
+                # if the incident_reported_date is within a week of the new incident
+                if new_incident_reported_date - timedelta(
+                        days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
+                    print('Duplicate incident found.')
+                    #
+                    all_associated_incidents.append(existing_incident)
+    elif cortlandVoice:
+        for cortland_voice_incident in cortland_voice_associated_incidents:
+            print(cortland_voice_incident)
+            incidents = db_session.query(Incident).filter(
+                Incident.accused_name == cortland_voice_incident.accused_name,
+            ).order_by(Incident.incident_reported_date.asc()).all()
+            new_incident_reported_date = cortland_voice_incident.incident_reported_date
+
+            for existing_incident in incidents:
+                existing_incident_reported_date = existing_incident.incident_reported_date
+                print('new incident reported date: ', new_incident_reported_date)
+                print('existing incident reported date: ', existing_incident_reported_date)
+                # if the incident_reported_date is within a week of the new incident
+                if new_incident_reported_date - timedelta(
+                        days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
+                    print('Duplicate incident found.')
+                    #
+                    all_associated_incidents.append(existing_incident)
+
+    print(all_associated_incidents)
 
     return render_template(
         'verify_article.html',
         article=article,
-        incidents=associated_incidents,
+        incidents=all_associated_incidents,
         form=form
     )
 
 
 def get_article_id_from_incident(incident):
-    article = db_session.query(Article).filter(Article.url == incident.source).first()
+    article = db_session.query(Article).filter(Article.url == incident.cortlandStandardSource).first()
+    if not article:
+        article = db_session.query(Article).filter(Article.url == incident.cortlandVoiceSource).first()
     return article.id
 
 
