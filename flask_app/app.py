@@ -1,10 +1,12 @@
 from datetime import timedelta
 
 import pandas as pd
-from flask import Flask, render_template, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, jsonify, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField
 from sqlalchemy import func
+from wtforms.fields.simple import StringField
+from wtforms.validators import DataRequired
 
 from database import get_database_session
 from models.article import Article
@@ -257,6 +259,23 @@ class VerificationForm(FlaskForm):
     csrf_enabled = True  # Enable CSRF protection in the form
 
 
+class IncidentForm(FlaskForm):
+    incident_reported_date = StringField('Incident Reported Date', validators=[DataRequired()])
+    accused_name = StringField('Accused Name', validators=[DataRequired()])
+    accused_age = StringField('Accused Age')
+    accused_location = StringField('Accused Location', validators=[DataRequired()])
+    charges = StringField('Charges', validators=[DataRequired()])
+    spellchecked_charges = StringField('Spellchecked Charges')
+    details = StringField('Details')
+    legal_actions = StringField('Legal Actions')
+    incident_date = StringField('Incident Date')
+    incident_location = StringField('Incident Location')
+    cortlandStandardSource = StringField('Cortland Standard Source')
+    cortlandVoiceSource = StringField('Cortland Voice Source')
+
+    submit = SubmitField('Add Incident')
+
+
 @app.route('/update-verification/<int:article_id>', methods=['POST'])
 def update_verification(article_id):
     article = db_session.query(Article).filter(Article.id == article_id).first()
@@ -275,6 +294,18 @@ def update_verification(article_id):
         print('form errors: ', form.errors)  # Print errors if validation fails
 
     return render_template('verify_article.html', article=article, form=form)
+
+
+@app.route('/add-incident', methods=['GET', 'POST'])
+def add_incident():
+    form = IncidentForm()
+    if form.validate_on_submit():
+        # Process form submission here
+        # For example, access form data with form.accused_name.data
+        return redirect(url_for('index'))  # Redirect or show a success message
+
+    # Pass the form instance to the template
+    return render_template('add_incident.html', form=form)
 
 
 if __name__ == '__main__':
