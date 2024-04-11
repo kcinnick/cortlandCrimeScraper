@@ -98,11 +98,20 @@ def get_people():
 
 
 def get_charges_by_person(person):
+    # lookup the incident date
     charges = db_session.query(
         Charges
     ).filter(
         Charges.charged_name == person
     ).all()
+
+    for charge in charges:
+        # get the incident date by looking up the incident_id
+        incident = db_session.query(Incident).filter(Incident.id == charge.incident_id).first()
+        charge.incident_date = incident.incident_reported_date
+
+    # sort charges by incident date
+    charges.sort(key=lambda x: x.incident_date, reverse=True)
 
     return charges
 
@@ -206,7 +215,8 @@ def verify_article(article_id):
                         days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
                     print('Duplicate incident found in Cortland Standard.')
                     #
-                    all_associated_incidents.append(existing_incident)
+                    if existing_incident not in all_associated_incidents:
+                        all_associated_incidents.append(existing_incident)
     elif cortlandVoice:
         for cortland_voice_incident in cortland_voice_associated_incidents:
             print(cortland_voice_incident)
@@ -223,8 +233,8 @@ def verify_article(article_id):
                 if new_incident_reported_date - timedelta(
                         days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
                     print('Duplicate incident found in Cortland Voice.')
-                    #
-                    all_associated_incidents.append(existing_incident)
+                    if existing_incident not in all_associated_incidents:
+                        all_associated_incidents.append(existing_incident)
 
     return render_template(
         'verify_article.html',
@@ -255,7 +265,6 @@ def delete_incident(incident_id):
     return redirect(url_for('verify_article', article_id=article_id))  # Redirect back to verification page
 
 
-
 @app.route('/update-verification/<int:article_id>', methods=['POST'])
 def update_verification(article_id):
     article = db_session.query(Article).filter(Article.id == article_id).first()
@@ -280,8 +289,26 @@ def update_verification(article_id):
 def add_incident():
     form = IncidentForm()
     if form.validate_on_submit():
-        # Process form submission here
-        # For example, access form data with form.accused_name.data
+        # Create a new Incident object
+        incident = Incident(
+            incident_reported_date=form.incident_reported_date.data,
+            accused_name=form.accused_name.data,
+            accused_age=form.accused_age.data,
+            accused_location=form.accused_location.data,
+            charges=form.charges.data,
+            spellchecked_charges=form.spellchecked_charges.data,
+            details=form.details.data,
+            legal_actions=form.legal_actions.data,
+            incident_date=form.incident_date.data,
+            incident_location=form.incident_location.data,
+            cortlandStandardSource=form.cortlandStandardSource.data,
+            cortlandVoiceSource=form.cortlandVoiceSource.data
+        )
+
+        # Add the new Incident to the database
+        db_session.add(incident)
+        db_session.commit()
+        flash('Incident added successfully!', 'success')
         return redirect(url_for('index'))  # Redirect or show a success message
 
     # Pass the form instance to the template
