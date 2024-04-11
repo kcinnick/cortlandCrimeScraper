@@ -25,11 +25,16 @@
         <tr>
           <th>Cortland Voice Source:</th>
           <td>
-            {% if incident.cortlandVoiceSource.startswith('http') %}
-              <a href="{{ incident.cortlandVoiceSource }}">{{ incident.cortlandVoiceSource }}</a>
+            {% if incident.cortlandVoiceSource %}
+              {% if incident.cortlandVoiceSource.startswith('http') %}
+                <a href="{{ incident.cortlandVoiceSource }}">{{ incident.cortlandVoiceSource }}</a>
+              {% else %}
+                {{ incident.cortlandVoiceSource }}
+              {% endif %}
             {% else %}
-              {{ incident.cortlandVoiceSource }}
+                -
             {% endif %}
+
           </td>
         </tr>
         <tr>
