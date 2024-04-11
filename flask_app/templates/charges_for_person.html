@@ -6,6 +6,7 @@
     <thead>
       <tr>
         <th>Incident ID</th>
+        <th>Incident Date</th>
         <th>Charge Description</th>
       </tr>
     </thead>
@@ -14,6 +15,7 @@
         {% for charge in charges %}
           <tr>
             <td><a href="/incidents/{{ charge.incident_id }}">{{ charge.incident_id }}</a></td>
+            <td>{{ charge.incident_date }}</td>
             <td>{{ charge.charge_description }}</td>
           </tr>
         {% endfor %}

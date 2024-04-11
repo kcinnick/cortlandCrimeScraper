@@ -1,12 +1,16 @@
 from datetime import timedelta
 
 import pandas as pd
-from flask import Flask, render_template, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, jsonify, redirect, url_for, flash, request
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField
 from sqlalchemy import func
+from wtforms.fields.datetime import DateField
+from wtforms.fields.simple import StringField
+from wtforms.validators import DataRequired
 
 from database import get_database_session
+from flask_app.forms import VerificationForm, IncidentForm
 from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
@@ -94,11 +98,20 @@ def get_people():
 
 
 def get_charges_by_person(person):
+    # lookup the incident date
     charges = db_session.query(
         Charges
     ).filter(
         Charges.charged_name == person
     ).all()
+
+    for charge in charges:
+        # get the incident date by looking up the incident_id
+        incident = db_session.query(Incident).filter(Incident.id == charge.incident_id).first()
+        charge.incident_date = incident.incident_reported_date
+
+    # sort charges by incident date
+    charges.sort(key=lambda x: x.incident_date, reverse=True)
 
     return charges
 
@@ -202,7 +215,8 @@ def verify_article(article_id):
                         days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
                     print('Duplicate incident found in Cortland Standard.')
                     #
-                    all_associated_incidents.append(existing_incident)
+                    if existing_incident not in all_associated_incidents:
+                        all_associated_incidents.append(existing_incident)
     elif cortlandVoice:
         for cortland_voice_incident in cortland_voice_associated_incidents:
             print(cortland_voice_incident)
@@ -219,8 +233,8 @@ def verify_article(article_id):
                 if new_incident_reported_date - timedelta(
                         days=5) <= existing_incident_reported_date <= new_incident_reported_date + timedelta(days=5):
                     print('Duplicate incident found in Cortland Voice.')
-                    #
-                    all_associated_incidents.append(existing_incident)
+                    if existing_incident not in all_associated_incidents:
+                        all_associated_incidents.append(existing_incident)
 
     return render_template(
         'verify_article.html',
@@ -251,12 +265,6 @@ def delete_incident(incident_id):
     return redirect(url_for('verify_article', article_id=article_id))  # Redirect back to verification page
 
 
-class VerificationForm(FlaskForm):
-    verified = BooleanField('Verified?')
-    submit = SubmitField('Mark as Verified')
-    csrf_enabled = True  # Enable CSRF protection in the form
-
-
 @app.route('/update-verification/<int:article_id>', methods=['POST'])
 def update_verification(article_id):
     article = db_session.query(Article).filter(Article.id == article_id).first()
@@ -275,6 +283,36 @@ def update_verification(article_id):
         print('form errors: ', form.errors)  # Print errors if validation fails
 
     return render_template('verify_article.html', article=article, form=form)
+
+
+@app.route('/add-incident', methods=['GET', 'POST'])
+def add_incident():
+    form = IncidentForm()
+    if form.validate_on_submit():
+        # Create a new Incident object
+        incident = Incident(
+            incident_reported_date=form.incident_reported_date.data,
+            accused_name=form.accused_name.data,
+            accused_age=form.accused_age.data,
+            accused_location=form.accused_location.data,
+            charges=form.charges.data,
+            spellchecked_charges=form.spellchecked_charges.data,
+            details=form.details.data,
+            legal_actions=form.legal_actions.data,
+            incident_date=form.incident_date.data,
+            incident_location=form.incident_location.data,
+            cortlandStandardSource=form.cortlandStandardSource.data,
+            cortlandVoiceSource=form.cortlandVoiceSource.data
+        )
+
+        # Add the new Incident to the database
+        db_session.add(incident)
+        db_session.commit()
+        flash('Incident added successfully!', 'success')
+        return redirect(url_for('index'))  # Redirect or show a success message
+
+    # Pass the form instance to the template
+    return render_template('add_incident.html', form=form)
 
 
 if __name__ == '__main__':

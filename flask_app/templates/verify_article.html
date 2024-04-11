@@ -1,10 +1,15 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1>Verify Article: {{ article.headline }}</h1>
-<p>Source URL: <a href="{{ article.url }}">{{ article.url }}</a></p>
+<h1 style="text-align: center;">Verify Article: {{ article.headline }}</h1>
+<p style="text-align: center; margin-bottom: 40px;">Source URL: <a href="{{ article.url }}">{{ article.url }}</a></p>
 
-<h2>Associated Incidents</h2>
+<div class="add-incident-container" style="text-align: center; margin-bottom: 20px;">
+    <a href="{{ url_for('add_incident') }}" class="btn btn-primary">Add Incident</a>
+</div>
+
+<h2 style="text-align: center; margin-top: 20px;">Associated Incidents</h2>
+<div class="table-container">
 <table>
   <thead>
     <tr>
@@ -54,7 +59,7 @@
     {% endfor %}
   </tbody>
 </table>
-
+</div>
 <div class="verification-container">
   <form action="{{ url_for('update_verification', article_id=article.id) }}" method="post">
     {{ form.hidden_tag() }}  <label for="verified">Verified?</label>

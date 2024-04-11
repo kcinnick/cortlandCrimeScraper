@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1>Add New Incident</h1>
+<form action="{{ url_for('add_incident') }}" method="post">
+  {{ form.hidden_tag() }}
+
+  {{ form.incident_reported_date.label }} {{ form.incident_reported_date }}
+    <br>
+  {{ form.accused_name.label }} {{ form.accused_name }}
+    <br>
+  {{ form.accused_age.label }} {{ form.accused_age }}
+    <br>
+  {{ form.accused_location.label }} {{ form.accused_location }}
+    <br>
+  {{ form.charges.label }} {{ form.charges }}
+    <br>
+  {{ form.spellchecked_charges.label }} {{ form.spellchecked_charges }}
+    <br>
+  {{ form.details.label }} {{ form.details }}
+    <br>
+  {{ form.legal_actions.label }} {{ form.legal_actions }}
+    <br>
+  {{ form.incident_date.label }} {{ form.incident_date }}
+    <br>
+  {{ form.incident_location.label }} {{ form.incident_location }}
+    <br>
+  {{ form.cortlandStandardSource.label }} {{ form.cortlandStandardSource}}
+    <br>
+  {{ form.cortlandVoiceSource.label }} {{ form.cortlandVoiceSource }}
+    <br>
+
+  <button type="submit">Add Incident</button>
+</form>
+{% endblock %}

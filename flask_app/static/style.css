@@ -180,3 +180,11 @@ nav ul li:last-child {  /* Remove separator from the last item */
 .verification-container button:hover {
   background-color: #45A049;  /* Darker green on hover */
 }
+
+.table-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+}
