@@ -5,10 +5,12 @@ from flask import Flask, render_template, jsonify, redirect, url_for, flash, req
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, SubmitField
 from sqlalchemy import func
+from wtforms.fields.datetime import DateField
 from wtforms.fields.simple import StringField
 from wtforms.validators import DataRequired
 
 from database import get_database_session
+from flask_app.forms import VerificationForm, IncidentForm
 from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
@@ -252,28 +254,6 @@ def delete_incident(incident_id):
     article_id = get_article_id_from_incident(incident)
     return redirect(url_for('verify_article', article_id=article_id))  # Redirect back to verification page
 
-
-class VerificationForm(FlaskForm):
-    verified = BooleanField('Verified?')
-    submit = SubmitField('Mark as Verified')
-    csrf_enabled = True  # Enable CSRF protection in the form
-
-
-class IncidentForm(FlaskForm):
-    incident_reported_date = StringField('Incident Reported Date', validators=[DataRequired()])
-    accused_name = StringField('Accused Name', validators=[DataRequired()])
-    accused_age = StringField('Accused Age')
-    accused_location = StringField('Accused Location', validators=[DataRequired()])
-    charges = StringField('Charges', validators=[DataRequired()])
-    spellchecked_charges = StringField('Spellchecked Charges')
-    details = StringField('Details')
-    legal_actions = StringField('Legal Actions')
-    incident_date = StringField('Incident Date')
-    incident_location = StringField('Incident Location')
-    cortlandStandardSource = StringField('Cortland Standard Source')
-    cortlandVoiceSource = StringField('Cortland Voice Source')
-
-    submit = SubmitField('Add Incident')
 
 
 @app.route('/update-verification/<int:article_id>', methods=['POST'])
