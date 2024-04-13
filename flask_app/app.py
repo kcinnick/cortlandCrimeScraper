@@ -204,9 +204,9 @@ def verify_article(article_id):
     if cortlandStandard:
         for cortland_standard_incident in cortland_standard_associated_incidents:
             incidents = db_session.query(Incident).filter(
-                Incident.accused_name == cortland_standard_incident['accused_name'],
+                Incident.accused_name == cortland_standard_incident.accused_name,
             ).order_by(Incident.incident_reported_date.asc()).all()
-            new_incident_reported_date = cortland_standard_incident['incident_reported_date']
+            new_incident_reported_date = cortland_standard_incident.incident_reported_date
 
             for existing_incident in incidents:
                 existing_incident_reported_date = existing_incident.incident_reported_date
