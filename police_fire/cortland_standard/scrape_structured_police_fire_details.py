@@ -342,7 +342,7 @@ def scrape_structured_incident_details(article, DBsession):
             incident_lat, incident_lng = None, None
 
         incident = Incident(
-            source=article.url,
+            cortlandStandardSource=article.url,
             incident_reported_date=article.date_published,
             accused_age=accused_age,
             accused_name=accused_name,

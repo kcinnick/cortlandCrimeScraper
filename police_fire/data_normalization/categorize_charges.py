@@ -112,14 +112,16 @@ def categorize_charge(charge):
 
     # first, look up the crime in the charges database. if it exists and has a category, assign it to the same category it's already in
     existing_crime = DBsession.query(Charges).filter_by(crime=charge.crime).first()
-    # assert that existing_crime has a category
-    assert existing_crime.category is not None
     # if the crime exists, assign it to the same category
     if existing_crime:
-        print('Crime already existed. Assigning to category: ', existing_crime.category)
-        charge.category = existing_crime.category
-        DBsession.commit()
-        return
+        if existing_crime.category:
+            print('Crime already existed. Assigning to category: ', existing_crime.category)
+            charge.category = existing_crime.category
+            DBsession.commit()
+            return
+        else:
+            print('Crime already existed, but category is null.')
+            response = get_manual_response()
     else:
         response = get_manual_response()
 
