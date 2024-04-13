@@ -26,6 +26,12 @@ def clean_end_of_charge_description(charge_description):
     if charge_description.endswith(', '):
         charge_description = charge_description[:-2]
 
+    if '(a ' in charge_description:
+        charge_description = charge_description.split('(a ')[0]
+
+    if ' – a' in charge_description:
+        charge_description = charge_description.split(' – a')[0]
+
     # get rid of ', all' at the end of the charge description
     if charge_description.endswith(', all'):
         charge_description = charge_description[:-5]
@@ -36,8 +42,7 @@ def clean_end_of_charge_description(charge_description):
 def categorize_charges(incident_id, charges, accused_name):
     # Regular expression to match charge descriptions
     # The regex captures all text up to target words
-    print('charges: ', charges)
-    regex = r"(.*?)(felonies|felony|misdemeanors|misdemeanor|midemeanor|misdemean-or|traffic infractions?|traffic violations|violations|a? ?violation|infractions?)"
+    regex = r"(.*?)([Ff]elonies|[Ff]elony|[Mm]isdemeanors|[Mm]isdemeanor|[MM]idemeanor|[Mm]isdemean-or|[Tt]raffic infractions?|[Tt]raffic [Vv]iolations|[Vv]iolations|[Aa]? ?[Vv]iolation|[Ii]nfractions?)"
     # Find all matches
     matches = re.findall(regex, charges, re.IGNORECASE | re.DOTALL)
 
@@ -214,6 +219,10 @@ def process_charge(charge_description):
         cleaned_description = cleaned_description[2:].strip()
     if cleaned_description.startswith('of '):
         cleaned_description = cleaned_description[3:].strip()
+
+    cleaned_description = cleaned_description.replace('  ', ' ')
+    cleaned_description = cleaned_description.replace('(', '')
+    cleaned_description = cleaned_description.replace(')', '')
 
     print('charge_description: ', charge_description)
     print('cleaned_description: ', cleaned_description)
@@ -516,7 +525,7 @@ def rename_charge_description(cleaned_charge_description):
         'Operating with a blood-alcohol content greater than 0.08%': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a vehicle with blood-alcohol content greater than 0.08 percent': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a vehicle with a blood-alcohol content of 0.18% or greater': 'Driving while intoxicated with a blood-alcohol content of 0.18% or greater',
-        'Operating a vehicle with a blood-alcohol content greater than 0.08%' : 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
+        'Operating a vehicle with a blood-alcohol content greater than 0.08%': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a vehicle with a blood-alcohol content great than 0.08%': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a motor vehicle with more than 0.08 percent blood-alcohol content': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
         'Operating a motor vehicle with a blood-alcohol level of 0.08%': 'Driving while intoxicated with a blood-alcohol content of 0.08% or greater',
@@ -907,7 +916,7 @@ def add_charges_to_charges_table(incident, categorized_charges):
     for charge_type, charges in categorized_charges.items():
         if len(charges) == 0:
             continue
-        print('charges: ', charges)
+        print('917.charges: ', charges)
         for charge in charges:
             accused_name = charge['accused_name']
             # remove any commas from dollar amounts
@@ -920,6 +929,8 @@ def add_charges_to_charges_table(incident, categorized_charges):
                 charges_split_by_and = split_charges_by_and(c, charge_type)
                 for split_charge in charges_split_by_and:
                     split_charge = split_charge.strip()
+                    split_charge = split_charge.split('(')[0].strip()
+                    split_charge = split_charge.split(')')[0].strip()
                     print('split_charge: ', split_charge)
                     if len(split_charge) == 0:
                         continue
@@ -989,7 +1000,9 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
     cleaned_description = cleaned_description.replace('  ', ' ')
     if ' charged with ' in cleaned_description:
         cleaned_description = ' '.join(cleaned_description.split(' charged with ')[1:])
-    if 'degree' in cleaned_description:
+    if cleaned_description.endswith('degree'):
+        pass
+    elif 'degree' in cleaned_description:
         cleaned_description = ' '.join(cleaned_description.split('degree')[1:])
     if cleaned_description.startswith('_ '):
         cleaned_description = cleaned_description[2:]
