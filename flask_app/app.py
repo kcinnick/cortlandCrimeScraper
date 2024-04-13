@@ -15,6 +15,8 @@ from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
 
+from police_fire.cortland_voice.scrape_incidents_from_articles import rescrape_article as rescrape_cv_article
+
 db_session, engine = get_database_session(environment='production')
 
 app = Flask(__name__)
@@ -313,6 +315,15 @@ def add_incident():
 
     # Pass the form instance to the template
     return render_template('add_incident.html', form=form)
+
+
+@app.route('/rescrape/cortland-voice/<int:article_id>', methods=['GET', 'POST'])
+def rescrape_cortland_voice_article(article_id):
+    # Logic to rescrape a Cortland Voice article
+    article = db_session.query(Article).filter(Article.id == article_id).first()
+    print('rescraping article: ', article.url)
+    rescrape_cv_article(article.url)
+    return redirect(url_for('verify_article', article_id=article_id))
 
 
 if __name__ == '__main__':

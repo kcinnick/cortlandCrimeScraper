@@ -187,5 +187,11 @@ def main():
         scrape_incidents_from_article(DB_session, article)
 
 
+def rescrape_article(url):
+    DB_session, engine = get_database_session(environment='prod')
+    article = DB_session.query(Article).filter(Article.url == url).first()
+    scrape_incidents_from_article(DB_session, article)
+
+
 if __name__ == '__main__':
     main()
