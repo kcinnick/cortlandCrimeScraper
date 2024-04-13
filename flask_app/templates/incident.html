@@ -19,6 +19,9 @@
           <td>{{ incident.accused_age }}</td>
         </tr>
         <tr>
+          <th>Incident Details:</th>
+          <td>{{ incident.details }}</td>
+        <tr>
           <th>Accused Charges:</th>
           <td>{{ incident.spellchecked_charges }}</td>
         </tr>
@@ -40,10 +43,14 @@
         <tr>
           <th>Cortland Standard Source:</th>
           <td>
+            {% if incident.cortlandStandardSource %}
             {% if incident.cortlandStandardSource.startswith('http') %}
               <a href="{{ incident.cortlandStandardSource }}">{{ incident.cortlandStandardSource }}</a>
             {% else %}
               {{ incident.cortlandStandardSource }}
+            {% endif %}
+            {% else %}
+              -
             {% endif %}
           </td>
         </tr>
