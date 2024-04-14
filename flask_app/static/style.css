@@ -182,9 +182,21 @@ nav ul li:last-child {  /* Remove separator from the last item */
 }
 
 .table-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    flex-direction: column;
-    align-items: center;
+    max-width: 90%; /* Adjust this percentage based on how much you want the tables to be narrower than the page width */
+    margin: auto; /* This centers the table horizontally */
+    overflow-x: auto; /* Adds horizontal scrolling if table exceeds the container width */
+}
+
+.table-container th, .table-container td {
+    border: 1px solid #ccc;
+    padding: 8px; /* Padding inside cells */
+    text-align: left; /* Align text to the left */
+}
+
+.verification-container form {
+    padding: 10px; /* Adds padding inside the form */
+    background-color: #f9f9f9; /* Optional: adds a background color to the form */
+    border-radius: 5px; /* Optional: rounds the corners of the form */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Optional: adds a subtle shadow around the form */
+    padding-bottom: 20px; /* Adds 20 pixels of padding to the bottom */
 }

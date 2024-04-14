@@ -23,6 +23,7 @@
       <th>Incident ID</th>
       <th>Cortland Voice URL</th>
       <th>Cortland Standard URL</th>
+      <th>Incident Date</th>
       <th>Person</th>
       <th>Charges</th>
       <th>Delete</th>
@@ -49,6 +50,13 @@
         {% endif %}
       </td>
       <td>
+        {% if incident.incident_date: %}
+          {{ incident.incident_date }}
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>
         {% if incident.accused_name: %}
           <a href="/charges/{{ incident.accused_name }}">{{ incident.accused_name }}</a>
         {% else %}
@@ -67,6 +75,69 @@
   </tbody>
 </table>
 </div>
+
+<h2 style="text-align: center; margin-top: 20px;">Potentially Associated Incidents</h2>
+<div class="table-container">
+<table>
+  <thead>
+    <tr>
+      <th>Incident ID</th>
+      <th>Cortland Voice URL</th>
+      <th>Cortland Standard URL</th>
+      <th>Incident Date</th>
+      <th>Person</th>
+      <th>Charges</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for incident in potentially_duplicate_incidents %}
+    <tr>
+      <td>
+        <a href="{{ url_for('incident', incident_id=incident.id) }}">{{ incident.id }}</a>
+      </td>
+      <td>
+        {% if incident.cortlandVoiceSource: %}
+          <a href="{{ incident.cortlandVoiceSource }}">{{ incident.cortlandVoiceSource }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>
+        {% if incident.cortlandStandardSource: %}
+          <a href="{{ incident.cortlandStandardSource }}">{{ incident.cortlandStandardSource }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>
+        {% if incident.incident_date: %}
+          {{ incident.incident_date }}
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>
+        {% if incident.accused_name: %}
+          <a href="/charges/{{ incident.accused_name }}">{{ incident.accused_name }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>{{ incident.charges }}</td>
+      <td>
+        <form action="{{ url_for('delete_incident', incident_id=incident.id) }}" method="POST">
+          {{ form.hidden_tag() }} <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </td>
+
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+
 <div class="verification-container">
   <form action="{{ url_for('update_verification', article_id=article.id) }}" method="post">
     {{ form.hidden_tag() }}  <label for="verified">Verified?</label>
