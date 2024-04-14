@@ -271,6 +271,12 @@ def get_article_id_from_incident(incident):
 @app.route('/delete-incident/<int:incident_id>', methods=['POST'])
 def delete_incident(incident_id):
     incident = db_session.query(Incident).filter(Incident.id == incident_id).first()
+    # check for any Charges associated to the incident
+    charges = db_session.query(Charges).filter(Charges.incident_id == incident_id).all()
+    if charges:
+        for charge in charges:
+            db_session.delete(charge)
+            db_session.commit()
     if incident:
         db_session.delete(incident)
         db_session.commit()
