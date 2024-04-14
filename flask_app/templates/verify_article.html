@@ -23,6 +23,7 @@
       <th>Incident ID</th>
       <th>Cortland Voice URL</th>
       <th>Cortland Standard URL</th>
+      <th>Incident Date</th>
       <th>Person</th>
       <th>Charges</th>
       <th>Delete</th>
@@ -44,6 +45,13 @@
       <td>
         {% if incident.cortlandStandardSource: %}
           <a href="{{ incident.cortlandStandardSource }}">{{ incident.cortlandStandardSource }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>
+        {% if incident.incident_date: %}
+          {{ incident.incident_date }}
         {% else %}
           -
         {% endif %}
@@ -76,6 +84,7 @@
       <th>Incident ID</th>
       <th>Cortland Voice URL</th>
       <th>Cortland Standard URL</th>
+      <th>Incident Date</th>
       <th>Person</th>
       <th>Charges</th>
       <th>Delete</th>
@@ -97,6 +106,13 @@
       <td>
         {% if incident.cortlandStandardSource: %}
           <a href="{{ incident.cortlandStandardSource }}">{{ incident.cortlandStandardSource }}</a>
+        {% else %}
+          -
+        {% endif %}
+      </td>
+      <td>
+        {% if incident.incident_date: %}
+          {{ incident.incident_date }}
         {% else %}
           -
         {% endif %}
