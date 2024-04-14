@@ -238,10 +238,25 @@ def verify_article(article_id):
                     if existing_incident not in all_associated_incidents:
                         all_associated_incidents.append(existing_incident)
 
+    potentially_duplicate_incidents = []
+    # do a query with the first and last name like this: accused_name like '%Chris%Hines%
+    # if there are any results, then the incident is likely a duplicate
+    if len(all_associated_incidents) > 0:
+        first_name, last_name = all_associated_incidents[0].accused_name.split()[0], all_associated_incidents[0].accused_name.split()[-1]
+        if last_name in ['Jr.', 'Jr', 'Sr.', 'Sr', 'II', 'III', 'IV', 'V']:
+            last_name = all_associated_incidents[0].accused_name.split()[-2]
+        incidents = db_session.query(Incident).filter(
+            Incident.accused_name.like(f"%{first_name}%{last_name}%")
+        ).all()
+        for incident in incidents:
+            if incident not in all_associated_incidents:
+                potentially_duplicate_incidents.append(incident)
+
     return render_template(
         'verify_article.html',
         article=article,
         incidents=all_associated_incidents,
+        potentially_duplicate_incidents=potentially_duplicate_incidents,
         form=form
     )
 
