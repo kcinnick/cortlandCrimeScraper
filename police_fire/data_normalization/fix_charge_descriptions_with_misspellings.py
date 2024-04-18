@@ -11,13 +11,26 @@ from models.incident import Incident
 DBsession, engine = get_database_session(environment='prod')
 
 
-def spellcheck_charges():
+def spellcheck_charges(source=None):
     correct_words = ['first-degree', 'second-degree', 'third-degree', 'fourth-degree', ]
     corrected_words = {}
 
     # incidents = DBsession.query(Incident).all()
     # get incidents where spellchecked_charges is null
-    incidents = DBsession.query(Incident).filter(Incident.spellchecked_charges == None).all()
+    if source == 'cortlandStandard':
+        incidents = DBsession.query(Incident).filter(
+            Incident.spellchecked_charges == None,
+            Incident.cortlandStandardSource != None
+        ).all()
+    elif source == 'cortlandVoice':
+        incidents = DBsession.query(Incident).filter(
+            Incident.spellchecked_charges == None,
+            Incident.cortlandVoiceSource != None
+        ).all()
+    else:
+        incidents = DBsession.query(Incident).filter(
+            Incident.spellchecked_charges == None
+        ).all()
     spell = SpellChecker()
     for incident in tqdm(incidents):
         print('Incident ID: ', incident.id)

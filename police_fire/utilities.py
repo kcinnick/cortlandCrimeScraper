@@ -187,6 +187,9 @@ def login():
     login_username = os.getenv('LOGIN_EMAIL')
     login_password = os.getenv('LOGIN_PASSWORD')
 
+    assert login_username is not None
+    assert login_password is not None
+
     r = session.post('https://www.cortlandstandard.com/login.html?action=login', data={
         'login_username': login_username,
         'login_password': login_password,

@@ -1051,7 +1051,8 @@ def main():
     incident_ids_in_charges_table = [i[0] for i in incident_ids_in_charges_table]
     # get all incidents that are not in the charges table
     incidents = DBsession.query(Incident).filter(~Incident.id.in_(incident_ids_in_charges_table)).all()
-
+    # remove all incidents that don't have a cortlandStandard source
+    incidents = [i for i in incidents if i.cortlandStandardSource]
     # use the below for a single incident:
     #incidents = DBsession.query(Incident).filter(Incident.id == 2984)
 
