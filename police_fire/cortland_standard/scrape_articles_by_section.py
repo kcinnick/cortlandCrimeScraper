@@ -184,6 +184,7 @@ def get_or_create_article(article_url, section, DBsession, soup, headline, bylin
 def get_article_and_details(article_url, logged_in_session):
     r = logged_in_session.get(article_url)
     soup = BeautifulSoup(r.content, 'html.parser')
+    assert 'Log out' in soup.text, 'Not logged in.'
     headline = soup.find('h1', id='headline').text
     try:
         byline = soup.find('div', class_='byline').text

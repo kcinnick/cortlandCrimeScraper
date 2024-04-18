@@ -33,7 +33,7 @@ def main(environment='dev'):
         article.incidents_scraped = True
         database_session.commit()
 
-    spellcheck_charges()
+    spellcheck_charges(source='cortlandStandard')
     scrape_charges_from_incidents()
     categorize_charges()
 
