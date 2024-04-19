@@ -1,20 +1,16 @@
+import os
 from datetime import timedelta
 
 import pandas as pd
-from flask import Flask, render_template, jsonify, redirect, url_for, flash, request
-from flask_wtf import FlaskForm
-from wtforms import BooleanField, SubmitField
+from flask import Flask, render_template, jsonify, redirect, url_for, flash
+from flask import send_from_directory
 from sqlalchemy import func
-from wtforms.fields.datetime import DateField
-from wtforms.fields.simple import StringField
-from wtforms.validators import DataRequired
 
 from database import get_database_session
 from flask_app.forms import VerificationForm, IncidentForm
 from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
-
 from police_fire.cortland_voice.scrape_incidents_from_articles import rescrape_article as rescrape_cv_article
 
 db_session, engine = get_database_session(environment='production')
@@ -259,6 +255,20 @@ def verify_article(article_id):
         potentially_duplicate_incidents=potentially_duplicate_incidents,
         form=form
     )
+
+
+@app.route('/verify-article/pdfs/<int:year>/<string:month>/<string:day>', methods=['GET'])
+def get_pdf(year, month, day):
+    base_pdf_path = os.path.normpath(os.getcwd() + os.sep + os.pardir) + '/pdfs' + f'/{year}/{month}/{day}/pages'
+
+    try:
+        files = [f for f in os.listdir(base_pdf_path) if f.endswith('.pdf')]
+        if files:
+            return send_from_directory(directory=base_pdf_path, path=files[0], as_attachment=False)
+        else:
+            return "No PDF found for this date.", 404
+    except Exception as e:
+        return str(e), 500
 
 
 def get_article_id_from_incident(incident):
