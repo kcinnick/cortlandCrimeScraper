@@ -7,7 +7,7 @@ from models.article import Article
 from models.incident import Incident
 from police_fire.maps import get_lat_lng_of_addresses
 from police_fire.cortland_standard.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
-from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
+from police_fire.utilities.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
     update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details
 

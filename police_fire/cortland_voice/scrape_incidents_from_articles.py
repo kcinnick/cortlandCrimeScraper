@@ -8,7 +8,7 @@ from tqdm import tqdm
 from database import get_database_session
 from models.article import Article
 from models.incident import Incident
-from police_fire.utilities import get_response_for_query, check_if_details_references_a_relative_date, \
+from police_fire.utilities.utilities import get_response_for_query, check_if_details_references_a_relative_date, \
     get_incident_location_from_details
 
 
@@ -96,8 +96,7 @@ def scrape_incidents_from_article(DBsession, article):
     query = ("What incidents are listed in this article? JSON response should contain the keys "
              "accused_name, incident_date, accused_age, accused_location, charges, details, and legal_actions. "
              "Dates should be formatted as YYYY-MM-DD and all JSON values should be strings."
-             "If there is more than one person listed in an incident, each person should have "
-             "their own incident: ") + article.content
+             ) + article.content
     response = get_response_for_query(query)
     jsonified_response = json.loads(response)
     if 'incidents' in jsonified_response.keys():

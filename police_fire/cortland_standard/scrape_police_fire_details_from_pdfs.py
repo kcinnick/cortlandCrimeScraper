@@ -15,7 +15,7 @@ from database import get_database_session
 from models.incident import Incident
 from models.article import Article
 from police_fire.maps.get_lat_lng_of_addresses import get_lat_lng_of_address
-from police_fire.utilities import check_if_details_references_a_relative_date, \
+from police_fire.utilities.utilities import check_if_details_references_a_relative_date, \
     check_if_details_references_an_actual_date, get_incident_location_from_details \
     , get_response_for_query
 
