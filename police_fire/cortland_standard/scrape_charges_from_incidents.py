@@ -65,6 +65,7 @@ def categorize_charges(incident_id, charges, accused_name):
 
     for match in matches:
         print('---')
+        print(match)
         charge_description, charge_type = match
         original_charge_description = charge_description
 

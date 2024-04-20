@@ -93,6 +93,9 @@ def scrape_unstructured_incident_details(article_id, source, article_content, ar
                     print('Integrity error: ', e)
                     DBsession.rollback()
 
+    article.incidents_scraped = True
+    DBsession.commit()
+
     return
 
 

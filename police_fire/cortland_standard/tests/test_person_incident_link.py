@@ -18,7 +18,6 @@ def test_person_incident_link(setup_database):
         details='Fake details',
         legal_actions='Fake legal actions',
         incident_location='Fakeville, NY',
-        source='https://www.fakeurl.com',
     )
 
     second_fake_incident = Incident(
@@ -31,7 +30,6 @@ def test_person_incident_link(setup_database):
         details='More fake details',
         legal_actions='Fake legal actions',
         incident_location='Fakeland County, NY',
-        source='https://www.fakeurl.com',
     )
 
     DBsession.add(fake_incident)

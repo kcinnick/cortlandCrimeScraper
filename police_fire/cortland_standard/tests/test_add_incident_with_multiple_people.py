@@ -1,5 +1,5 @@
 from police_fire.cortland_standard.scrape_structured_police_fire_details import scrape_structured_incident_details
-from police_fire.utilities import login
+from police_fire.utilities.utilities import login
 from police_fire.cortland_standard.scrape_articles_by_section import scrape_article
 
 from models.article import Article

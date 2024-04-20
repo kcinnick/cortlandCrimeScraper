@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from database import get_database_session
 from models.article import Article
-from police_fire.utilities import login
+from police_fire.utilities.utilities import login
 
 config = Config()
 userAgent = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 "

@@ -128,7 +128,7 @@ def update_incident_date_if_necessary(DBsession, incident_date_response, details
         existing_incident.incident_date = incident_date_response
         DBsession.add(existing_incident)
         DBsession.commit()
-        print('Incident date updated for ' + existing_incident.source)
+        print('Incident date updated for incident ' + str(existing_incident.id))
 
     return
 

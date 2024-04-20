@@ -7,7 +7,7 @@ from models.article import Article
 from models.incident import Incident
 from police_fire.maps import get_lat_lng_of_addresses
 from police_fire.cortland_standard.scrape_unstructured_police_fire_details import scrape_unstructured_incident_details
-from police_fire.utilities import add_incident_with_error_if_not_already_exists, \
+from police_fire.utilities.utilities import add_incident_with_error_if_not_already_exists, \
     clean_up_charges_details_and_legal_actions_records, check_if_details_references_a_relative_date, \
     update_incident_date_if_necessary, check_if_details_references_an_actual_date, get_incident_location_from_details
 
@@ -106,7 +106,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
         incident_location = get_incident_location_from_details(details_str)
         incident_lat, incident_lng = get_lat_lng_of_addresses.get_lat_lng_of_address(incident_location)
         incident = Incident(
-            source=article.url,
+            cortlandStandardSource=article.url,
             incident_reported_date=article.date_published,
             accused_age=accused_age,
             accused_location=accused_location,
@@ -132,7 +132,7 @@ def scrape_separate_incident_details(separate_incident_tags, article, DBsession)
                 update_incident_date_if_necessary(DBsession, incident_date_response, details_str)
 
     # when all separate incidents are scraped, update article to incidents_scraped == True
-    article = DBsession.query(Article).filter_by(path=article.url).first()
+    article = DBsession.query(Article).filter_by(url=article.url).first()
     article.incidents_scraped = True
     DBsession.commit()
 
@@ -283,7 +283,8 @@ def scrape_structured_incident_details(article, DBsession):
             soupy_br_tags = [BeautifulSoup(br_tag, 'html.parser').text.strip() for br_tag in br_tags if
                              br_tag.strip() != '']
             scrape_separate_incident_details(soupy_br_tags, article, DBsession)
-
+        article.incidents_scraped = True
+        DBsession.commit()
         return
 
     if len(accused) != len(charges) or len(accused) != len(details) or len(accused) != len(legal_actions):
@@ -378,7 +379,10 @@ def scrape_structured_incident_details(article, DBsession):
                 existing_incident.incident_location_lng = lng
                 DBsession.add(existing_incident)
                 DBsession.commit()
-                print('Incident location updated for ' + existing_incident.source)
+                print('Incident location updated for incident ID ' + str(existing_incident.id))
+
+        article.incidents_scraped = True
+        DBsession.commit()
 
     return
 

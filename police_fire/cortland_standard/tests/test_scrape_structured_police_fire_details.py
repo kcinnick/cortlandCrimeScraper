@@ -26,7 +26,7 @@ def test_structure_data_with_matching_counts_gets_added_to_incidents_table(setup
 
     scraped_incident = incidents[0]
 
-    assert scraped_incident.source == 'https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?'
+    assert scraped_incident.cortlandStandardSource == 'https://www.cortlandstandard.com/stories/homer-woman-charged-with-dwi,70763?'
     assert scraped_incident.accused_name == 'Julie M. Conners'
     assert scraped_incident.accused_age == '34'
     assert scraped_incident.accused_location == 'Cold Brook Road, Homer'
@@ -215,7 +215,7 @@ def test_scraped_article_gets_added_to_scraped_articles_table(setup_database):
 
     scrape_structured_incident_details(article, DBsession)
 
-    scraped_article = DBsession.query(Incident).where(
-        Incident.source == article_url).first()
+    article = DBsession.query(Article).where(
+        Article.url == article_url).first()
 
-    assert scraped_article.source == article_url
+    assert article.incidents_scraped

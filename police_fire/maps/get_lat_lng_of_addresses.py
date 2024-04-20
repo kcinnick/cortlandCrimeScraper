@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 from database import get_database_session
 from models.incident import Incident
-from police_fire.utilities import get_incident_location_from_details
+from police_fire.utilities.utilities import get_incident_location_from_details
 
 
 def get_lat_lng_of_address(address):

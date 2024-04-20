@@ -5,7 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 from base import Base
-from police_fire.utilities import get_incident_location_from_details
+from police_fire.utilities.utilities import get_incident_location_from_details
 
 database_username = os.getenv('DATABASE_USERNAME')
 database_password = os.getenv('DATABASE_PASSWORD')
