@@ -13,7 +13,6 @@ def test_check_if_details_references_a_relative_date(setup_database):
         accused_location='Groton, NY',
         charges='Fake charges',
         details='Two people called 911 about 5:35 p.m. Monday complaining',
-        source='https://www.fakeurl.com',
     )
     db_session.add(fake_incident)
     db_session.commit()
