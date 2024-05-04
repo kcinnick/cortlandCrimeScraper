@@ -65,19 +65,29 @@ def search_for_day_of_week_in_details(details_str):
             return day
 
 
-def get_response_for_query(query, client=None):
+def get_response_for_query(query, client=None, json=True):
     if client is None:
         client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
-    completion = client.chat.completions.create(
-        model='gpt-4-1106-preview',
-        messages=[
-            {'role': 'system',
-             'content': query},
-        ],
-        temperature=0,
-        response_format=ResponseFormat(type='json_object')
-    )
+    if json:
+        completion = client.chat.completions.create(
+            model='gpt-4-1106-preview',
+            messages=[
+                {'role': 'system',
+                 'content': query},
+            ],
+            temperature=0,
+            response_format=ResponseFormat(type='json_object')
+        )
+    else:
+        completion = client.chat.completions.create(
+            model='gpt-4-1106-preview',
+            messages=[
+                {'role': 'system',
+                 'content': query},
+            ],
+            temperature=0,
+        )
     response = completion.choices[0].message.content.strip()
     print('response', response)
 
