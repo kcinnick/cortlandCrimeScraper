@@ -10,33 +10,40 @@ from database import get_database_session
 
 from models.article import Article
 from models.incident import Incident
+from police_fire.utilities.utilities import get_response_for_query
 
 
-def find_sentencing_article(session):
-    articles = session.query(Article).all()
-    sentencing_articles = []
+def classify_article_stage(incidents_by_accused_name, accused_name):
+    for incident in incidents_by_accused_name[accused_name]:
+        print('Looking for incident: {}'.format(incident.id))
+        get_response_for_query(
+            query=f"You will be an incident. Your task is to determine what stage of the criminal justice process the incident is in. The choices are initial report, arrest, trial, sentencing, and appeal. Please only respond with one of the choices.  If the choice cannot be determined, respond 'undetermined'."
+                  f"INCIDENT START: {incident.legal_actions} INCIDENT END.",
+            json=False,
+        )
 
-    for article in articles:
-        if 'sentenc' in article.content:
-            print('Found sentenc in article {}'.format(article.id))
-            sentencing_articles.append(article)
+    return
 
-    print('Found {} sentencing articles'.format(len(sentencing_articles)))
+def group_incidents_by_accused_name(incidents):
+    incidents_by_accused_name = {}
+    for incident in incidents:
+        if incident.accused_name not in incidents_by_accused_name:
+            incidents_by_accused_name[incident.accused_name] = []
+        incidents_by_accused_name[incident.accused_name].append(incident)
 
-    return sentencing_articles
-
+    return incidents_by_accused_name
 
 def main():
     session, engine = get_database_session(environment='prod')
-    sentencing_articles = find_sentencing_article(session)
+    # group incidents by accused_name
     incidents = session.query(Incident).all()
-    for incident in incidents:
-        for article in sentencing_articles:
-            if incident.accused_name in article.content:
-                #incident.sentencing_article_id = article.id
-                #session.commit()
-                print('linked article {} to incident {}'.format(article.id, incident.id))
-                break
+    # incidents = [incident for incident in incidents if incident.id in [1567, 3556, 2815, 3547]]
+    incidents_by_accused_name = group_incidents_by_accused_name(incidents)
+
+    for accused_name in incidents_by_accused_name.keys():
+        print('----------')
+        print('Looking for accused_name: {}'.format(accused_name))
+        classify_article_stage(incidents_by_accused_name, accused_name)
 
 
 if __name__ == '__main__':
