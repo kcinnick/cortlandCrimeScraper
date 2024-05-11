@@ -13,14 +13,14 @@ from models.article import Article
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
-def scrape_unstructured_incident_details(article_id, source, article_content, article_date_published, DBsession):
+def scrape_unstructured_incident_details(article, DBsession):
     # print('Article content: ', article.content)
 
     completion = client.chat.completions.create(
         model='gpt-3.5-turbo-1106',
         messages=[
             {'role': 'system',
-             'content': 'You provide information on incidents that occurred in the following article: ' + article_content},
+             'content': 'You provide information on incidents that occurred in the following article: ' + article.content},
             {'role': 'system',
              'content': 'There may be multiple incidents listed in a single article.  When this is the case, you must use a list of JSON responses. Multiple names, ages, and addresses may be listed in a single incident. The key for the list of incidents should always be incidents.'},
             {'role': 'system',
@@ -48,8 +48,8 @@ def scrape_unstructured_incident_details(article_id, source, article_content, ar
     for incident in jsonified_response['incidents']:
         print('incident: ', incident)
         incident = Incident(
-            cortlandStandardSource=source,
-            incident_reported_date=article_date_published,
+            cortlandStandardSource=article.url,
+            incident_reported_date=article.date_published,
             accused_name=incident['accused_name'],
             accused_age=incident['accused_age'],
             accused_location=incident['accused_location'],
@@ -107,11 +107,9 @@ def main():
     police_fire_articles = list(police_fire_articles)
     index = 0
     for article in tqdm(police_fire_articles):
-        article_id, article_url, article_content, article_date_published = article.id, article.url, article.content, article.date_published
-        print(article_url)
+        print(article.url)
         index += 1
-        scrape_unstructured_incident_details(article_id, article_url, article_content, article_date_published,
-                                             DBsession)
+        scrape_unstructured_incident_details(article, DBsession)
 
     DBsession.close()
 

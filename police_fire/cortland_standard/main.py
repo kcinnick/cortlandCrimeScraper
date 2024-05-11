@@ -22,12 +22,8 @@ def main(environment='dev'):
     for article in tqdm(articles_with_incidents_not_scraped, desc='Scraping incidents from article content.'):
         print(article.url)
         scrape_structured_police_fire_details.scrape_structured_incident_details(article, database_session)
-        article_id, article_url, article_content, article_date_published = article.id, article.url, article.content, article.date_published
         scrape_unstructured_police_fire_details.scrape_unstructured_incident_details(
-            article_id,
-            article_url,
-            article_content,
-            article_date_published,
+            article,
             database_session
         )
         article.incidents_scraped = True
