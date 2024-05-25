@@ -1,0 +1,156 @@
+id,incident_id,incident_legal_actions,case_status_classification
+1,3715,Arrested on felony marijuana charges,arrested
+2,3727,Hudson pleaded not guilty and was remanded to jail without bail. City Judge Elizabeth Burns could not set bail due to Hudson's three previous felony convictions. A preliminary hearing is scheduled for Wednesday morning to decide if there is reasonable evidence to conclude he committed a felony.,held_without_bail
+3,547,"Grossi was taken to Cortland County Jail for arraignment via the county's centralized arraignment and released pending a future court appearance. Following the violation of order charge, he was further ticketed to appear Nov. 8 in Virgil Town Court.",pending_arraignment
+4,2710,Howe was arraigned via Cortland County central arraignment and released without bail pending an appearance Feb. 7 in Cortlandville Town Court.,released_without_bail
+5,557,Angulo was issued a ticket directing him to appear July 18 in Cortlandville Town Court.,issued_appearance_ticket
+6,2520,Nelson Maricle was arraigned via Cortland County central arraignment and released without bail pending an appearance Wednesday in Freetown Town Court.,released_without_bail
+7,540,Anderson was arraigned in Cortland City Court and sent to Cortland County Jail to appear in court at a later date.,held_without_bail
+8,527,Volckhausen was awaiting arraignment Tuesday in Town of Cortlandville Court.,pending_arraignment
+9,2712,Granger was ticketed to appear Feb. 20 in Homer Town Court.,issued_appearance_ticket
+10,581,All three were free on bail.,released_with_bail
+11,3734,"Arraigned in Homer Town Court, released",released_without_bail
+12,503,Sweeney was arraigned in Cortland City Court and released without bail pending an appearance May 17 in city court.,released_without_bail
+13,2711,Cooney was arraigned in Cortland City Court and released to appear Feb. 28 in city court.,released_without_bail
+14,3764,"No federal charges were filed, but Leeper and Rodriquez could be charged under federal law. The investigation is continuing and additional charges are possible. They are being held in Tioga County Jail without bail and their next court hearing is scheduled for February 26.",held_without_bail
+15,585,"Bailey was being held without bail in the Oswego County Jail pending an appearance in Richland Town Court. State police were assisted by state Park Police, the Oswego County Sheriff's Office, Oswego Police Department and Northern Oswego County Ambulance.",held_without_bail
+16,617,"Allen was arrested at the residence. The woman was transported by private vehicle and treated for her injuries at Cortland Regional Medical Center, police said. The investigation continues and additional charges are possible.",arrested
+17,43,Fiene was arraigned on Tuesday in Cortland City Court and remanded to the jail without bail. The defendant returned Wednesday to the Cortland City Court where bail was denied again.,held_without_bail
+18,686,"Parshall was arraigned in Nanticoke Town Court and was sent to the Broome County Jail on $1,000 cash bail or $2,000 bond.",held_on_bail
+19,82,"Stevens was sent to the Cortland County Jail on $1,000 bail or $2,500 bond pending an appearance today in Cortland City Court.",held_on_bail
+20,83,Mazzone was sent to the Cortland County Jail on $250 bail or $500 bond pending an appearance Wednesday in Cortland City Court.,held_on_bail
+21,85,Martinez was awaiting arraignment this morning in Cortland City Court.,pending_arraignment
+22,3776,Carrera was arraigned this morning in Cortland City Court and released. He is scheduled to reappear at 9 a.m. Jan. 30.,released_without_bail
+23,87,Ferris-Savage was released to appear Feb. 20 in Homer Town Court.,released_without_bail
+24,86,Both men were released and are due to appear Jan. 21 in Cortland City Court.,released_without_bail
+25,91,Miller was released but a future court date was not available.,released_without_bail
+26,92,Homa was released and is scheduled to appear Dec. 22 in City Court.,released_without_bail
+27,620,Swan awaited arraignment this morning in Cortland City Court.,pending_arraignment
+28,89,Garrison was released without bail pending an appearance Oct. 3 in Cortland City Court.,released_without_bail
+29,732,George was ticketed to appear June 28 in City Court.,issued_appearance_ticket
+30,3779,"Cortland County Judge David Alexander reinstated an order of protection against Bergman, barring him from any contact with the child until July 8. Bergman is out of jail on $1,000 bail and has been reporting to Cortland County Alternatives to Incarceration. His next court date is Feb.19 for a pre-trial conference. If convicted on all three charges, Bergman could face a prison sentence of up to seven years for first-degree disseminating indecent material to minors, up to four years for second-degree disseminating indecent material to minors, and a year for endangering the welfare of a child.",released_with_bail
+31,482,"The two were transported to the Cortland County Sheriffs Office, processed and released with no bail set. They were ticketed to appear in the Town of Cortlandville Court at 1 p.m. June 26.",released_without_bail
+32,1032,Howard was released to appear May 18 in Cortland City Court.,issued_appearance_ticket
+33,1033,Cruz was released and ordered to appear May 28 in Dryden Town Court.,issued_appearance_ticket
+34,628,Walker was released and is due to appear May 20 in Dryden Town Court.,issued_appearance_ticket
+35,643,"Happel was arraigned in Cortlandville Town Court and held on $5,000 bail or $15,000 bond pending a court appearance late this morning",held_on_bail
+36,649,Kaczmarek was released and is due to appear March 13 in Cortland City Court.,released_without_bail
+37,2302,Fairweather was arraigned via Cortland County central arraignment and released without bail pending appearances Wednesday in Cincinnatus Town Court and Jan. 24 in Truxton Town Court.,released_without_bail
+38,2778,"Hoy was arraigned via Cortland County central arraignment and released without bail pending an appearance Monday in Cortlandville Town Court, for which details were unavailable.",released_without_bail
+39,2254,Arraigned in Cortland City Court and sent to the Cortland County jail without bail pending an appearance on Sept. 21 in city court.,released_without_bail
+40,3782,Felton-McCullough was released and is set to appear at 9 a.m. Jan. 18 in City Court.,released_without_bail
+41,2182,Ticketed to appear March 28 in Cortlandville Town Court.,issued_appearance_ticket
+42,2275,Ticketed to appear on June 24 in Cortland City Court.,issued_appearance_ticket
+43,2285,Arraigned in Cortlandville Town Court and released without bail pending an appearance,released_without_bail
+44,2121,Charged with second-degree menacing and fourth-degree criminal possession of a weapon,arrested
+45,2272,Returned to the Cortland County Jail pending a future appearance in Freetown Town Court.,held_without_bail
+46,95,"Barber was ticketed to appear Nov. 13 in Cortlandville Town Court, but details were unavailable.",issued_appearance_ticket
+47,2376,Jabbour was ticketed to appear July 13 in Virgil Town Court.,issued_appearance_ticket
+48,181,Macleod was ticketed to appear later in Dryden Town Court and turned over to a sober third party.,issued_appearance_ticket
+49,182,Mcumber was ticketed to appear Feb. 15 in Town of Homer Court.,issued_appearance_ticket
+50,184,Osborne was ticketed to appear Oct. 26 in Lansing Town Court.,issued_appearance_ticket
+51,189,Tetreault was arraigned via Cortland County central arraignment and released without bail pending an appearance Oct. 25 in Cortlandville Town Court.,released_without_bail
+52,188,Heath was arraigned via Cortland County central arraignment and released without bail pending an appearance today in Cortlandville Town Court.,released_without_bail
+53,236,Vanbenschoten was ticketed to appear Feb. 1 in Homer Town Court.,issued_appearance_ticket
+54,190,"O'Rourke was arrested Monday by state police. If convicted, faces up to 1 1/2 to four years in prison.",held_without_bail
+55,1800,Emerson was released and is scheduled to appear Feb. 12 in Ithaca town court.,issued_appearance_ticket
+56,187,Haberstroh was ticketed to appear Nov. 13 in Cuyler Town Court.,issued_appearance_ticket
+57,2523,Sallis was arraigned via Cortland County central arraignment and released without bail pending an appearance Feb. 5 in Cortlandville Town Court.,released_without_bail
+58,672,Davidson was ticketed to appear March 14 in Homer Town Court.,issued_appearance_ticket
+59,682,Youngs was ticketed to appear March 21 in Scott Town Court.,issued_appearance_ticket
+60,688,"Fendrock was arraigned Friday in Marathon Town Court and sent to the Cortland County Jail on $3,000 cash bail or $6,000 bond. She is to appear May 10 in Marathon Town Court.",held_on_bail
+61,691,Riley was ticketed to appear April 19 in Taylor Town Court.,issued_appearance_ticket
+62,702,Leon was released and is due to appear May 22 in Cortland City Court.,released_without_bail
+63,706,"Stevens was sent to Cortland County Jail on $500 bail or $1,000 bond and was scheduled to appear Wednesday in Cortlandville Town Court. He next appears Oct. 19 in Cortland City Court and Oct. 24 in Cortlandville Town Court.",held_on_bail
+64,716,Poole was arraigned in Cortland County Court and sent back to the Cortland County Jail without bail.,held_on_bail
+65,722,Mono was arraigned in Cortlandville Town Court and released without bail pending an appearance May 20 in town court.,released_without_bail
+66,569,Charged,arrested
+67,3731,The case was sent to Cortland County Court after a city judge ruled there was enough evidence. Cole was charged with multiple felonies and a misdemeanor.,arrested
+68,725,Dewitt was arraigned in  Cortlandville Town Court and released to appear today in Cortlandville Town Court.,released_without_bail
+69,216,Niles was arraigned Monday in Cortland City Court and released without bail pending an appearance Sept. 27 in Cortland City Court.,released_without_bail
+70,388,Arraigned in Cortland City Court and sent to the Cortland County Jail without bail pending appearances Wednesday in city court,held_without_bail
+71,167,Closson was arraigned via Cortland County central arraignment and released without bail pending an appearance Dec. 21 in Taylor Town Court.,released_without_bail
+72,1965,Lateer was ticketed to appear Nov. 16 in Cortlandville Town Court and released to a sober third party.,issued_appearance_ticket
+73,143,Both women were released without bail and ticketed to appear June 7 in Town of Harford Court.,released_without_bail
+74,772,"Christopher Crawford was sent to Cortland County Jail with bail set at $7,500 cash or $15,000 bond. Thomas Crawford was sent to the jail with bail set at $10,000 cash or $20,000 bond. Both are scheduled to appear June 15 in County Court.",held_on_bail
+75,734,"Vasquez was arraigned in Homer Town Court and sent to the Cortland County Jail on $15,000 cash bail or $30,000 bond. His next court day was unavailable.",held_on_bail
+76,738,Fleming was released to appear June 21 in City Court.,released_without_bail
+77,742,"Miller was arraigned in City Court and sent back to the jail on $2,500 bail or $5,000 bond, scheduled to appear July 26 in City Court.",held_on_bail
+78,1023,"Fiorentini was arraigned in Homer Town Court and sent to the Cortland County Jail on $1,000 bail or $2,000 bond.",held_on_bail
+79,916,Gantt is being held at the Cortland County Jail until his next court date on Sept. 18.,held_without_bail
+80,762,Coville and Perone were sent to jail without bail and are set to appear today in City Court.,held_without_bail
+81,1092,OaNeil and Larrabee were released and are scheduled to appear July 9 in Cortlandville Town Court.,released_without_bail
+82,3840,"Arraigned in Owasco Town Court and remanded to Cayuga County Jail on $10,000 cash bail. The investigation is ongoing and additional charges may be filed.",held_on_bail
+83,756,He was ordered to appear Wednesday in City Court.,released_without_bail
+84,3851,issued an appearance ticket and is scheduled to appear in Cortlandville Town Court later this month,issued_appearance_ticket
+85,893,Morgan was sent to the Cortland County Jail without bail pending an appearance today in Cortland City Court.,held_without_bail
+86,2085,Both were released and are scheduled to appear Jan. 18 in City Court.,released_without_bail
+87,3866,"He was arraigned in Taylor Town Court and taken to the Cortland County Jail on $50,000 cash bail or $100,000 bond.",held_on_bail
+88,3421,Released and due to appear in Cortlandville town court at 1 p.m. July 10.,released_without_bail
+89,776,"Maricle and Harahus were arraigned in Cortlandville Town Court and sent to the Cortland County Jail on $500 cash bail or $1,000 bond. They are scheduled to appear Wednesday in Freetown Town Court.",held_on_bail
+90,3893,"Detained and transported to the Cortland County Sheriff's Office, charged with felonies and misdemeanors.",arrested
+91,780,Deforest is scheduled to appear Aug. 31 in Cortland City Court.,issued_appearance_ticket
+92,785,"Nunez was arraigned in Cortlandville Town Court, released and ordered to appear Wednesday in Cortlandville Town Court.",released_without_bail
+93,793,Keeney was issued an appearance ticket for Sept. 18 in City Court.,issued_appearance_ticket
+94,794,Newton was ticketed to appear Aug. 28 in Dryden Town Court.,issued_appearance_ticket
+95,806,"Maclean was arraigned in Cortland County Court and returned to the Cortland County Jail on $5,000 bail or $10,000 bond. He is scheduled to appear Oct. 2 in Cortland County Court.",held_on_bail
+96,812,Cotterill was released on bail and ordered to appear 5 p.m. June 4 in Dryden Town Court.,released_with_bail
+97,825,Soshinsky was issued appearance tickets for Nov. 20 in Cortlandville Town Court.,issued_appearance_ticket
+98,3434,"A warrant for Pohl's arrest was obtained. He is currently being held at Cortland County Jail on a $2,000 cash bail or $10,000 bond and is scheduled to appear in city court on April 26.",held_on_bail
+99,1035,Sackman was released to appear Monday in Cortland City Court.,released_without_bail
+100,822,Krango was arraigned in Aurelius Town Court and sent to the Cayuga County Jail with no bail set.,held_without_bail
+101,1846,Greene was arraigned Friday and issued a ticket for a future court appearance. Thomas was ticketed to appear April 27 in Cortlandville Town Court.,issued_appearance_ticket
+102,2419,Weaver and Kirk were ticketed to appear in Cincinnatus Town Court.,issued_appearance_ticket
+103,1060,"They were sent to the Cortland County Jail on $2,000 bail or $4,000 bond to appear today in City Court.",held_on_bail
+104,819,Knapp and Stevens awaited arraignment this morning in City Court.,pending_arraignment
+105,1453,Both Walkers were ticketed to appear Wednesday in Cortland City Court.,issued_appearance_ticket
+106,222,"Grossi was arraigned at Cortland County central arraignment and sent to the Cortland County Jail on $10,000 bail or $20,000 bond pending an appearance April 5 in Cortlandville Town Court.",held_on_bail
+107,1304,Both Crandalls were released without bail pending an appearance today in Cortland City Court. Orders of protection were issued for the victim.,released_without_bail
+108,829,"Buchalla was arraigned in Cortlandville Town Court and sent to the Cortland County Jail on $500 cash bail or $1,000 bond. He is scheduled to appear May 8 in Cortlandville Town Court.",held_on_bail
+109,512,They were ticketed to appear later in Cortland County Youth Court.,issued_appearance_ticket
+110,1798,Evener was ordered to appear Feb. 7 in Cortland City Court,issued_appearance_ticket
+111,3917,"Adam Underwood turned himself in to the Cortland City Police Department and was charged with first-degree robbery, a class B felony, and criminal possession of a weapon in the third degree, a class D felony.",arrested
+112,3437,"Both were arraigned, released and are now set to appear in Virgil town court on Feb. 28.",released_without_bail
+113,2715,Declerq-Comstock was ticketed to appear March 4 in Town of Cortlandville Court.,issued_appearance_ticket
+114,2716,Serrant was ticketed to appear Feb. 26 in Cortlandville Town Court.,issued_appearance_ticket
+115,2719,Hamilton was ticketed to appear Feb. 26 in Cortland City Court.,issued_appearance_ticket
+116,3931,Arraigned in Cortland City Court Monday morning.,arraigned
+117,1553,Both Quinteros were ticketed to appear Oct. 21 in Cortland City Court.,issued_appearance_ticket
+118,605,Rose was released and is scheduled to appear Aug. 28 to Lansing Town Court. The 15-year-old is scheduled to reappear on Aug. 17 in Family Court. The 17-year-old is scheduled to appear on Aug. 30 in the Lansing Town Court.,released_without_bail
+119,1007,Both were ticketed to appear April 25 in Dryden Town Court.,issued_appearance_ticket
+120,1863,"Falso was ticketed to appear Sept. 4 in Homer Town Court, but was taken to the Cortland County Jail on a parole warrant. Cole was taken to the Cortland County Jail on a parole warrant.",held_without_bail
+121,830,Thornton was arraigned in Freetown Town Court and released. He is scheduled to appear Oct. 25 in Solon Town Court.,arraigned
+122,3556,Martinez was sent to the Cortland County Correctional Facility without bail and is scheduled to appear at 10 a.m. Monday in City Court.,held_without_bail
+123,2014,"Strauf was released without bail, ordered to appear Monday in Cortlandville Town Court. Leman was ticketed to appear Monday in Cortlandville Town Court.",released_without_bail
+124,1998,Seymour and Swansbrough were each ticketed to appear later in Town of Dryden Court.,issued_appearance_ticket
+125,2717,Chace was ticketed to appear Feb. 26 in Cortlandville Town Court.,issued_appearance_ticket
+126,2720,Goodall was ticketed to appear Feb. 28 in Freetown Town Court.,issued_appearance_ticket
+127,2721,Crawford was ticketed to appear Feb. 27 in Willet Town Court.,issued_appearance_ticket
+128,2722,Eldridge was arraigned in Cortland City Court and released without bail pending an appearance Feb. 21 in city court.,released_without_bail
+129,833,Dixon was arraigned in Homer Town Court and sent to the Cortland County Jail on no bail.,held_without_bail
+130,2723,Maxwell was arraigned in Cortland City Court and released without bail pending an appearance Feb. 21 in city court.,released_without_bail
+131,2724,Mott was arraigned in Cortland City Court and released without bail pending an appearance Feb. 21 in city court.,released_without_bail
+132,861,Mendias was released to a third party and is due to appear June 10 in Cortlandville Town Court.,released_without_bail
+133,863,"Hudson and Rigg were arraigned Sunday in Cortlandville Town Court. Hudson was held at the Cortland County Jail on $500 bail or $1,000 bond; Rigg was held on $750 bail or $1,500 bond pending an 11 a.m. Monday court appearance. Information on the appearance was unavailable this morning.",held_on_bail
+134,877,He was released to appear Feb. 26 in City Court.,released_without_bail
+135,875,"Weir was sent to Cortland County Jail on $400 bail or $1,000 bond. He is scheduled to appear today in Town of Cortlandville Court.",held_on_bail
+136,885,"Gates was arraigned in Truxton Town Court and sent to the Cortland County Jail on $1,000 bail or $1,500 bond pending an appearance at 4 p.m. today in Truxton Town Court.",held_on_bail
+137,2714,Larrabee was ticketed to appear March 4 in Cortlandville Town Court.,issued_appearance_ticket
+138,2718,Wyant was arraigned via Cortland County central arraignment and released without bail pending an appearance Feb. 26 in Cortlandville Town Court.,released_without_bail
+139,884,Cummings was ticketed to appear Jan. 18 in Cortland City Court. Levern was ticketed to appear Jan. 23 in City Court.,issued_appearance_ticket
+140,886,A family friend took custody of the child. Lightaul was released and is to appear June 12 in Cortland City Court.,released_without_bail
+141,31,Both Batsford and West were released and are scheduled to appear Oct. 26 in Cortland City Court.,released_without_bail
+142,2788,Burhans was arraigned via Cortland County central arraignment and released without bail pending an appearance April 4 in Willet Town Court.,released_without_bail
+143,2789,Caswell was released without bail pending an appearance March 25 in Cortland City Court.,released_without_bail
+144,906,Hayes and Storie were to be arraigned this morning in City Court.,pending_arraignment
+145,909,Van Hoesen was arraigned in Homer Town Court and released to appear July 11.,released_without_bail
+146,528,Megivern was arraigned via Tompkins County central arraignment and released pending a future court appearance.,released_without_bail
+147,2727,"Arraigned and sent to the Cortland County jail on $5,000 bail pending an appearance Feb. 28 in Cortland City Court.",held_on_bail
+148,2728,"Indicted on 17 charges, including attempted murder and assault on a police officer",held_without_bail
+149,2167,"Rogers was sent to Cortland County Jail without bail pending an appearance Monday in Cortlandville Town Court, for which details were not available.",held_without_bail
+150,3586,"Clark was arraigned in city court and remanded to the Cortland County Correctional Facility on $10,000 or $20,000 bond. She was released from jail this morning. Her next court date was not available.",released_with_bail
+151,922,"Sartwell was arraigned Wednesday in City Court and released without bail, ordered to reappear Aug. 30. An order or protection was also issued.",released_without_bail
+152,3624,Clemens has not yet been arraigned. The Homer Police Department is considering additional charges.,pending_arraignment
+153,2733,Ticketed to appear Feb. 26 in Cortland City Court,issued_appearance_ticket
+154,924,"Both were sent to Cortland County Jail on $10,000 bail or $20,000 bond pending a City Court appearance today.",held_on_bail
+155,931,He was released to a third party and is to appear June 24 in Cortlandville Town Court.,issued_appearance_ticket
