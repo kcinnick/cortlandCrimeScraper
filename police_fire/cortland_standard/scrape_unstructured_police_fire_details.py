@@ -2,7 +2,7 @@ import json
 import os
 
 from openai import OpenAI
-from pydantic import BaseModel, Field
+
 from sqlalchemy.exc import IntegrityError
 from tqdm import tqdm
 
@@ -93,6 +93,7 @@ def scrape_unstructured_incident_details(article, DBsession):
                     print('Integrity error: ', e)
                     DBsession.rollback()
 
+    article = DBsession.query(Article).filter_by(id=article.id).first()
     article.incidents_scraped = True
     DBsession.commit()
 
