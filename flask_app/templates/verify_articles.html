@@ -15,7 +15,32 @@ td.actions {
   width: 200px;
 }
 
+.scrape-button-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f8f9fa;
+  border-radius: 5px;
+  border-left: 4px solid #007bff;
+}
+
+.scrape-button-section h3 {
+  margin-top: 0;
+  color: #333;
+}
+
 </style>
+
+<div class="scrape-button-section">
+  <h3>Download Articles from Source</h3>
+  <p>Scrape the latest articles from <a href="https://www.cortlandstandard.com/news/police-fire/" target="_blank">Cortland Standard Police/Fire Section</a></p>
+  <form method="POST" action="/scrape-source" style="display: inline;">
+    <label for="max_pages">Max Pages: </label>
+    <input type="number" name="max_pages" id="max_pages" value="1" min="1" max="50" style="width: 50px;">
+    <button type="submit" class="btn btn-primary">Start Scraping</button>
+  </form>
+  <p><small>This will run in the background. Check the terminal for progress.</small></p>
+</div>
+
 <h1 class="verify_incidents">Verify Incidents in Article</h1>
 <table class="verify-table" id="verify-table">
   <thead>

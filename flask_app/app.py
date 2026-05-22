@@ -1,8 +1,9 @@
 import os
 from datetime import timedelta
+from threading import Thread
 
 import pandas as pd
-from flask import Flask, render_template, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, jsonify, redirect, url_for, flash, request
 from flask import send_from_directory
 from sqlalchemy import func
 
@@ -12,6 +13,11 @@ from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
 from police_fire.cortland_voice.scrape_incidents_from_articles import rescrape_article as rescrape_cv_article
+from police_fire.cortland_standard.scrape_articles_by_section import main as scrape_articles_main
+from police_fire.cortland_standard.scrape_articles_by_section import get_article_urls, scrape_article as scrape_single_article
+from police_fire.utilities.utilities import login
+from tqdm import tqdm
+from threading import Thread
 
 # Get database environment from FLASK_ENV variable, default to production
 db_environment = os.getenv('FLASK_ENV', 'production')
@@ -357,6 +363,62 @@ def rescrape_cortland_voice_article(article_id):
     print('rescraping article: ', article.url)
     rescrape_cv_article(article.url)
     return redirect(url_for('verify_article', article_id=article_id))
+
+
+def scrape_articles_background(max_pages=1):
+    """Background function to scrape articles from Cortland Standard"""
+    try:
+        db_session_bg, engine_bg = get_database_session(environment=db_environment)
+        logged_in_session = login()
+
+        # Get articles from the Police/Fire section
+        article_urls = get_article_urls(
+            ['Police/Fire'], [], '', 'any',
+            '', '', [], session=logged_in_session,
+            max_pages=max_pages
+        )
+
+        print(f'{len(article_urls)} articles found.')
+
+        # Scrape each article
+        for article_url in tqdm(article_urls, desc='Scraping articles'):
+            try:
+                scrape_single_article(article_url, logged_in_session, section='Police/Fire', DBsession=db_session_bg)
+            except Exception as e:
+                print(f'Error scraping article {article_url}: {e}')
+
+        print('Scraping complete!')
+
+    except Exception as e:
+        print(f'Error in background scraping: {e}')
+
+
+@app.route('/scrape-source', methods=['GET', 'POST'])
+def scrape_source():
+    """Trigger scraping from Cortland Standard Police/Fire section"""
+    try:
+        max_pages = request.args.get('max_pages', 1, type=int)
+
+        # Run scraping in background to avoid blocking
+        thread = Thread(target=scrape_articles_background, args=(max_pages,))
+        thread.daemon = True
+        thread.start()
+
+        flash(f'Started scraping Police/Fire articles from Cortland Standard (max {max_pages} pages)...', 'info')
+        return redirect(url_for('verify_incidents'))
+    except Exception as e:
+        flash(f'Error starting scrape: {str(e)}', 'danger')
+        return redirect(url_for('verify_incidents'))
+
+
+@app.route('/api/scrape-status', methods=['GET'])
+def scrape_status():
+    """API endpoint to check scraping status"""
+    # For now, just return that scraping is running
+    return jsonify({
+        'status': 'running',
+        'message': 'Check the terminal for scraping progress'
+    })
 
 
 if __name__ == '__main__':
