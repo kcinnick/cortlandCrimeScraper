@@ -1,5 +1,27 @@
 # AGENTS.md - cortlandCrimeScraper
 
+## 🔴 CRITICAL: Branch Workflow
+
+**ALWAYS create a feature branch. NEVER commit directly to master.**
+
+```bash
+# ✅ CORRECT: Create feature branch
+git checkout -b feat/your-feature
+git add .
+git commit -m "feat: description"
+git push origin feat/your-feature
+
+# ❌ WRONG: Never do this
+git checkout master
+git add .
+git commit -m "quick fix"
+git push
+```
+
+See `CONTRIBUTING.md` for complete workflow details.
+
+---
+
 ## Project Overview
 
 **cortlandCrimeScraper** is a Python web scraping and data extraction pipeline that ingests crime/incident news articles from local sources (Cortland Standard, Cortland Voice) and transforms them into structured incident and charge records stored in PostgreSQL.
