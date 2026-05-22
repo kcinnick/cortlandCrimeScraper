@@ -13,7 +13,9 @@ from models.charges import Charges
 from models.incident import Incident
 from police_fire.cortland_voice.scrape_incidents_from_articles import rescrape_article as rescrape_cv_article
 
-db_session, engine = get_database_session(environment='production')
+# Get database environment from FLASK_ENV variable, default to production
+db_environment = os.getenv('FLASK_ENV', 'production')
+db_session, engine = get_database_session(environment=db_environment)
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'mysecretkey'

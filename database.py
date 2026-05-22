@@ -2,7 +2,7 @@ import os
 
 import unicodedata
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 
 from models.incident import Incident
