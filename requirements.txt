@@ -38,5 +38,5 @@ matplotlib==3.8.2
 psycopg2-binary==2.9.9
 
 # Testing
-pytest==7.4.3
+pytest==9.0.3
 
