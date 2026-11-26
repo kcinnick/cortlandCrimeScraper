@@ -5,6 +5,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from base import Base
+from models.incident import Incident
 from police_fire.data_normalization.normalize_incident_locations import main
 
 database_username = os.getenv('DATABASE_USERNAME')
@@ -28,13 +29,14 @@ def setup_database():
 
     yield db_session  # Provide the session for testing
 
+    db_session.query(Incident).delete()
+    db_session.commit()
     db_session.close()
-    Base.metadata.drop_all(engine)  # Drop tables after tests are done
 
 
 def test_main(setup_database):
     # test set up
-    fake_incident = Incidents(
+    fake_incident = Incident(
         accused_name='Test',
         incident_location='Lansing'
     )
@@ -46,7 +48,7 @@ def test_main(setup_database):
     main(environment='test')
 
     # test
-    incident = DBsession.query(Incidents).filter(
-        Incidents.accused_name == 'Test',
+    incident = DBsession.query(Incident).filter(
+        Incident.accused_name == 'Test',
     ).first()
     assert incident.incident_location == 'Lansing, New York'
