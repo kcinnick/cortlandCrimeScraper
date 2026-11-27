@@ -1,4 +1,4 @@
-"""Bounded Cortland Voice refresh. Preview by default; no fuzzy case merging."""
+"""Bounded source-linked refresh. Standard uses authorized local exports only."""
 import argparse
 from datetime import date, datetime
 import json
@@ -7,8 +7,9 @@ from pathlib import Path
 import shutil
 import subprocess
 import time
+from urllib.parse import urlsplit
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from database import get_database_session
 from models.article import Article
@@ -16,6 +17,26 @@ from models.incident import Incident
 from models.charges import Charges
 from police_fire.cortland_voice.scrape_articles import fetch_article, get_article_urls
 from police_fire.utilities.utilities import get_response_for_query
+from police_fire.cortland_standard.import_articles import load_export, validate_standard_url
+
+
+def source_column(url):
+    parts = urlsplit(url)
+    if parts.scheme == 'https' and parts.hostname in {'cortlandstandard.com', 'www.cortlandstandard.com'}:
+        validate_standard_url(url)
+        return Incident.cortlandStandardSource
+    if parts.scheme == 'https' and parts.hostname == 'cortlandvoice.com' and not parts.username and not parts.password:
+        return Incident.cortlandVoiceSource
+    raise ValueError('Unrecognized article source URL')
+
+
+def source_filter(source):
+    if source == 'standard':
+        return or_(Article.url.like('https://www.cortlandstandard.com/%'),
+                   Article.url.like('https://cortlandstandard.com/%'))
+    if source == 'voice':
+        return Article.url.like('https://cortlandvoice.com/%')
+    raise ValueError('Unrecognized source')
 
 
 def audit(session):
@@ -28,6 +49,13 @@ def audit(session):
             Article.url.like('https://cortlandvoice.com/%'),
             Article.incidents_scraped.is_not(True),
         ).count(),
+        'standard_articles': session.query(Article).filter(source_filter('standard')).count(),
+        'standard_unparsed': session.query(Article).filter(
+            source_filter('standard'), Article.incidents_scraped.is_not(True),
+        ).count(),
+        'latest_standard_publication': str(session.query(func.max(Article.date_published)).filter(
+            source_filter('standard'),
+        ).scalar()),
     }
 
 
@@ -50,6 +78,7 @@ def backup_database(engine):
 
 
 def validate_incidents(payload, article):
+    attribution = {source_column(article.url).key: article.url}
     if not isinstance(payload, dict) or not isinstance(payload.get('incidents'), list):
         raise ValueError('Expected a JSON object containing an incidents list')
     records = []
@@ -69,7 +98,7 @@ def validate_incidents(payload, article):
                 raise ValueError('Incident date cannot be later than publication')
         records.append(Incident(
             **{key: row[key] for key in fields}, incident_date=incident_date,
-            incident_reported_date=article.date_published, cortlandVoiceSource=article.url,
+            incident_reported_date=article.date_published, **attribution,
         ))
     keys = {(r.accused_name, r.details, r.charges) for r in records}
     if len(keys) != len(records):
@@ -78,9 +107,10 @@ def validate_incidents(payload, article):
 
 
 def parse_article(session, article, query_fn=get_response_for_query):
+    column = source_column(article.url)
     if article.incidents_scraped:
         return 0
-    if session.query(Incident).filter_by(cortlandVoiceSource=article.url).count():
+    if session.query(Incident).filter(column == article.url).count():
         raise ValueError('Existing incidents for unparsed article require manual review')
     prompt = (
         'Extract only explicitly reported allegations; do not infer guilt or invent information. '
@@ -114,6 +144,8 @@ def positive_int(value):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--environment', choices=['development', 'test', 'production'], default='development')
+    parser.add_argument('--source', choices=['voice', 'standard'], default='voice')
+    parser.add_argument('--import-file', type=Path, help='Publisher-authorized Standard JSON export (no website requests)')
     parser.add_argument('--max-pages', type=positive_int, default=1)
     parser.add_argument('--max-articles', type=positive_int, default=5)
     parser.add_argument('--audit-only', action='store_true')
@@ -129,6 +161,11 @@ def main(argv=None):
         load_dotenv(args.env_file, override=True)
     if args.parse_only:
         args.parse = True
+    if args.import_file and (args.source != 'standard' or args.parse_only):
+        parser.error('--import-file requires --source standard and cannot be combined with --parse-only')
+    if args.source == 'standard' and not (args.import_file or args.parse_only or args.audit_only):
+        parser.error('Standard website access is unavailable; supply --import-file or use --parse-only')
+    imported = load_export(args.import_file) if args.import_file else None
     if args.parse and not args.apply:
         parser.error('--parse requires --apply; preview never calls paid APIs')
     if args.parse and not os.getenv('OPENAI_API_KEY'):
@@ -142,7 +179,23 @@ def main(argv=None):
             print('Backup:', backup_database(engine))
         seen = set()
         fetched = 0
-        for page in range(1, 1 if args.parse_only else args.max_pages + 1):
+        if imported is not None:
+            for article in imported:
+                if session.query(Article).filter_by(url=article.url).first():
+                    continue
+                print(json.dumps({'url': article.url, 'date_published': str(article.date_published),
+                                  'action': 'insert' if args.apply else 'preview'}))
+                if args.apply:
+                    try:
+                        session.add(article)
+                        session.commit()
+                    except Exception:
+                        session.rollback()
+                        raise
+                fetched += 1
+                if fetched >= args.max_articles:
+                    break
+        for page in range(1, 1 if args.parse_only or imported is not None else args.max_pages + 1):
             urls = get_article_urls(page)
             if not urls:
                 break
@@ -168,7 +221,7 @@ def main(argv=None):
                 break
         if args.parse:
             articles = session.query(Article).filter(
-                Article.url.like('https://cortlandvoice.com/%'),
+                source_filter(args.source),
                 Article.incidents_scraped.is_not(True),
             ).order_by(Article.date_published.desc(), Article.id.desc()).limit(args.max_articles).all()
             for article in articles:

@@ -1,0 +1,4 @@
+# Optional authorized Standard browser export; uses installed Chrome or Edge.
+-r requirements-test.txt
+playwright==1.65.2
+
