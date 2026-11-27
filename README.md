@@ -24,7 +24,7 @@ Copy `.env.example` to the ignored `.env.local` file and edit it locally. **Neve
 paste keys into chat, commit credentials, or pass passwords on command lines.**
 The refresh runner loads this file only when `--env-file` is supplied, overriding
 stale environment values. Set `OPENAI_MODEL` to a model your account can access
-(default: `gpt-4.1-mini`; live access has not been verified). Cortland Standard
+(default: `gpt-4.1-mini`; choose a model your account supports). Cortland Standard
 also requires legitimate `LOGIN_EMAIL` and `LOGIN_PASSWORD` credentials.
 
 ### Safe data refresh
@@ -56,6 +56,33 @@ restrictions. `--parse-only` works on already stored articles without discovery.
 The November 26 read-only production audit found 1,769 articles, 3,050 incidents,
 7,804 charges, latest publication 2024-05-30, and 127 unparsed Voice articles.
 No production data was refreshed during that audit.
+
+A later backed-up November 26 run successfully parsed six stored Voice articles,
+adding five **unverified** incidents (IDs 4003–4007). Production now has 3,055
+incidents and 121 unparsed Voice articles. Article and individual charge counts
+remain 1,769 and 7,804. This refreshed stored backlog, not current news: the
+latest publication is still 2024-05-30 and publisher discovery access remains blocked.
+
+### Local app preview
+
+```powershell
+.\.venv-review\Scripts\python.exe -m flask_app.run --env-file .env.local --environment production --port 5000
+```
+
+Visit **http://127.0.0.1:5000**. The launcher forces read-only mode, binds only to
+loopback, and disables debug/reloading. Database sessions open lazily and close
+after each request; startup does not create tables. Main pages and the five new
+incident pages have been checked over HTTP. Raw charges display even before
+spellchecking or individual charge-row extraction.
+
+For other startup methods, `DATABASE_ENV` defaults to development and
+`APP_READ_ONLY` defaults to `1`. Write requests are blocked unless read-only mode
+is explicitly disabled and a configured `FLASK_ADMIN_TOKEN` matches the request's
+`X-Admin-Token` header; global CSRF validation also applies. Administrative browser
+login/token handling is not implemented, so use the preview for viewing, not editing.
+Set a stable `FLASK_SECRET_KEY` for any administrative deployment. Do not expose
+the development server publicly. Remaining destructive-script safeguards and
+production authentication requirements are tracked in issue #115.
 
 ## Overview
 `cortlandCrimeScraper` is a Python-based web scraping tool designed to gather and store detailed information about local news stories from the Cortland Standard & Cortland Voice websites. The primary purpose of this tool is to facilitate data collection for analysis and querying of local news incidents.

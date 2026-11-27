@@ -21,9 +21,22 @@
         <tr>
           <th>Incident Details:</th>
           <td>{{ incident.details }}</td>
+        </tr>
         <tr>
           <th>Accused Charges:</th>
-          <td>{{ incident.spellchecked_charges }}</td>
+          <td>{{ incident.spellchecked_charges or incident.charges or 'Not reported' }}</td>
+        </tr>
+        <tr>
+          <th>Reported Date:</th>
+          <td>{{ incident.incident_reported_date or 'Unknown' }}</td>
+        </tr>
+        <tr>
+          <th>Incident Date:</th>
+          <td>{{ incident.incident_date or 'Unknown' }}</td>
+        </tr>
+        <tr>
+          <th>Incident Location:</th>
+          <td>{{ incident.incident_location or 'Unknown' }}</td>
         </tr>
         <tr>
           <th>Cortland Voice Source:</th>

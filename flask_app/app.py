@@ -1,24 +1,68 @@
 import os
-from datetime import timedelta
+import hmac
+import secrets
+from collections import Counter
+from datetime import date, timedelta
+from pathlib import Path
 
-import pandas as pd
-from flask import Flask, render_template, jsonify, redirect, url_for, flash
+from flask import Flask, render_template, jsonify, redirect, url_for, flash, g, request, abort
 from flask import send_from_directory
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import func
+from werkzeug.local import LocalProxy
 
 from database import get_database_session
 from flask_app.forms import VerificationForm, IncidentForm
 from models.article import Article
 from models.charges import Charges
 from models.incident import Incident
-from police_fire.cortland_voice.scrape_incidents_from_articles import rescrape_article as rescrape_cv_article
-
-# Get database environment from FLASK_ENV variable, default to production
-db_environment = os.getenv('FLASK_ENV', 'production')
-db_session, engine = get_database_session(environment=db_environment)
-
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'mysecretkey'
+app.config.update(
+    SECRET_KEY=os.getenv('FLASK_SECRET_KEY') or secrets.token_hex(32),
+    DATABASE_ENV=os.getenv('DATABASE_ENV', os.getenv('FLASK_ENV', 'development')),
+    READ_ONLY=os.getenv('APP_READ_ONLY', '1') != '0',
+    ADMIN_TOKEN=os.getenv('FLASK_ADMIN_TOKEN'),
+)
+
+
+def get_request_session():
+    if 'db_session' not in g:
+        factory = app.config.get('DATABASE_SESSION_FACTORY')
+        if factory:
+            g.db_session, g.db_engine = factory()
+        else:
+            g.db_session, g.db_engine = get_database_session(
+                environment=app.config['DATABASE_ENV'], create_tables=False,
+            )
+    return g.db_session
+
+
+db_session = LocalProxy(get_request_session)
+
+
+@app.before_request
+def protect_writes():
+    if request.method not in {'GET', 'HEAD', 'OPTIONS'}:
+        if app.config['READ_ONLY']:
+            abort(403, description='Read-only preview: database modifications are disabled.')
+        expected = app.config.get('ADMIN_TOKEN')
+        supplied = request.headers.get('X-Admin-Token', '')
+        if not expected or not hmac.compare_digest(expected, supplied):
+            abort(403, description='An administrative token is required.')
+
+
+csrf = CSRFProtect(app)
+
+
+@app.teardown_appcontext
+def close_request_session(error=None):
+    session = g.pop('db_session', None)
+    engine = g.pop('db_engine', None)
+    if session is not None:
+        session.rollback()
+        session.close()
+    if engine is not None:
+        engine.dispose()
 
 
 @app.route('/')
@@ -32,7 +76,7 @@ def index():
 def data():
     distinct_crimes = db_session.query(
         Charges.crime
-    ).distinct().all()
+    ).filter(Charges.crime.is_not(None)).distinct().all()
     # order crimes alphabetically
     distinct_crimes.sort()
     crimes = [crime[0] for crime in distinct_crimes]  # Extracting crime types
@@ -66,13 +110,15 @@ def fetch_incidents():
 def incidents():
     incidents = fetch_incidents()
     # order Incidents by reported_date
-    incidents.sort(key=lambda x: x.incident_reported_date, reverse=True)
+    incidents.sort(key=lambda x: x.incident_reported_date or date.min, reverse=True)
     return render_template('incidents.html', incidents=incidents)
 
 
 @app.route('/incidents/<int:incident_id>')
 def incident(incident_id):
     incident = db_session.query(Incident).filter(Incident.id == incident_id).first()
+    if incident is None:
+        abort(404)
     return render_template('incident.html', incident=incident)
 
 
@@ -129,33 +175,17 @@ def people():
 
 
 def get_incidents_by_year(incidents):
-    incident_data = []
-    for incident in incidents:
-        incident_data.append({
-            'incident_reported_date': incident.incident_reported_date,
-            'id': incident.id
-        })
-
-    # Convert crimes to pandas DataFrame
-    df = pd.DataFrame(incident_data)
-
-    # Ensure 'incident_reported_date' is a datetime type
-    df['incident_reported_date'] = pd.to_datetime(df['incident_reported_date'])
-
-    # Extract year and month for sorting
-    df['year'] = df['incident_reported_date'].dt.year
-
-    # Group by year and count incidents
-    crimes_by_year = df.groupby('year').size().to_dict()
-
-    return crimes_by_year
+    return dict(sorted(Counter(
+        incident.incident_reported_date.year for incident in incidents
+        if incident.incident_reported_date is not None
+    ).items()))
 
 
 @app.route('/api/incidents_by_year')
 def incidents_by_year_api():
     incidents = fetch_incidents()
     incidents_by_year = get_incidents_by_year(incidents)
-    return render_template('index.html', incidents_by_year=incidents_by_year)
+    return jsonify(incidents_by_year)
 
 
 @app.route('/verify_incidents')
@@ -171,6 +201,8 @@ def verify_incidents():
 @app.route('/verify-article/<int:article_id>', methods=['GET', 'POST'])
 def verify_article(article_id):
     article = db_session.query(Article).filter(Article.id == article_id).first()
+    if article is None:
+        abort(404)
     # now that there are 2 sources, but we only want incidents created for one source or the other,
     # we need to do the same lookup we do before adding the incident to the database
     # when verifying it.
@@ -261,48 +293,48 @@ def verify_article(article_id):
 
 @app.route('/verify-article/pdfs/<int:year>/<string:month>/<string:day>', methods=['GET'])
 def get_pdf(year, month, day):
-    base_pdf_path = os.path.normpath(os.getcwd() + os.sep + os.pardir) + '/pdfs' + f'/{year}/{month}/{day}/pages'
-
+    if not month.isdigit() or not day.isdigit():
+        abort(404)
     try:
-        files = [f for f in os.listdir(base_pdf_path) if f.endswith('.pdf')]
-        if files:
-            return send_from_directory(directory=base_pdf_path, path=files[0], as_attachment=False)
-        else:
-            return "No PDF found for this date.", 404
-    except Exception as e:
-        return str(e), 500
+        date(year, int(month), int(day))
+    except ValueError:
+        abort(404)
+    base_pdf_path = Path(__file__).resolve().parents[1] / 'pdfs' / str(year) / month / day / 'pages'
+    files = sorted(base_pdf_path.glob('*.pdf'))
+    if not files:
+        abort(404)
+    return send_from_directory(directory=base_pdf_path, path=files[0].name, as_attachment=False)
 
 
 def get_article_id_from_incident(incident):
     article = db_session.query(Article).filter(Article.url == incident.cortlandStandardSource).first()
     if not article:
         article = db_session.query(Article).filter(Article.url == incident.cortlandVoiceSource).first()
-    return article.id
+    return article.id if article else None
 
 
 @app.route('/delete-incident/<int:incident_id>', methods=['POST'])
 def delete_incident(incident_id):
     incident = db_session.query(Incident).filter(Incident.id == incident_id).first()
-    # check for any Charges associated to the incident
-    charges = db_session.query(Charges).filter(Charges.incident_id == incident_id).all()
-    if charges:
-        for charge in charges:
-            db_session.delete(charge)
-            db_session.commit()
-    if incident:
+    if incident is None:
+        abort(404)
+    article_id = get_article_id_from_incident(incident)
+    try:
+        db_session.query(Charges).filter(Charges.incident_id == incident_id).delete()
         db_session.delete(incident)
         db_session.commit()
-        flash('Incident deleted successfully!', 'success')
-    else:
-        flash('Incident not found!', 'danger')
-
-    article_id = get_article_id_from_incident(incident)
-    return redirect(url_for('verify_article', article_id=article_id))  # Redirect back to verification page
+    except Exception:
+        db_session.rollback()
+        raise
+    flash('Incident deleted successfully!', 'success')
+    return redirect(url_for('verify_article', article_id=article_id) if article_id else url_for('incidents'))
 
 
 @app.route('/update-verification/<int:article_id>', methods=['POST'])
 def update_verification(article_id):
     article = db_session.query(Article).filter(Article.id == article_id).first()
+    if article is None:
+        abort(404)
     form = VerificationForm(csrf_enabled=True)  # Create a VerificationForm instance
 
     if form.validate_on_submit():
@@ -350,14 +382,17 @@ def add_incident():
     return render_template('add_incident.html', form=form)
 
 
-@app.route('/rescrape/cortland-voice/<int:article_id>', methods=['GET', 'POST'])
+@app.route('/rescrape/cortland-voice/<int:article_id>', methods=['POST'])
 def rescrape_cortland_voice_article(article_id):
-    # Logic to rescrape a Cortland Voice article
     article = db_session.query(Article).filter(Article.id == article_id).first()
-    print('rescraping article: ', article.url)
-    rescrape_cv_article(article.url)
+    if article is None:
+        abort(404)
+    if not article.url.startswith('https://cortlandvoice.com/') or article.incidents_scraped:
+        abort(409, description='Reprocessing existing incidents requires manual review.')
+    from police_fire.refresh_data import parse_article
+    parse_article(db_session, article)
     return redirect(url_for('verify_article', article_id=article_id))
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='127.0.0.1', debug=False, use_reloader=False)
