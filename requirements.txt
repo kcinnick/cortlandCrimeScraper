@@ -33,7 +33,7 @@ pdf2image==1.17.0
 pytesseract==0.3.10
 
 # Utilities
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 tqdm==4.67.0
 matplotlib==3.8.2
 
