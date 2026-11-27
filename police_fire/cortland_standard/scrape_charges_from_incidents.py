@@ -2,15 +2,13 @@ import re
 from pprint import pprint
 
 from tqdm import tqdm
+from sqlalchemy.orm import object_session
 
 from database import get_database_session
 from models.incident import Incident
 from models.charges import Charges
 
 from police_fire.data_normalization.split_incidents_with_multiple_accused import split_incident
-
-DBsession, engine = get_database_session(environment='prod')
-
 
 def clean_end_of_charge_description(charge_description):
     # get rid of ', a' at the end of the charge description
@@ -912,7 +910,11 @@ def rename_charge_description(cleaned_charge_description):
         return cleaned_charge_description
 
 
-def add_charges_to_charges_table(incident, categorized_charges):
+def add_charges_to_charges_table(incident, categorized_charges, DBsession=None):
+    if DBsession is None:
+        DBsession = object_session(incident)
+    if DBsession is None:
+        raise ValueError('Charge persistence requires a session-bound incident')
     print('categorized_charges: ', categorized_charges)
     for charge_type, charges in categorized_charges.items():
         if len(charges) == 0:
@@ -963,7 +965,7 @@ def add_charges_to_charges_table(incident, categorized_charges):
 
 def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_id):
     print('charge_str: ', charge_str)
-    name_used = re.search('(\w+) (?:was|were) charged with ', charge_str, re.IGNORECASE)
+    name_used = re.search(r'(\w+) (?:was|were) charged with ', charge_str, re.IGNORECASE)
     if charge_str.startswith('All '):
         name_used = 'all'
     else:
@@ -1042,7 +1044,8 @@ def add_or_get_charge(session, charge_str, charge_type, accused_name, incident_i
         return charge.id
 
 
-def main():
+def main(environment='production'):
+    DBsession, engine = get_database_session(environment=environment)
     # use the below for a full load:
     #incidents = DBsession.query(Incident).all()
 

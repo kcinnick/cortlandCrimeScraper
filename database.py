@@ -2,6 +2,7 @@ import os
 
 import unicodedata
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
 
@@ -11,28 +12,28 @@ from models.article import Article
 from base import Base
 
 
-def get_database_session(environment='development'):
-    print('environment==', environment)
+def get_database_session(environment='development', create_tables=True):
     database_username = os.getenv('DATABASE_USERNAME')
     database_password = os.getenv('DATABASE_PASSWORD')
-    print("database_username: ", database_username)
-    print("database_password: ", database_password)
-
-    # SQLAlchemy connection string for PostgreSQL
-    if environment == 'test':
-        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_test'
-    elif environment == 'development':
-        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_dev'
-    elif environment == 'dev':
-        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_dev'
-    else:
-        DATABASE_URI = f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard'
+    databases = {
+        'test': 'cortlandstandard_test',
+        'development': 'cortlandstandard_dev', 'dev': 'cortlandstandard_dev',
+        'production': 'cortlandstandard', 'prod': 'cortlandstandard',
+    }
+    if environment not in databases:
+        raise ValueError(f'Unknown database environment: {environment!r}')
+    DATABASE_URI = URL.create(
+        'postgresql+psycopg2', username=database_username,
+        password=database_password, host=os.getenv('DATABASE_HOST', 'localhost'),
+        port=int(os.getenv('DATABASE_PORT', '5432')), database=databases[environment],
+    )
 
     engine = create_engine(DATABASE_URI, echo=False)
     Session = sessionmaker(bind=engine)
     db_session = Session()
     # create tables if they don't exist
-    Base.metadata.create_all(engine, Base.metadata.tables.values(), checkfirst=True)
+    if create_tables:
+        Base.metadata.create_all(engine, Base.metadata.tables.values(), checkfirst=True)
 
     return db_session, engine
 

@@ -10,14 +10,13 @@ from database import get_database_session
 from models.incident import Incident
 from models.article import Article
 
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
-
-def scrape_unstructured_incident_details(article, DBsession):
+def scrape_unstructured_incident_details(article, DBsession, client=None):
+    if client is None:
+        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     # print('Article content: ', article.content)
 
     completion = client.chat.completions.create(
-        model='gpt-3.5-turbo-1106',
+        model=os.getenv('OPENAI_MODEL', 'gpt-4.1-mini'),
         messages=[
             {'role': 'system',
              'content': 'You provide information on incidents that occurred in the following article: ' + article.content},
