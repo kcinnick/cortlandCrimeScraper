@@ -4,6 +4,7 @@ from html import escape
 import json
 import sys
 from types import SimpleNamespace
+from pathlib import Path
 
 import pytest
 
@@ -245,5 +246,34 @@ def test_export_failure_closes_browser_and_keeps_checkpoint(tmp_path, monkeypatc
                              '--profile', str(profile), '--output', str(output)])
     assert [row['url'] for row in json.loads(output.read_text())['articles']] == [first]
     context.close.assert_called_once()
+
+
+def test_checkpoint_retries_temporary_windows_lock(tmp_path, monkeypatch):
+    output = tmp_path / 'checkpoint.json'
+    replace = Path.replace
+    attempts = []
+    def temporarily_locked(path, target):
+        attempts.append(target)
+        if len(attempts) < 3:
+            raise PermissionError('Temporary reader lock')
+        return replace(path, target)
+    monkeypatch.setattr(Path, 'replace', temporarily_locked)
+    sleep = Mock()
+    monkeypatch.setattr(browser_export.time, 'sleep', sleep)
+    browser_export.write_json_checkpoint(output, {'articles': []})
+    assert json.loads(output.read_text()) == {'articles': []}
+    assert len(attempts) == 3 and sleep.call_count == 2
+
+
+def test_checkpoint_permanent_lock_preserves_previous(tmp_path, monkeypatch):
+    output = tmp_path / 'checkpoint.json'
+    output.write_text('{"previous": true}', encoding='utf-8')
+    replace = Mock(side_effect=PermissionError('Locked'))
+    monkeypatch.setattr(Path, 'replace', replace)
+    monkeypatch.setattr(browser_export.time, 'sleep', Mock())
+    with pytest.raises(PermissionError):
+        browser_export.write_json_checkpoint(output, {'new': True})
+    assert json.loads(output.read_text()) == {'previous': True}
+    assert replace.call_count == 25
 
 

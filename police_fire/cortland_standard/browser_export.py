@@ -2,7 +2,9 @@
 import argparse
 from datetime import date, datetime
 import json
+import os
 from pathlib import Path
+import time
 from urllib.parse import parse_qs, urlencode, urljoin, urlsplit
 
 from bs4 import BeautifulSoup
@@ -12,6 +14,25 @@ from police_fire.refresh_data import positive_int
 
 
 SECTION_URL = 'https://www.cortlandstandard.com/news/police-fire/'
+
+
+def write_json_checkpoint(path, payload):
+    """Flush before replacing; retry only transient local Windows file locks."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix('.tmp')
+    with temporary.open('w', encoding='utf-8') as stream:
+        json.dump(payload, stream, ensure_ascii=False, indent=2)
+        stream.flush()
+        os.fsync(stream.fileno())
+    for attempt in range(25):
+        try:
+            temporary.replace(path)
+            return
+        except PermissionError:
+            if attempt == 24:
+                raise
+            time.sleep(0.2)
 
 
 def discover_urls(html, news_only=True):
@@ -200,7 +221,7 @@ def main(argv=None):
             manifest = {'since': str(args.since), 'until': str(args.until), 'urls': urls,
                         'archive_exhausted': exhausted, 'pending': len(pending)}
             args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.with_suffix('.manifest.json').write_text(json.dumps(manifest, indent=2), encoding='utf-8')
+            write_json_checkpoint(args.output.with_suffix('.manifest.json'), manifest)
             print(json.dumps({'discovered': len(urls), 'pending': len(pending),
                               'archive_exhausted': exhausted}), flush=True)
             for url in pending[:args.max_articles]:
@@ -215,9 +236,7 @@ def main(argv=None):
                 record.update(url=page.url, content=wait_for_article_text(page))
                 records.append(record)
                 args.output.parent.mkdir(parents=True, exist_ok=True)
-                checkpoint = args.output.with_suffix('.tmp')
-                checkpoint.write_text(json.dumps({'articles': records}, ensure_ascii=False, indent=2), encoding='utf-8')
-                checkpoint.replace(args.output)
+                write_json_checkpoint(args.output, {'articles': records})
                 print(json.dumps({'exported': len(records), 'url': record['url'], 'date_published': record['date_published']}), flush=True)
         finally:
             context.close()
