@@ -21,7 +21,7 @@ regex==2023.12.25
 
 # Natural Language Processing
 openai==1.26.0
-transformers==4.35.2
+transformers==5.10.1
 torch
 pyspellchecker==0.8.1
 fuzzywuzzy==0.18.0
