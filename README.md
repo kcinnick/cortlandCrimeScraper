@@ -48,7 +48,7 @@ client tools and put `pg_dump` on PATH. Backups are stored in ignored
 large runs. Backups are not automatically restored after failure. Each article
 is its own transaction, so earlier successful articles remain committed.
 
-This runner currently supports Cortland Voice, not authenticated Standard ingestion,
+This runner supports Cortland Voice and authorized local Cortland Standard exports,
 and does not populate individual charge rows or perform destructive normalization.
 Voice discovery returned HTTP 403 during the November audit; do not bypass access
 restrictions. `--parse-only` works on already stored articles without discovery.
@@ -58,10 +58,71 @@ The November 26 read-only production audit found 1,769 articles, 3,050 incidents
 No production data was refreshed during that audit.
 
 A later backed-up November 26 run successfully parsed six stored Voice articles,
-adding five **unverified** incidents (IDs 4003–4007). Production now has 3,055
+adding five **unverified** incidents (IDs 4003–4007). At that point production had 3,055
 incidents and 121 unparsed Voice articles. Article and individual charge counts
 remain 1,769 and 7,804. This refreshed stored backlog, not current news: the
-latest publication is still 2024-05-30 and publisher discovery access remains blocked.
+latest publication was 2024-05-30 and publisher discovery access remained blocked.
+
+### Cortland Standard refresh
+
+The Standard import phase uses `--source standard` and makes **no publisher website
+requests**. The initial November 27 audit found 593 stored Standard articles, all marked
+parsed, with latest publication 2024-05-30. The legacy login/browse endpoints
+returned HTTP 429, login credentials are absent, and robots directives exclude
+several AI crawlers. Do not change crawler identities or bypass access restrictions.
+Issue #126 tracks the site migration. Publisher authorization was subsequently
+confirmed by the user, and normal browser access to the current Police/Fire section
+was verified. Do not run the legacy Standard main pipeline against production.
+
+With publisher permission, use the optional browser exporter and installed Chrome
+or Edge. No stealth settings, access bypass, hidden text extraction, or automatic
+login are used. Keep the browser profile under ignored `downloads/` because it
+contains session data. Sign in normally if required, then save the profile:
+
+```powershell
+.\.venv-review\Scripts\python.exe -m pip install -r requirements-browser.txt
+.\.venv-review\Scripts\python.exe -m police_fire.cortland_standard.browser_export --authorized --login
+.\.venv-review\Scripts\python.exe -m police_fire.cortland_standard.browser_export --authorized --max-articles 5 --output downloads/standard-export.json
+```
+
+The exporter waits up to 90 seconds for normally visible article text and subscriber
+elements to settle. A five-second wait was insufficient; the tested blotter became
+readable after nine seconds. HTTP/access failures stop navigation without retries.
+Successful articles are checkpointed to the export; output files are not overwritten.
+
+Obtain a publisher-authorized JSON export and save it under ignored `downloads/`.
+The file must contain an object with an `articles` list. Each article requires:
+- `url`: canonical HTTPS Standard article URL, without tracking query/fragment;
+- `headline` and `content`: non-empty strings, with authorized full article text;
+- `date_published`: an ISO date (`YYYY-MM-DD`);
+- optional `author` and `html_content` strings.
+
+Do not commit exports. Files are limited to 20 MiB; split larger exports. All rows
+are validated before opening the database or creating a backup. Duplicate URLs
+within a file are rejected; already stored URLs are skipped without overwriting.
+
+```powershell
+.\.venv-review\Scripts\python.exe -m police_fire.refresh_data --source standard --environment production --audit-only
+.\.venv-review\Scripts\python.exe -m police_fire.refresh_data --source standard --import-file downloads/standard-export.json --max-articles 5
+.\.venv-review\Scripts\python.exe -m police_fire.refresh_data --source standard --env-file .env.local --import-file downloads/standard-export.json --environment production --apply --parse --max-articles 5
+```
+
+The second command previews without writes or paid API calls. The third backs up
+production, imports up to five new articles, then parses up to five unparsed
+Standard articles. Incidents use `cortlandStandardSource`, remain unverified,
+and retain unknown dates as null. Imports and extraction commit per article;
+earlier successful articles remain committed if a later article fails. No fuzzy
+cross-source merging or individual charge-row generation is performed. Use
+`--source standard --apply --parse-only` to parse already stored Standard backlog
+without importing or contacting the publisher.
+
+The successful November 27 Standard batch imported five current articles and added
+56 unverified incidents (IDs 4008–4063). Production totals: 1,774 articles, 3,111
+incidents, and 7,804 individual charge rows. The latest stored publication is now
+2026-11-27; Standard has 598 articles and zero unparsed articles. The Voice backlog
+still has 121 unparsed articles. Source links and name mentions were checked, not
+manually certified; the new records still need review. This covers a five-article
+current batch, not all historical reporting since 2024.
 
 ### Local app preview
 
