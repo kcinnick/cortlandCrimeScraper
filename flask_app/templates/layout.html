@@ -19,6 +19,10 @@
     </nav>
   </header>
   <main>
+    <div class="alert alert-info" role="status">
+      {% if config.READ_ONLY %}Read-only preview — changes are disabled.{% endif %}
+      Reported allegations are not findings of guilt. Extracted records require verification.
+    </div>
     {% block content %}
     {% endblock %}
   </main>
