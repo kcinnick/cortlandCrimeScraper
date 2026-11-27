@@ -1,4 +1,5 @@
 from datetime import datetime
+from urllib.parse import urlsplit
 
 import requests
 from bs4 import BeautifulSoup
@@ -14,23 +15,29 @@ headers = {
 def get_article_urls(page=1):
     url = 'https://cortlandvoice.com/category/news/crime-courts/page/' + str(page)
     print(url)
-    r = requests.get('https://cortlandvoice.com/category/news/crime-courts/page/' + str(page), headers=headers)
+    r = requests.get(url, headers=headers, timeout=30)
+    r.raise_for_status()
     soup = BeautifulSoup(r.content, 'html.parser')
     article_titles = soup.find_all('h4', class_='title')
     article_urls = []
     for article_title in article_titles:
-        article_urls.append(article_title.find('a').get('href'))
+        link = article_title.find('a', href=True)
+        if link and urlsplit(link['href']).hostname == 'cortlandvoice.com':
+            article_urls.append(link['href'])
 
-    return article_urls
+    return list(dict.fromkeys(article_urls))
 
 
-def scrape_article(article_url, database_session):
-    r = requests.get(article_url, headers=headers)
+def fetch_article(article_url):
+    if urlsplit(article_url).hostname != 'cortlandvoice.com' or urlsplit(article_url).scheme != 'https':
+        raise ValueError('Expected an HTTPS Cortland Voice article URL')
+    r = requests.get(article_url, headers=headers, timeout=30)
+    r.raise_for_status()
     soup = BeautifulSoup(r.content, 'html.parser')
     headline = soup.find('h1', itemprop='headline').text.strip()
     section = 'Police/Fire'
-    author = soup.find('div', class_='post-author').text.lstrip('by ')
-    date_published = datetime.strptime(soup.find('div', class_='post-date').text, '%B %d, %Y')
+    author = soup.find('div', class_='post-author').text.strip().removeprefix('by ').strip()
+    date_published = datetime.strptime(soup.find('div', class_='post-date').text.strip(), '%B %d, %Y').date()
     content = soup.find('div', itemprop='articleBody').text.strip()
 
     article = Article(
@@ -43,19 +50,31 @@ def scrape_article(article_url, database_session):
         html_content=soup.prettify()
     )
 
-    database_session.add(article)
-    database_session.commit()
-    print('Article added to database.')
-
-    return
+    if not headline or not content:
+        raise ValueError('Article headline and body must not be empty')
+    return article
 
 
-def main():
-    database_session, engine = get_database_session(environment='prod')
+def scrape_article(article_url, database_session):
+    existing = database_session.query(Article).filter_by(url=article_url).first()
+    if existing:
+        return existing
+    article = fetch_article(article_url)
+    try:
+        database_session.add(article)
+        database_session.commit()
+    except Exception:
+        database_session.rollback()
+        raise
+    return article
+
+
+def main(environment='development', max_pages=1):
+    database_session, engine = get_database_session(environment=environment)
     already_scraped_articles = database_session.query(Article.url).all()
     already_scraped_articles = [url[0] for url in already_scraped_articles]
     page = 1
-    while True:
+    while page <= max_pages:
         article_urls = get_article_urls(page=page)
         if not article_urls:
             break

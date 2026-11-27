@@ -1,36 +1,23 @@
-import os
-
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from base import Base
-
-database_username = os.getenv('DATABASE_USERNAME')
-database_password = os.getenv('DATABASE_PASSWORD')
+from models.article import Article
+from models.incident import Incident
+from models.charges import Charges
+from models.incidents_with_errors import IncidentsWithErrors
 
 
 @pytest.fixture(scope="function")
 def setup_database():
-    # Connect to your test database
-    environment = 'dev'
-
-    print(environment)
-    engine = create_engine(
-        f'postgresql+psycopg2://{database_username}:{database_password}@localhost:5432/cortlandstandard_' + environment, )
-    Base.metadata.create_all(engine)  # Create tables
-
-    # Create a new session for testing
+    engine = create_engine('sqlite:///:memory:').execution_options(
+        schema_translate_map={'public': None}
+    )
+    Base.metadata.create_all(engine)
     db_session = scoped_session(sessionmaker(bind=engine))
-
-    yield db_session  # Provide the session for testing
-
-    db_session.close()
-    tables = ['public.scraped_articles', 'public.charges', 'public.incidents_with_errors', 'public.incidents',
-              'public.articles']
-    for table_name in tables:
-        table = Base.metadata.tables.get(table_name)
-        if table is not None:
-            table.drop(engine, checkfirst=True)
-
-    return
+    try:
+        yield db_session
+    finally:
+        db_session.remove()
+        engine.dispose()

@@ -1,3 +1,5 @@
+from datetime import date
+
 from models.incident import Incident
 
 from police_fire.test_database import setup_database
@@ -10,8 +12,8 @@ def test_person_incident_link(setup_database):
 
     fake_incident = Incident(
         accused_name='Fake J. Faker',
-        incident_reported_date='2020-01-01',
-        incident_date='2020-01-01',
+        incident_reported_date=date(2020, 1, 1),
+        incident_date=date(2020, 1, 1),
         accused_age=99,
         accused_location='Fakeville, NY',
         charges='Fake charges',
@@ -22,8 +24,8 @@ def test_person_incident_link(setup_database):
 
     second_fake_incident = Incident(
         accused_name='Fake J. Faker',
-        incident_reported_date='2020-01-02',
-        incident_date='2020-01-02',
+        incident_reported_date=date(2020, 1, 2),
+        incident_date=date(2020, 1, 2),
         accused_age=100,
         accused_location='Fakeville, NY',
         charges='More fake charges',
@@ -35,3 +37,6 @@ def test_person_incident_link(setup_database):
     DBsession.add(fake_incident)
     DBsession.add(second_fake_incident)
     DBsession.commit()
+    records = DBsession.query(Incident).filter_by(accused_name='Fake J. Faker').all()
+    assert len(records) == 2
+    assert records[0].id != records[1].id
