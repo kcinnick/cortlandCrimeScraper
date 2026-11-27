@@ -18,6 +18,7 @@ from models.charges import Charges
 from police_fire.cortland_voice.scrape_articles import fetch_article, get_article_urls
 from police_fire.utilities.utilities import get_response_for_query
 from police_fire.cortland_standard.import_articles import load_export, validate_standard_url
+from police_fire.utilities.incident_dates import infer_incident_date, publication_date
 
 
 def source_column(url):
@@ -91,14 +92,14 @@ def validate_incidents(payload, article):
             raise ValueError('Incident must have an explicitly reported name and details')
         incident_date = row.get('incident_date')
         if incident_date in (None, '', 'N/A'):
-            incident_date = None
+            incident_date = infer_incident_date(row['details'], row['legal_actions'], article.date_published)
         else:
             incident_date = date.fromisoformat(incident_date)
-            if incident_date > article.date_published:
+            if incident_date > publication_date(article.date_published):
                 raise ValueError('Incident date cannot be later than publication')
         records.append(Incident(
             **{key: row[key] for key in fields}, incident_date=incident_date,
-            incident_reported_date=article.date_published, **attribution,
+            incident_reported_date=publication_date(article.date_published), **attribution,
         ))
     keys = {(r.accused_name, r.details, r.charges) for r in records}
     if len(keys) != len(records):
@@ -119,6 +120,12 @@ def parse_article(session, article, query_fn=get_response_for_query):
         'accused_age, accused_location, incident_location and incident_date (YYYY-MM-DD or null). '
         'Use N/A for unknown string fields. Use an empty incidents list if no named accused is reported. '
         'Never substitute publication date for an unknown incident date. '
+        'Resolve weekday references using the most recent matching weekday on or before publication, '
+        'including the same day; last Tuesday on a Tuesday means seven days earlier. '
+        'Resolve month/day references using the latest matching date on or before publication. '
+        'Prefer the explicitly stated occurrence date; if only an arrest/charge date is reported, use it. '
+        'Do not use future court/hearing dates. Preserve the original event date wording in details '
+        'or legal_actions for each accused separately, even when incident_date is null. '
         f'Publication date: {article.date_published}. Article follows:\n{article.content}'
     )
     try:
@@ -132,6 +139,29 @@ def parse_article(session, article, query_fn=get_response_for_query):
         session.rollback()
         raise
     return len(records)
+
+
+def backfill_incident_dates(session, article, apply=False):
+    """Fill only missing source-linked dates; never overwrite a recorded date."""
+    changes = []
+    column = source_column(article.url)
+    try:
+        records = session.query(Incident).filter(
+            column == article.url, Incident.incident_date.is_(None),
+        ).order_by(Incident.id).all()
+        for record in records:
+            inferred = infer_incident_date(record.details, record.legal_actions, article.date_published)
+            if inferred is None:
+                continue
+            changes.append({'incident_id': record.id, 'incident_date': inferred.isoformat()})
+            if apply:
+                record.incident_date = inferred
+        if apply and changes:
+            session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return changes
 
 
 def positive_int(value):
@@ -151,6 +181,8 @@ def main(argv=None):
     parser.add_argument('--audit-only', action='store_true')
     parser.add_argument('--env-file', type=Path, help='Load a local ignored credentials file')
     parser.add_argument('--parse-only', action='store_true', help='Parse stored articles without website requests')
+    parser.add_argument('--backfill-dates', action='store_true',
+                        help='Infer missing dates in the latest max-articles stored articles; preview unless --apply')
     parser.add_argument('--apply', action='store_true', help='Write fetched articles to the selected database')
     parser.add_argument('--parse', action='store_true', help='Parse up to max-articles unparsed articles (requires --apply)')
     args = parser.parse_args(argv)
@@ -161,9 +193,11 @@ def main(argv=None):
         load_dotenv(args.env_file, override=True)
     if args.parse_only:
         args.parse = True
+    if args.backfill_dates and (args.parse or args.import_file):
+        parser.error('--backfill-dates cannot be combined with parsing or importing')
     if args.import_file and (args.source != 'standard' or args.parse_only):
         parser.error('--import-file requires --source standard and cannot be combined with --parse-only')
-    if args.source == 'standard' and not (args.import_file or args.parse_only or args.audit_only):
+    if args.source == 'standard' and not (args.import_file or args.parse_only or args.audit_only or args.backfill_dates):
         parser.error('Standard website access is unavailable; supply --import-file or use --parse-only')
     imported = load_export(args.import_file) if args.import_file else None
     if args.parse and not args.apply:
@@ -177,6 +211,18 @@ def main(argv=None):
             return
         if args.apply and args.environment == 'production':
             print('Backup:', backup_database(engine))
+        if args.backfill_dates:
+            articles = session.query(Article).filter(source_filter(args.source)).order_by(
+                Article.date_published.desc(), Article.id.desc(),
+            ).limit(args.max_articles).all()
+            updated = 0
+            for article in articles:
+                changes = backfill_incident_dates(session, article, apply=args.apply)
+                print(json.dumps({'article_id': article.id,
+                                  'action': 'update' if args.apply else 'preview', 'dates': changes}))
+                updated += len(changes)
+            print(json.dumps({'after': audit(session), 'dates_resolved': updated}, indent=2))
+            return
         seen = set()
         fetched = 0
         if imported is not None:

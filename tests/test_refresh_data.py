@@ -8,7 +8,7 @@ from models.article import Article
 from models.incident import Incident
 from police_fire.test_database import setup_database
 from police_fire.cortland_voice import scrape_articles
-from police_fire.refresh_data import parse_article, validate_incidents, main
+from police_fire.refresh_data import backfill_incident_dates, parse_article, validate_incidents, main
 
 
 def article():
@@ -64,6 +64,72 @@ def test_future_date_rejected():
     response['incidents'][0]['incident_date'] = '2026-11-26'
     with pytest.raises(ValueError):
         validate_incidents(response, article())
+
+
+def test_validate_infers_each_incident_separately():
+    response = payload()
+    response['incidents'][0]['legal_actions'] = 'Charged Tuesday.'
+    second = dict(response['incidents'][0], accused_name='Second Person', legal_actions='Charged Monday.')
+    response['incidents'].append(second)
+    records = validate_incidents(response, article())
+    assert [record.incident_date for record in records] == [date(2026, 11, 24), date(2026, 11, 23)]
+
+
+def test_validate_preserves_explicit_occurrence_date():
+    response = payload()
+    response['incidents'][0].update(incident_date='2026-11-12', legal_actions='Charged Tuesday.')
+    assert validate_incidents(response, article())[0].incident_date == date(2026, 11, 12)
+
+
+def test_backfill_preview_apply_and_rerun(setup_database):
+    source = article()
+    missing = Incident(cortlandVoiceSource=source.url, details='Charged Tuesday.')
+    existing = Incident(cortlandVoiceSource=source.url, details='Charged Monday.', incident_date=date(2026, 11, 10))
+    unknown = Incident(cortlandVoiceSource=source.url, details='No event date.', legal_actions='Court Tuesday.')
+    unrelated = Incident(cortlandVoiceSource=source.url + 'other', details='Charged Tuesday.')
+    setup_database.add_all([source, missing, existing, unknown, unrelated])
+    setup_database.commit()
+    preview = backfill_incident_dates(setup_database, source)
+    assert preview == [{'incident_id': missing.id, 'incident_date': '2026-11-24'}]
+    assert missing.incident_date is None
+    assert backfill_incident_dates(setup_database, source, apply=True) == preview
+    setup_database.expire_all()
+    assert missing.incident_date == date(2026, 11, 24)
+    assert existing.incident_date == date(2026, 11, 10)
+    assert unknown.incident_date is unrelated.incident_date is None
+    assert backfill_incident_dates(setup_database, source, apply=True) == []
+
+
+def test_backfill_cli_no_discovery_or_paid_api(setup_database, monkeypatch):
+    from police_fire import refresh_data
+    source = article()
+    record = Incident(cortlandVoiceSource=source.url, details='Charged Tuesday.')
+    setup_database.add_all([source, record])
+    setup_database.commit()
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+    monkeypatch.setattr(refresh_data, 'get_database_session', lambda *args, **kwargs: (setup_database, setup_database.bind))
+    discovery, parse = Mock(), Mock()
+    monkeypatch.setattr(refresh_data, 'get_article_urls', discovery)
+    monkeypatch.setattr(refresh_data, 'parse_article', parse)
+    main(['--backfill-dates', '--max-articles', '1'])
+    assert record.incident_date is None
+    discovery.assert_not_called()
+    parse.assert_not_called()
+
+
+def test_backfill_production_backup_failure_prevents_updates(setup_database, monkeypatch):
+    from police_fire import refresh_data
+    source = article()
+    record = Incident(cortlandVoiceSource=source.url, details='Charged Tuesday.')
+    setup_database.add_all([source, record])
+    setup_database.commit()
+    monkeypatch.setattr(refresh_data, 'get_database_session', lambda *args, **kwargs: (setup_database, setup_database.bind))
+    monkeypatch.setattr(refresh_data, 'backup_database', Mock(side_effect=RuntimeError('backup failed')))
+    backfill = Mock()
+    monkeypatch.setattr(refresh_data, 'backfill_incident_dates', backfill)
+    with pytest.raises(RuntimeError, match='backup failed'):
+        main(['--backfill-dates', '--apply', '--environment', 'production'])
+    backfill.assert_not_called()
 
 
 def test_scrape_article_duplicate_does_not_fetch(setup_database, monkeypatch):
