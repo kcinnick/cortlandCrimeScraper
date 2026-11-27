@@ -90,6 +90,36 @@ elements to settle. A five-second wait was insufficient; the tested blotter beca
 readable after nine seconds. HTTP/access failures stop navigation without retries.
 Successful articles are checkpointed to the export; output files are not overwritten.
 
+For historical coverage, the browser exporter supports the publisher's normal
+Police/Fire archive search and follows its validated next-page links. Archive
+discovery excludes unrelated sidebar stories. Set explicit dates and bounds:
+
+```powershell
+.\.venv-review\Scripts\python.exe -m police_fire.cortland_standard.browser_export --authorized --since 2024-05-30 --until 2026-11-27 --max-pages 10 --max-articles 1000 --output downloads/standard-full-export.json
+```
+
+Use `--skip-file downloads/standard-existing-urls.json` with a local JSON list of
+already stored canonical Standard URLs to avoid downloading them again. Add
+`--resume` to continue a validated existing export, without refetching its articles.
+Checkpoints use a temporary file and atomic replacement. The adjacent
+`.manifest.json` records discovered URLs, pending count, dates, and whether archive
+pagination was exhausted. Hitting an article/page bound or an access failure is
+**not** a complete refresh; reconcile manifest URLs against stored URLs afterwards.
+The import runner remains bounded; raise `--max-articles` explicitly to cover the
+export, then run source-specific `--apply --parse-only` for remaining stored backlog.
+
+A backed-up full refresh was started November 27: authorized Standard archive
+coverage from May 30, 2024 through November 27, 2026, plus all 121 then-unparsed
+stored Voice articles. Private runtime progress is recorded in
+`downloads/full-refresh-status.json`; browser progress is recorded in
+`downloads/standard-full-export-status.log`. These files and the local job script
+are ignored, not repository artifacts. The running job validates the production
+backup with `pg_restore --list`, imports/parses each article atomically, and records
+article-level failures for review. Current Voice website discovery remains blocked
+by HTTP 403. Individual charge-row generation, geocoding, destructive normalization,
+and manual verification are not part of this refresh. Do not interpret starting
+the job or exhausting Standard pagination as complete two-source coverage.
+
 Obtain a publisher-authorized JSON export and save it under ignored `downloads/`.
 The file must contain an object with an `articles` list. Each article requires:
 - `url`: canonical HTTPS Standard article URL, without tracking query/fragment;
@@ -123,6 +153,29 @@ incidents, and 7,804 individual charge rows. The latest stored publication is no
 still has 121 unparsed articles. Source links and name mentions were checked, not
 manually certified; the new records still need review. This covers a five-article
 current batch, not all historical reporting since 2024.
+
+The November 27 date repair filled `incident_date` for all 56 batch incidents
+(4008–4063), after a production backup. Weekday references resolve to the latest
+matching day on or before publication: "charged Tuesday" in the November 27
+article means November 24. Explicit month/day references such as “Nov. 12” use
+the latest matching date on or before publication, handling year boundaries.
+An explicitly reported occurrence date takes precedence; when only a dated
+arrest/charge is reported, that date is used. This does not establish when an
+alleged underlying offense occurred. Court dates are not used, ambiguous dates
+remain unknown, and existing dates are never overwritten by backfill.
+
+New refresh extraction includes these rules and a deterministic fallback using
+each incident's details and legal actions separately. To repair missing dates in
+the latest five stored Standard articles without website requests or paid APIs:
+
+```powershell
+python -m police_fire.refresh_data --source standard --environment production --env-file .env.local --backfill-dates --max-articles 5
+```
+
+This previews only. Add `--apply` to write after a successful production backup;
+updates commit per article. Repeating the completed batch repair proposes zero
+updates. Article, incident, and charge counts are unchanged, and records remain
+unverified.
 
 ### Local app preview
 

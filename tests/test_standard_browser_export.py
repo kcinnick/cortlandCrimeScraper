@@ -1,4 +1,9 @@
 from unittest.mock import Mock
+from datetime import date
+from html import escape
+import json
+import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -100,5 +105,145 @@ def test_loading_timeout_is_bounded(monkeypatch):
         browser_export.wait_for_article_text(page, timeout_ms=2000)
     assert page.wait_for_timeout.call_count == 2
     page.goto.assert_not_called()
+
+
+def archive_html(next_url=None):
+    result = '<div class="search-page-container"><div class="col-md-9"><a href="/news/blotter/article_abc.html">Blotter</a></div></div>'
+    result += '<a href="/news/sidebar/article_other.html">Unrelated sidebar</a>'
+    if next_url:
+        result += '<ul class="pagination"><li class="next"><a href="' + escape(next_url) + '">Next</a></li></ul>'
+    return result
+
+
+def test_archive_scope_and_next_filters():
+    url = browser_export.archive_url(date(2024, 5, 30), date(2026, 11, 27))
+    next_url = url + '&o=100'
+    urls, following = browser_export.archive_links(archive_html(next_url), url)
+    assert urls == ['https://www.cortlandstandard.com/news/blotter/article_abc.html']
+    assert following == next_url
+
+
+def test_archive_includes_migrated_paths():
+    html = archive_html().replace('/news/blotter/article_abc.html', '/police-blotter/article_abc.html')
+    urls, following = browser_export.archive_links(html, 'https://www.cortlandstandard.com/search/')
+    assert urls == ['https://www.cortlandstandard.com/police-blotter/article_abc.html']
+    assert following is None
+
+
+@pytest.mark.parametrize('next_url', [
+    'https://other.example/search/',
+    'http://www.cortlandstandard.com/search/',
+    'https://www.cortlandstandard.com/users/login/',
+    'https://www.cortlandstandard.com/search/?c[]=news',
+])
+def test_invalid_archive_pagination_rejected(next_url):
+    with pytest.raises(ValueError):
+        browser_export.archive_links(archive_html(next_url), browser_export.archive_url(date(2024, 5, 30), date(2026, 11, 27)))
+
+
+def test_archive_dates_invalid():
+    with pytest.raises(ValueError):
+        browser_export.archive_url(date(2026, 11, 27), date(2024, 5, 30))
+
+
+def test_archive_result_container_required():
+    with pytest.raises(ValueError, match='container missing'):
+        browser_export.archive_links('<html>Login</html>', 'https://www.cortlandstandard.com/search/')
+
+
+def test_archive_bounded_and_exhausted(monkeypatch):
+    since, until = date(2024, 5, 30), date(2026, 11, 27)
+    url = browser_export.archive_url(since, until)
+    page = Mock()
+    navigation = Mock()
+    monkeypatch.setattr(browser_export, 'navigate', navigation)
+    page.content.return_value = archive_html(url + '&o=100')
+    urls, exhausted = browser_export.collect_archive_urls(page, since, until, 1)
+    assert len(urls) == 1 and exhausted is False
+    assert navigation.call_count == 1
+    page.content.side_effect = [archive_html(url + '&o=100'), archive_html()]
+    urls, exhausted = browser_export.collect_archive_urls(page, since, until, 5)
+    assert len(urls) == 1 and exhausted is True
+
+
+def test_archive_pagination_loop_rejected(monkeypatch):
+    since, until = date(2024, 5, 30), date(2026, 11, 27)
+    url = browser_export.archive_url(since, until)
+    page = Mock()
+    page.content.return_value = archive_html(url)
+    monkeypatch.setattr(browser_export, 'navigate', Mock())
+    with pytest.raises(ValueError, match='loop'):
+        browser_export.collect_archive_urls(page, since, until, 5)
+
+
+@pytest.fixture
+def exporter_browser(monkeypatch):
+    page, context, playwright = Mock(), Mock(), Mock()
+    context.pages = [page]
+    playwright.chromium.launch_persistent_context.return_value = context
+    manager = Mock()
+    manager.__enter__ = Mock(return_value=playwright)
+    manager.__exit__ = Mock(return_value=False)
+    monkeypatch.setitem(sys.modules, 'playwright.sync_api', SimpleNamespace(sync_playwright=lambda: manager))
+    monkeypatch.setattr(browser_export, 'navigate', Mock())
+    monkeypatch.setattr(browser_export, 'extract_metadata', Mock(return_value={
+        'headline': 'Synthetic article', 'date_published': '2026-11-25', 'author': '',
+    }))
+    monkeypatch.setattr(browser_export, 'wait_for_article_text', Mock(return_value='Synthetic reporting. ' * 20))
+    return page, context
+
+
+def test_export_skips_stored_urls_and_checkpoints(tmp_path, monkeypatch, exporter_browser):
+    page, context = exporter_browser
+    profile = tmp_path / 'profile'
+    profile.mkdir()
+    output, skip = tmp_path / 'export.json', tmp_path / 'skip.json'
+    known = 'https://www.cortlandstandard.com/news/example/article_known.html'
+    pending = 'https://www.cortlandstandard.com/news/example/article_new.html'
+    skip.write_text(json.dumps([known]), encoding='utf-8')
+    page.url = pending
+    monkeypatch.setattr(browser_export, 'collect_archive_urls', Mock(return_value=([known, pending], True)))
+    browser_export.main(['--authorized', '--since', '2024-05-30', '--until', '2026-11-27',
+                         '--profile', str(profile), '--output', str(output), '--skip-file', str(skip)])
+    assert [row['url'] for row in json.loads(output.read_text())['articles']] == [pending]
+    assert json.loads(output.with_suffix('.manifest.json').read_text())['archive_exhausted'] is True
+    browser_export.navigate.assert_called_once_with(page, pending)
+    context.close.assert_called_once()
+
+
+def test_resume_does_not_refetch_checkpointed_articles(tmp_path, monkeypatch, exporter_browser):
+    page, context = exporter_browser
+    profile = tmp_path / 'profile'
+    profile.mkdir()
+    output = tmp_path / 'export.json'
+    known = 'https://www.cortlandstandard.com/news/example/article_known.html'
+    output.write_text(json.dumps({'articles': [{'url': known, 'headline': 'Synthetic',
+        'content': 'Synthetic reporting', 'date_published': '2026-11-25'}]}), encoding='utf-8')
+    monkeypatch.setattr(browser_export, 'collect_archive_urls', Mock(return_value=([known], True)))
+    browser_export.main(['--authorized', '--resume', '--since', '2024-05-30', '--until', '2026-11-27',
+                         '--profile', str(profile), '--output', str(output)])
+    browser_export.navigate.assert_not_called()
+    assert len(json.loads(output.read_text())['articles']) == 1
+    context.close.assert_called_once()
+
+
+def test_export_failure_closes_browser_and_keeps_checkpoint(tmp_path, monkeypatch, exporter_browser):
+    page, context = exporter_browser
+    profile = tmp_path / 'profile'
+    profile.mkdir()
+    output = tmp_path / 'export.json'
+    first = 'https://www.cortlandstandard.com/news/example/article_first.html'
+    second = 'https://www.cortlandstandard.com/news/example/article_second.html'
+    monkeypatch.setattr(browser_export, 'collect_archive_urls', Mock(return_value=([first, second], True)))
+    def navigation(page, url):
+        if url == second:
+            raise RuntimeError('HTTP 429')
+        page.url = url
+    monkeypatch.setattr(browser_export, 'navigate', navigation)
+    with pytest.raises(RuntimeError, match='429'):
+        browser_export.main(['--authorized', '--since', '2024-05-30', '--until', '2026-11-27',
+                             '--profile', str(profile), '--output', str(output)])
+    assert [row['url'] for row in json.loads(output.read_text())['articles']] == [first]
+    context.close.assert_called_once()
 
 
