@@ -1,3 +1,5 @@
+from datetime import date
+
 from models.incident import Incident
 from police_fire.cortland_standard.scrape_charges_from_incidents import categorize_charges
 
@@ -11,8 +13,8 @@ def test_assert_all_charges_are_categorized(setup_database):
 
     fake_incident = Incident(
         accused_name='Christian M. Seaman',
-        incident_reported_date='2020-05-21',
-        incident_date='2020-05-21',
+        incident_reported_date=date(2020, 5, 21),
+        incident_date=date(2020, 5, 21),
         accused_age=40,
         accused_location='Groton, NY',
         charges='Aggravated driving while intoxicated with a blood alcohol content of 0.18% or more,'

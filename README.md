@@ -1,5 +1,62 @@
 # cortlandCrimeScraper
 
+## Tested maintenance workflow (November 2026)
+
+Use **Python 3.11** for the existing pinned dependencies. The editor's Python
+3.14 environment has not been validated. A lightweight environment supports
+offline tests and the bounded refresh runner without installing Torch or OCR:
+
+```powershell
+py -3.11 -m venv .venv-review
+.\.venv-review\Scripts\python.exe -m pip install -r requirements-test.txt
+.\.venv-review\Scripts\python.exe -m pytest -q
+```
+
+Default tests use disposable SQLite sessions and block network connections.
+Live website/API tests are explicitly skipped, not counted as passing. Run them
+with `--integration` only after configuring credentials and an isolated PostgreSQL
+test database; some legacy integration tests still use PostgreSQL-specific inputs.
+The old shared fixture no longer touches the development database.
+
+### Credentials
+
+Copy `.env.example` to the ignored `.env.local` file and edit it locally. **Never
+paste keys into chat, commit credentials, or pass passwords on command lines.**
+The refresh runner loads this file only when `--env-file` is supplied, overriding
+stale environment values. Set `OPENAI_MODEL` to a model your account can access
+(default: `gpt-4.1-mini`; live access has not been verified). Cortland Standard
+also requires legitimate `LOGIN_EMAIL` and `LOGIN_PASSWORD` credentials.
+
+### Safe data refresh
+
+```powershell
+.\.venv-review\Scripts\python.exe -m police_fire.refresh_data --env-file .env.local --environment production --audit-only
+.\.venv-review\Scripts\python.exe -m police_fire.refresh_data --env-file .env.local --environment development --max-pages 1 --max-articles 5
+.\.venv-review\Scripts\python.exe -m police_fire.refresh_data --env-file .env.local --environment development --apply --parse-only --max-articles 1
+```
+
+The first command only reads counts and latest publication date. The second
+previews public-source articles without writes or paid API calls. The third
+parses stored articles and writes **unverified incident allegations**, not findings
+of guilt. Unknown dates stay null; extraction is validated and committed atomically
+per article. Re-runs skip parsed articles. Partial existing extractions stop for
+manual review rather than guessing how to merge cases.
+
+Production `--apply` requires a successful `pg_dump` backup first. Install PostgreSQL
+client tools and put `pg_dump` on PATH. Backups are stored in ignored
+`downloads/backups/`; restrict local access and verify restore procedures before
+large runs. Backups are not automatically restored after failure. Each article
+is its own transaction, so earlier successful articles remain committed.
+
+This runner currently supports Cortland Voice, not authenticated Standard ingestion,
+and does not populate individual charge rows or perform destructive normalization.
+Voice discovery returned HTTP 403 during the November audit; do not bypass access
+restrictions. `--parse-only` works on already stored articles without discovery.
+
+The November 26 read-only production audit found 1,769 articles, 3,050 incidents,
+7,804 charges, latest publication 2024-05-30, and 127 unparsed Voice articles.
+No production data was refreshed during that audit.
+
 ## Overview
 `cortlandCrimeScraper` is a Python-based web scraping tool designed to gather and store detailed information about local news stories from the Cortland Standard & Cortland Voice websites. The primary purpose of this tool is to facilitate data collection for analysis and querying of local news incidents.
 

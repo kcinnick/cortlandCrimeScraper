@@ -2,10 +2,10 @@
 import ast
 import os
 import re
+from datetime import date as date_type, datetime, timedelta
 
 import sqlalchemy
 from openai import OpenAI
-from openai.types.chat.completion_create_params import ResponseFormat
 from requests import Session
 from tqdm import tqdm
 
@@ -13,9 +13,6 @@ from database import get_database_session
 from models.incident import Incident
 from models.incidents_with_errors import IncidentsWithErrors
 from models.article import Article
-
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
 
 def delete_table_contents(DBsession, engine):
     if sqlalchemy.inspect(engine).has_table("incidents_with_errors"):
@@ -71,17 +68,17 @@ def get_response_for_query(query, client=None, json=True):
 
     if json:
         completion = client.chat.completions.create(
-            model='gpt-4-1106-preview',
+            model=os.getenv('OPENAI_MODEL', 'gpt-4.1-mini'),
             messages=[
                 {'role': 'system',
                  'content': query},
             ],
             temperature=0,
-            response_format=ResponseFormat(type='json_object')
+            response_format={'type': 'json_object'}
         )
     else:
         completion = client.chat.completions.create(
-            model='gpt-4-1106-preview',
+            model=os.getenv('OPENAI_MODEL', 'gpt-4.1-mini'),
             messages=[
                 {'role': 'system',
                  'content': query},
@@ -95,14 +92,14 @@ def get_response_for_query(query, client=None, json=True):
 
 
 def get_last_date_of_day_of_week_before_date(day_of_week, date):
-    # find the last time that day of the week occurred before the date
-    query = "What was the most recent " + day_of_week + " that occurred before " + str(
-        date) + "? Return ONLY the date in JSON format, with the key as 'date', as a string formatted YYYY-MM-DD. If none, return N/A."
-
-    response = get_response_for_query(query)
-    response = ast.literal_eval(response)
-
-    return response['date']
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    target = days.index(day_of_week)
+    if isinstance(date, datetime):
+        date = date.date()
+    elif not isinstance(date, date_type):
+        date = date_type.fromisoformat(date)
+    offset = (date.weekday() - target) % 7 or 7
+    return (date - timedelta(days=offset)).isoformat()
 
 
 def check_if_details_references_a_relative_date(details_str, incident_reported_date):
