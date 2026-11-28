@@ -24,8 +24,10 @@ Copy `.env.example` to the ignored `.env.local` file and edit it locally. **Neve
 paste keys into chat, commit credentials, or pass passwords on command lines.**
 The refresh runner loads this file only when `--env-file` is supplied, overriding
 stale environment values. Set `OPENAI_MODEL` to a model your account can access
-(default: `gpt-4.1-mini`; choose a model your account supports). Cortland Standard
-also requires legitimate `LOGIN_EMAIL` and `LOGIN_PASSWORD` credentials.
+(default: `gpt-4.1-mini`; choose a model your account supports). The legacy Standard
+login helper uses `LOGIN_EMAIL` and `LOGIN_PASSWORD`; the current browser exporter
+uses normal manual sign-in in a dedicated local profile. Cortland Voice is public
+and does not require a login for its news articles.
 
 ### Safe data refresh
 
@@ -60,6 +62,57 @@ This is not an OpenAI key or database-password problem. Issue #114 records the
 Cloudflare Ray ID for publisher review. Do not automate challenges, spoof browser
 identities, extract another browser's session cookies, or retry blocked routes in
 a loop. Ask the publisher for approved access, an API/feed, or a content export.
+
+### Voice discovery from a manually saved public RSS feed
+
+Stored publisher HTML advertises **https://cortlandvoice.com/feed/**. The user
+successfully opened this feed in their ordinary browser and supplied a saved XML
+file. A later automated homepage check returned HTTP 403 as well; automated
+website tests stopped. The manually saved feed provides a supported local discovery
+route, not a repair of Cloudflare's automation restriction.
+
+```powershell
+.\.venv-review\Scripts\python.exe -m police_fire.cortland_voice.feed_inventory --input 'C:\Path\To\cortlandvoice.xml' --output downloads/voice-feed-inventory.json
+```
+
+This command makes **no website requests, database writes, or paid API calls**. It
+validates the publisher channel, canonical article URLs, timestamps/timezones,
+duplicate URLs and the XML size; DTD/entity declarations are rejected. It selects
+`Crime & Courts` by default; repeat `--category` to include other categories such as
+`Public Safety`. Output files are not overwritten. Keep feeds/inventories under
+ignored `downloads/`, not in Git.
+
+The supplied November feed contains ten items, six in `Crime & Courts`. Those six
+are truncated descriptions and none has a `content:encoded` body. The inventory
+preserves publication timestamps, marks incomplete summaries and leaves `content`
+null. **Do not import excerpts into Article.content or mark them parsed.** Even an
+encoded-body availability indicator is not certification of complete/accurate
+reporting. Full article exports from normal authorized access or a publisher API
+are still required for new incident parsing. This feed covers recent items, not
+historical backfill or complete current-source coverage. Issue #114 remains open.
+
+For a complete report normally readable in the working browser, save **HTML only**
+and use the saved-article importer. It previews without database access by default:
+
+```powershell
+.\.venv-review\Scripts\python.exe -m police_fire.cortland_voice.import_saved_article --input downloads/voice-report.html --confirmed-full-text
+```
+
+Use `--expected-url` with the canonical URL from the feed inventory to verify the
+saved page is the intended article. The importer requires the article body, headline,
+canonical Voice URL and displayed publication date; it rejects challenge pages,
+truncation/access prompts, oversized files and inline-hidden reporting. It removes
+scripts/embeds and stores only reporting text, not the raw browser page. Manual
+full-text confirmation is required; offline HTML parsing cannot certify all CSS
+visibility or source accuracy. The displayed publication date is used, not the UTC
+calendar day or later modification date.
+
+Add `--environment production --env-file .env.local --apply` to import after a
+successful production backup, and `--parse` to extract allegations using the locally
+configured API key. Existing URLs are not overwritten; parsed articles are skipped
+without paid API calls. Imports and parsing commit separately, leaving an imported
+article unparsed if extraction fails. Source attribution and unverified flags are
+preserved. This manual-export route does not remove the automated website block.
 
 The November 26 read-only production audit found 1,769 articles, 3,050 incidents,
 7,804 charges, latest publication 2024-05-30, and 127 unparsed Voice articles.
