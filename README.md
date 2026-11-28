@@ -53,6 +53,14 @@ and does not populate individual charge rows or perform destructive normalizatio
 Voice discovery returned HTTP 403 during the November audit; do not bypass access
 restrictions. `--parse-only` works on already stored articles without discovery.
 
+The November 27 normal headed-Chrome check loaded Voice's homepage (HTTP 200),
+but the public Crime & Courts section returned Cloudflare's "Just a moment..."
+security challenge (HTTP 403). Manual sign-in in the dedicated profile also failed.
+This is not an OpenAI key or database-password problem. Issue #114 records the
+Cloudflare Ray ID for publisher review. Do not automate challenges, spoof browser
+identities, extract another browser's session cookies, or retry blocked routes in
+a loop. Ask the publisher for approved access, an API/feed, or a content export.
+
 The November 26 read-only production audit found 1,769 articles, 3,050 incidents,
 7,804 charges, latest publication 2024-05-30, and 127 unparsed Voice articles.
 No production data was refreshed during that audit.
@@ -119,6 +127,39 @@ article-level failures for review. Current Voice website discovery remains block
 by HTTP 403. Individual charge-row generation, geocoding, destructive normalization,
 and manual verification are not part of this refresh. Do not interpret starting
 the job or exhausting Standard pagination as complete two-source coverage.
+
+That run later stopped on `net::ERR_NETWORK_IO_SUSPENDED`, preserving earlier
+commits: 245 additional Standard articles and 1,256 additional incidents since its
+starting audit. Totals at that checkpoint were 2,019 articles, 4,367 incidents and
+7,804 individual charge rows. All 121 stored Voice backlog articles were processed;
+Standard had seven parsing failures and 240 discovered URLs still missing. Those
+figures are a partial refresh, not complete historical coverage (issue #128).
+
+### Backfill 2025 and all earlier available reporting
+
+Use `--archive` without `--since` to leave the publisher search's lower date bound
+unset. `--until 2025-12-31` excludes 2026. The broader local-news section can recover
+crime reports whose migrated Police/Fire tags are missing; non-crime articles must
+not generate accused records. A separate normal search recovers untagged blotters:
+
+```powershell
+.\.venv-review\Scripts\python.exe -m police_fire.cortland_standard.browser_export --authorized --archive --archive-section news --until 2025-12-31 --max-pages 1000 --max-articles 1000 --output downloads/standard-history-local-news.json
+.\.venv-review\Scripts\python.exe -m police_fire.cortland_standard.browser_export --authorized --archive --search-term '"police blotter"' --until 2025-12-31 --max-pages 1000 --max-articles 1000 --output downloads/standard-history-blotters.json
+```
+
+Use a fresh stored-URL `--skip-file` and `--resume` as appropriate. Query and section
+filters are preserved across pagination; publication bounds are also checked on
+article pages. Empty searches create explicit empty export/manifest checkpoints.
+Import and parse after backup using the source-specific refresh runner above.
+
+The November 27 check found 45 local-news articles through 2025 plus four blotters
+outside those local-news tags. A general search before 2025 returned only ten test
+articles, not genuine reporting. Thus **no lower cutoff does not mean complete
+historical availability**: earlier reporting requires the publisher's legacy archive
+or an authorized export. The local historical job records private progress in
+`downloads/historical-backfill-status.json`, validates its backup with
+`pg_restore --list`, and retains extraction failures for review. Do not commit
+profiles, exports, job scripts, credentials, or backups from `downloads/`.
 
 Obtain a publisher-authorized JSON export and save it under ignored `downloads/`.
 The file must contain an object with an `articles` list. Each article requires:
