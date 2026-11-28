@@ -5,6 +5,7 @@ import json
 import sys
 from types import SimpleNamespace
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
@@ -275,5 +276,67 @@ def test_checkpoint_permanent_lock_preserves_previous(tmp_path, monkeypatch):
         browser_export.write_json_checkpoint(output, {'new': True})
     assert json.loads(output.read_text()) == {'previous': True}
     assert replace.call_count == 25
+
+
+def test_archive_no_lower_date_bound():
+    query = parse_qs(urlsplit(browser_export.archive_url(None, date(2025, 12, 31))).query)
+    assert 'd1' not in query
+    assert query['d2'] == ['2025-12-31']
+    assert query['c[]'] == ['news/police-fire']
+
+
+def test_archive_search_fallback_preserved():
+    url = browser_export.archive_url(None, date(2025, 12, 31), '"police blotter"')
+    query = parse_qs(urlsplit(url).query)
+    assert 'c[]' not in query and 'd1' not in query
+    assert query['q'] == ['"police blotter"']
+    assert browser_export.archive_links(archive_html(url + '&o=100'), url)[1] == url + '&o=100'
+    with pytest.raises(ValueError, match='filters'):
+        browser_export.archive_links(archive_html(url.replace('blotter', 'other') + '&o=100'), url)
+
+
+def test_archive_empty_results_checkpointed(tmp_path, monkeypatch, exporter_browser):
+    page, context = exporter_browser
+    profile = tmp_path / 'profile'
+    profile.mkdir()
+    output = tmp_path / 'export.json'
+    collect = Mock(return_value=([], True))
+    monkeypatch.setattr(browser_export, 'collect_archive_urls', collect)
+    browser_export.main(['--authorized', '--archive', '--until', '2025-12-31',
+                         '--profile', str(profile), '--output', str(output)])
+    collect.assert_called_once_with(page, None, date(2025, 12, 31), 10)
+    assert json.loads(output.read_text()) == {'articles': []}
+    manifest = json.loads(output.with_suffix('.manifest.json').read_text())
+    assert manifest['since'] is None and manifest['archive_exhausted'] is True
+    browser_export.navigate.assert_not_called()
+
+
+def test_archive_upper_bound_enforced_without_since(tmp_path, monkeypatch, exporter_browser):
+    page, context = exporter_browser
+    profile = tmp_path / 'profile'
+    profile.mkdir()
+    pending = 'https://www.cortlandstandard.com/news/example/article_new.html'
+    page.url = pending
+    monkeypatch.setattr(browser_export, 'collect_archive_urls', Mock(return_value=([pending], True)))
+    with pytest.raises(ValueError, match='outside requested'):
+        browser_export.main(['--authorized', '--archive', '--until', '2025-12-31',
+                             '--profile', str(profile), '--output', str(tmp_path / 'export.json')])
+    browser_export.wait_for_article_text.assert_not_called()
+    context.close.assert_called_once()
+
+
+def test_search_term_requires_archive():
+    with pytest.raises(SystemExit):
+        browser_export.main(['--authorized', '--search-term', 'blotter'])
+
+
+def test_broader_local_news_archive_filters():
+    url = browser_export.archive_url(None, date(2025, 12, 31), section='news')
+    assert parse_qs(urlsplit(url).query)['c[]'] == ['news']
+    assert browser_export.archive_links(archive_html(url + '&o=100'), url)[1] == url + '&o=100'
+    with pytest.raises(ValueError, match='filters'):
+        browser_export.archive_links(archive_html(url.replace('=news', '=news%2Fpolice-fire')), url)
+    with pytest.raises(ValueError, match='Unsupported'):
+        browser_export.archive_url(None, date(2025, 12, 31), section='unrelated')
 
 

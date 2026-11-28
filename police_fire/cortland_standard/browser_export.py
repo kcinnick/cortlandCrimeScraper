@@ -73,13 +73,19 @@ def extract_metadata(html):
             'author': author.get('content', '') if author else ''}
 
 
-def archive_url(since, until):
-    if since > until:
+def archive_url(since, until, search_term=None, section='news/police-fire'):
+    if since is not None and since > until:
         raise ValueError('Archive start date must not exceed end date')
-    return 'https://www.cortlandstandard.com/search/?' + urlencode({
-        'c[]': 'news/police-fire', 't': 'article', 's': 'start_time', 'sd': 'desc',
-        'l': '100', 'd1': since.isoformat(), 'd2': until.isoformat(),
-    })
+    query = {'t': 'article', 's': 'start_time', 'sd': 'desc', 'l': '100', 'd2': until.isoformat()}
+    if search_term:
+        query['q'] = search_term
+    else:
+        if section not in ('news/police-fire', 'news'):
+            raise ValueError('Unsupported archive section')
+        query['c[]'] = section
+    if since is not None:
+        query['d1'] = since.isoformat()
+    return 'https://www.cortlandstandard.com/search/?' + urlencode(query)
 
 
 def archive_links(html, current_url):
@@ -98,14 +104,15 @@ def archive_links(html, current_url):
             raise ValueError('Invalid archive pagination URL')
         expected, actual = parse_qs(urlsplit(current_url).query), parse_qs(parts.query)
         sections = actual.get('c[]', actual.get('c[0]'))
-        if sections != ['news/police-fire'] or any(
-                actual.get(key) != expected.get(key) for key in ('t', 's', 'sd', 'l', 'd1', 'd2')):
+        expected_sections = expected.get('c[]', expected.get('c[0]'))
+        if sections != expected_sections or any(
+                actual.get(key) != expected.get(key) for key in ('q', 't', 's', 'sd', 'l', 'd1', 'd2')):
             raise ValueError('Archive pagination changed the requested filters')
     return urls, next_url
 
 
-def collect_archive_urls(page, since, until, max_pages):
-    current = archive_url(since, until)
+def collect_archive_urls(page, since, until, max_pages, search_term=None, section='news/police-fire'):
+    current = archive_url(since, until, search_term, section)
     seen_pages, urls = set(), []
     for number in range(1, max_pages + 1):
         if current in seen_pages:
@@ -171,6 +178,10 @@ def main(argv=None):
     parser.add_argument('--output', type=Path, default=Path('downloads/standard-export.json'))
     parser.add_argument('--max-articles', type=positive_int, default=5)
     parser.add_argument('--since', type=date.fromisoformat, help='Search the Police/Fire archive from this ISO date')
+    parser.add_argument('--archive', action='store_true', help='Search the archive; omit --since to include all earlier years')
+    parser.add_argument('--search-term', help='Use normal publisher search instead of section tags (historical migration fallback)')
+    parser.add_argument('--archive-section', choices=['news/police-fire', 'news'], default='news/police-fire',
+                        help='Broader local news recovers historical articles missing Police/Fire tags')
     parser.add_argument('--until', type=date.fromisoformat, default=date.today())
     parser.add_argument('--max-pages', type=positive_int, default=10)
     parser.add_argument('--skip-file', type=Path, help='Local JSON list of already stored article URLs')
@@ -187,6 +198,9 @@ def main(argv=None):
         parser.error('--resume requires an existing export checkpoint')
     if args.since and args.since > args.until:
         parser.error('--since must not exceed --until')
+    if args.search_term and not (args.archive or args.since):
+        parser.error('--search-term requires --archive or --since')
+    archive = args.archive or args.since is not None
     skipped = set()
     if args.skip_file:
         values = json.loads(args.skip_file.read_text(encoding='utf-8'))
@@ -210,20 +224,28 @@ def main(argv=None):
                 navigate(page, 'https://www.cortlandstandard.com/users/login/')
                 input('Sign in normally in the browser, then press Enter here to save the local profile: ')
                 return
-            if args.since:
-                urls, exhausted = collect_archive_urls(page, args.since, args.until, args.max_pages)
+            if archive:
+                if args.search_term or args.archive_section != 'news/police-fire':
+                    urls, exhausted = collect_archive_urls(page, args.since, args.until, args.max_pages,
+                                                           args.search_term, args.archive_section)
+                else:
+                    urls, exhausted = collect_archive_urls(page, args.since, args.until, args.max_pages)
             else:
                 navigate(page, SECTION_URL)
                 urls, exhausted = discover_urls(page.content()), False
-            if not urls:
+            if not urls and not archive:
                 raise ValueError('No current section article URLs found')
             pending = [url for url in urls if url not in skipped]
-            manifest = {'since': str(args.since), 'until': str(args.until), 'urls': urls,
+            manifest = {'since': args.since.isoformat() if args.since else None, 'until': args.until.isoformat(),
+                        'search_term': args.search_term, 'urls': urls,
+                        'archive_section': args.archive_section if not args.search_term else None,
                         'archive_exhausted': exhausted, 'pending': len(pending)}
             args.output.parent.mkdir(parents=True, exist_ok=True)
             write_json_checkpoint(args.output.with_suffix('.manifest.json'), manifest)
             print(json.dumps({'discovered': len(urls), 'pending': len(pending),
                               'archive_exhausted': exhausted}), flush=True)
+            if not pending and not args.output.exists():
+                write_json_checkpoint(args.output, {'articles': records})
             for url in pending[:args.max_articles]:
                 page.wait_for_timeout(5000)
                 navigate(page, url)
@@ -231,8 +253,10 @@ def main(argv=None):
                 if page.url != url:
                     raise ValueError('Article URL redirected; manual review required')
                 record = extract_metadata(page.content())
-                if args.since and not args.since <= date.fromisoformat(record['date_published']) <= args.until:
-                    raise ValueError('Article publication outside requested archive range')
+                if archive:
+                    published = date.fromisoformat(record['date_published'])
+                    if published > args.until or (args.since and published < args.since):
+                        raise ValueError('Article publication outside requested archive range')
                 record.update(url=page.url, content=wait_for_article_text(page))
                 records.append(record)
                 args.output.parent.mkdir(parents=True, exist_ok=True)
